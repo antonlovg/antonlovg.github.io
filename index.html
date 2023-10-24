@@ -437,7 +437,7 @@
             monkaS
         </button>
     </div>
-    
+
     <!-- Haobin-bild -->
     <div class="collapse" id="haobin">
         <div class="card">
@@ -509,30 +509,29 @@
         document.querySelector("#quiz-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const answers = [];
-        const userChoices = []; // Skapa en array för att lagra valda alternativ
+        const brukerValg = []; // Skapa en array för att lagra valda alternativ
 
         for (let i = 0; i < questions.length; i++) {
-            const options = questions[i].querySelectorAll("input[type=radio]");
-            for (let j = 0; j < options.length; j++) {
-                if (options[j].checked) {
-                    answers.push(options[j].value);
-                    userChoices.push(options[j].nextElementSibling.textContent.trim()); // Lagra svarsalternativets text (t.ex., "Alternativ A")
+            const alternativer = questions[i].querySelectorAll("input[type=radio]");
+            for (let j = 0; j < alternativer.length; j++) {
+                if (alternativer[j].checked) {
+                    answers.push(alternativer[j].value);
+                    brukerValg.push(alternativer[j].nextElementSibling.textContent.trim()); // Lagra svarsalternativets text (t.ex., "Alternativ A")
                     break;
                 }
             }
         }
 
         if (answers.length === questions.length) {
-            const correctAnswers = ["b", "c", "c", "b", "c", "b", "c", "c", "c", "d", "d", "a", "c", "a", "c", "a", "a", "b", "c", "c"];
+            const riktigeSvar = ["b", "c", "c", "b", "c", "b", "c", "c", "c", "d", "d", "a", "c", "a", "c", "a", "a", "b", "c", "c"];
 
             for (let i = 0; i < questions.length; i++) {
-                if (answers[i] === correctAnswers[i]) {
-                    result.innerHTML += `Spørsmål ${i + 1}: Riktig svar er "${userChoices[i]}" (Rätt)<br>`;
+                result.innerHTML += `Spørsmål ${i + 1}: Du valgte "${brukerValg[i]}", riktig svar er "${riktigeSvar[i]}".<br>`;
+                if (answers[i] === riktigeSvar[i]) {
                     score++;
-                } else {
-                    result.innerHTML += `Spørsmål ${i + 1}: Feil svar. Riktig svar er "${userChoices[i]}" (Fel)<br>`;
                 }
             }
+            
             result.innerHTML += `<br>Du fikk ${score} av ${questions.length} spørsmål riktig.`;
         } else {
             result.innerHTML = "Vennligst svar på alle spørsmålene før du sender inn.";
