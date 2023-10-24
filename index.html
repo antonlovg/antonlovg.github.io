@@ -419,7 +419,7 @@
                     <label class="form-check-label" for="q20d">d) Du må stanse</label>
                 </div>
             </div>
-            <hr>
+            
             <div class="d-flex justify-content-between mt-3">
                 <button type="button" class="btn btn-secondary" id="prev-button">Forrige</button>
                 <button type="button" class="btn btn-primary" id="next-button">Neste</button>
@@ -430,23 +430,29 @@
         <p id="result" class="mt-3"></p>
     </div>
 
+    <hr>
     <!-- Meme-->
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-12">
-                <button id="toggleButton" class="btn btn-primary">visa/dölj nånting hehe</button>
-                <div id="haobinContainer" class="mt-3 fade">
-                    <img id="myImage" src="/img/haolight.jpg" alt="haobin" class="img-fluid">
-                </div>
-            </div>
+        <div class="text-center m-3">
+            <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#haobin" aria-expanded="false" aria-controls="haobin">
+                monkaS
+            </button>
         </div>
-    </div>
+      <div class="collapse" id="haobin">
+        <div class="card">
+          <img src="img/haolight.jpg" class="card-img-top">
+          <div class="card-body">
+            <p class="card-text">
+                Två helt vanliga personer som kollar varandra rakt in i ögonen väldigt intimt. En av dessa personer har tagit detta test och har ett körkort nu vroom vroom, kan du gissa vem?
+            </p>
+          </div>
+        </div>
+      </div>
 
     <!-- Footer -->
     <footer class="text-center text-white fixed-bottom" style="background-color: #f1f1f1;">      
         <!-- Copyright -->
         <div class="text-center text-dark p-3" style="background-color: rgba(0, 0, 0, 0.2);">
-          © 2023 Teoriprøve av:
+          © 2023 Teoriprøve:
           <a class="text-dark" href="https://lovgren.dev/">lovgren.dev</a>
         </div>
         <!-- Copyright -->
@@ -456,13 +462,6 @@
     <script src="/static/js/bootstrap.min.js"></script>
     <script src="/static/js/jquery-3.7.1.min.js"></script>
     <script src="/static/js/popper.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#toggleButton').click(function () {
-                $('#haobinContainer').fadeToggle();
-            });
-        });
-    </script>
     <script>
         const questions = document.querySelectorAll(".question");
         const nextButton = document.getElementById("next-button");
