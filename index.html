@@ -5,31 +5,93 @@
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h1>Teoriprøve for Kjøretillatelse Klasse B</h1>
+    <div class="container">
+        <h1 class="text-center">Teoriprøve for Kjøretillatelse Klasse B</h1>
 
-    <form>
-        <ol>
-            <li>
+        <form id="quiz-form">
+            <div class="question">
                 <p>Hvilken promille er den tillatte grensen for alkohol i blodet når du kjører en personbil?</p>
-                <input type="radio" name="q1" value="a">a) 0,2 promille<br>
-                <input type="radio" name="q1" value="b">b) 0,5 promille<br>
-                <input type="radio" name="q1" value="c">c) 0,8 promille<br>
-                <input type="radio" name="q1" value="d">d) 1,0 promille<br>
-            </li>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q1" value="a" id="q1a">
+                    <label class="form-check-label" for="q1a">a) 0,2 promille</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q1" value="b" id="q1b">
+                    <label class="form-check-label" for="q1b">b) 0,5 promille</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q1" value="c" id="q1c">
+                    <label class="form-check-label" for="q1c">c) 0,8 promille</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q1" value="d" id="q1d">
+                    <label class="form-check-label" for="q1d">d) 1,0 promille</label>
+                </div>
+            </div>
 
-            <li>
+            <div class="question">
                 <p>Hva er riktig rekkefølge for trafikklysene?</p>
-                <input type="radio" name="q2" value="a">a) Rødt lys, gult lys, grønt lys<br>
-                <input type="radio" name="q2" value="b">b) Grønt lys, gult lys, rødt lys<br>
-                <input type="radio" name="q2" value="c">c) Gult lys, rødt lys, grønt lys<br>
-                <input type="radio" name="q2" value="d">d) Gult lys, grønt lys, rødt lys<br>
-            </li>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q2" value="a" id="q2a">
+                    <label class="form-check-label" for="q2a">a) Rødt lys, gult lys, grønt lys</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q2" value="b" id="q2b">
+                    <label class="form-check-label" for="q2b">b) Grønt lys, gult lys, rødt lys</label>
+                </div>
+                <div class "form-check">
+                    <input type="radio" class="form-check-input" name="q2" value="c" id="q2c">
+                    <label class="form-check-label" for="q2c">c) Gult lys, rødt lys, grønt lys</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q2" value="d" id="q2d">
+                    <label class="form-check-label" for="q2d">d) Gult lys, grønt lys, rødt lys</label>
+                </div>
+            </div>
 
-            <!-- Lägg till resten av frågorna här -->
-        </ol>
+            <div class="question">
+                <p>Hva er den tillatte makshastigheten i tettbygd strøk med skiltet "50"?</p>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q3" value="a" id="q3a">
+                    <label class="form-check-label" for="q3a">a) 30 km/t</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q3" value="b" id="q3b">
+                    <label class="form-check-label" for="q3b">b) 40 km/t</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q3" value="c" id="q3c">
+                    <label class="form-check-label" for="q3c">c) 50 km/t</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" name="q3" value="d" id="q3d">
+                    <label class="form-check-label" for="q3d">d) 60 km/t</label>
+                </div>
+            </div>
 
-        <input type="submit" value="Skicka svar">
-    </form>
+            <!-- Lägg till resten av frågorna på samma sätt -->
+
+            <button class="btn btn-primary" id="next-button">Nästa fråga</button>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="/static/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var currentQuestion = 1;
+            var totalQuestions = 20;
+
+            $('#next-button').click(function() {
+                if (currentQuestion < totalQuestions) {
+                    $('.question:nth-child(' + currentQuestion + ')').hide();
+                    currentQuestion++;
+                    $('.question:nth-child(' + currentQuestion + ')').show();
+                }
+            });
+
+            // Visa den första frågan och dölj de andra
+            $('.question:not(:first)').hide();
+        });
+    </script>
 </body>
 </html>
