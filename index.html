@@ -421,7 +421,11 @@
             <button type="button" class="btn btn-secondary" id="prev-button">Forrige</button>
             <button type="submit" class="btn btn-primary" id="submit-button" style="display: none;">Skicka</button>
         </form>
-        </form>
+
+        <div id="result-container" style="display: none;">
+            <p id="result"></p>
+            <button type="button" class="btn btn-primary" id="restart-button">Kör igen</button>
+        </div>
 
         <p id="result"></p>
     </div>
@@ -432,7 +436,9 @@
         const nextButton = document.getElementById("next-button");
         const prevButton = document.getElementById("prev-button");
         const submitButton = document.getElementById("submit-button");
+        const resultContainer = document.getElementById("result-container");
         const result = document.getElementById("result");
+        const restartButton = document.getElementById("restart-button");
         let currentQuestion = 0;
         let score = 0;
 
@@ -465,7 +471,7 @@
                 showQuestion(currentQuestion);
             }
             if (currentQuestion < questions.length - 1) {
-                nextButton.style.display = "block";
+                nextButton.style display = "block";
                 submitButton.style.display = "none";
             }
         });
@@ -493,9 +499,19 @@
                 }
 
                 result.innerHTML = `Du fikk ${score} av ${questions.length} spørsmål riktig.`;
+                resultContainer.style.display = "block";
             } else {
                 result.innerHTML = "Vennligst svar på alle spørsmålene før du sender inn.";
             }
+        });
+
+        restartButton.addEventListener("click", () => {
+            currentQuestion = 0;
+            score = 0;
+            showQuestion(currentQuestion);
+            nextButton.style.display = "block";
+            submitButton.style.display = "none";
+            resultContainer.style.display = "none";
         });
     </script>
     
