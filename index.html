@@ -429,10 +429,11 @@
         const questions = document.querySelectorAll(".question");
         const nextButton = document.getElementById("next-button");
         const prevButton = document.getElementById("prev-button");
+        const submitButton = document.getElementById("submit-button");
         const result = document.getElementById("result");
         let currentQuestion = 0;
-        let score = 0; // Skapa en variabel för att räkna poängen
-    
+        let score = 0;
+
         function showQuestion(questionIndex) {
             questions.forEach((question, index) => {
                 if (index === questionIndex) {
@@ -442,23 +443,31 @@
                 }
             });
         }
-    
+
         showQuestion(currentQuestion);
-    
+
         nextButton.addEventListener("click", () => {
             if (currentQuestion < questions.length - 1) {
                 currentQuestion++;
                 showQuestion(currentQuestion);
             }
+            if (currentQuestion === questions.length - 1) {
+                nextButton.style.display = "none";
+                submitButton.style.display = "block";
+            }
         });
-    
+
         prevButton.addEventListener("click", () => {
             if (currentQuestion > 0) {
                 currentQuestion--;
                 showQuestion(currentQuestion);
             }
+            if (currentQuestion < questions.length - 1) {
+                nextButton.style.display = "block";
+                submitButton.style.display = "none";
+            }
         });
-    
+
         document.querySelector("#quiz-form").addEventListener("submit", (e) => {
             e.preventDefault();
             const answers = [];
@@ -471,16 +480,16 @@
                     }
                 }
             }
-    
+
             if (answers.length === questions.length) {
                 const correctAnswers = ["b", "c", "c", "b", "c", "b", "c", "c", "c", "d", "d", "a", "c", "a", "c", "a", "a", "b", "c", "c"];
-    
+
                 for (let i = 0; i < questions.length; i++) {
                     if (answers[i] === correctAnswers[i]) {
                         score++;
                     }
                 }
-    
+
                 result.innerHTML = `Du fikk ${score} av ${questions.length} spørsmål riktig.`;
             } else {
                 result.innerHTML = "Vennligst svar på alle spørsmålene før du sender inn.";
