@@ -1,9 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teoriprøve Spørsmål</title>
     <!-- Länk till Bootstrap CSS -->
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <style>
+        .question {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -423,25 +430,35 @@
         const nextButton = document.getElementById("next-button");
         const prevButton = document.getElementById("prev-button");
         const result = document.getElementById("result");
-
         let currentQuestion = 0;
-
+        let score = 0; // Skapa en variabel för att räkna poängen
+    
+        function showQuestion(questionIndex) {
+            questions.forEach((question, index) => {
+                if (index === questionIndex) {
+                    question.style.display = "block";
+                } else {
+                    question.style.display = "none";
+                }
+            });
+        }
+    
+        showQuestion(currentQuestion);
+    
         nextButton.addEventListener("click", () => {
             if (currentQuestion < questions.length - 1) {
-                questions[currentQuestion].style.display = "none";
                 currentQuestion++;
-                questions[currentQuestion].style.display = "block";
+                showQuestion(currentQuestion);
             }
         });
-
+    
         prevButton.addEventListener("click", () => {
             if (currentQuestion > 0) {
-                questions[currentQuestion].style.display = "none";
                 currentQuestion--;
-                questions[currentQuestion].style.display = "block";
+                showQuestion(currentQuestion);
             }
         });
-
+    
         document.querySelector("#quiz-form").addEventListener("submit", (e) => {
             e.preventDefault();
             const answers = [];
@@ -454,22 +471,22 @@
                     }
                 }
             }
-
+    
             if (answers.length === questions.length) {
                 const correctAnswers = ["b", "c", "c", "b", "c", "b", "c", "c", "c", "d", "d", "a", "c", "a", "c", "a", "a", "b", "c", "c"];
-                let score = 0;
-
+    
                 for (let i = 0; i < questions.length; i++) {
                     if (answers[i] === correctAnswers[i]) {
                         score++;
                     }
                 }
-
+    
                 result.innerHTML = `Du fikk ${score} av ${questions.length} spørsmål riktig.`;
             } else {
                 result.innerHTML = "Vennligst svar på alle spørsmålene før du sender inn.";
             }
         });
     </script>
+    
 </body>
 </html>
