@@ -431,11 +431,15 @@
     </div>
 
     <!-- Meme-->
-    <div class="container text-center">
-        <button data-toggle="collapse" data-target="#haolight">monkaS</button>
-        <a href="#haolight" data-toggle="collapse">
-            <img src="/img/haolight.jpg" alt="Haobin">
-        </a>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12">
+                <button id="toggleButton" class="btn btn-primary">visa/dölj nånting hehe</button>
+                <div id="haobinContainer" class="mt-3 fade">
+                    <img id="myImage" src="/img/haolight.jpg" alt="haobin" class="img-fluid">
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -452,6 +456,13 @@
     <script src="/static/js/bootstrap.min.js"></script>
     <script src="/static/js/jquery-3.7.1.min.js"></script>
     <script src="/static/js/popper.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#toggleButton').click(function () {
+                $('#haobinContainer').fadeToggle();
+            });
+        });
+    </script>
     <script>
         const questions = document.querySelectorAll(".question");
         const nextButton = document.getElementById("next-button");
