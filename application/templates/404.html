@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+    <meta http-equiv="Refresh" content="5;url=/login">
+    <br>
+    <br>
+    <h1 class="text-outline text-center">ERROR</h1>
+    <br>
+    <h2 class="text-outline text-center">Can't access the site you tried to go to</h2>
+    <br>
+    <div id="countdown" class="text-center">
+        <p id="countdown-text">Sending you back to the login page in <span id="countdown-number">5</span> seconds</p>
+        <p>If it's not sending you back you can <a href="/login">click here</a></p>
+    </div>
+    <br>
+
+    <script>
+        // JavaScript for the countdown
+        var countdown = 6; // Start countdown from 5 seconds
+
+        function updateCountdown() {
+            var countdownNumber = document.getElementById("countdown-number");
+
+            if (countdown > 0) {
+                countdown--;
+                countdownNumber.textContent = countdown;
+                setTimeout(updateCountdown, 1000); // Update every 1 second
+            } else {
+                // Redirect after the countdown is complete
+                window.location.href = "/";
+            }
+        }
+
+        updateCountdown(); // Start the countdown
+    </script>
+{% endblock %}

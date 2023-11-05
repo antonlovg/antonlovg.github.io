@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% block head %}
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{{ title }}</title>
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    {% endblock %}
+</head>
+
+<body>
+<!-- Tillägg till bootstrap -->
+<style>
+    body {
+        background-image: url("/static/img/background.jpg");
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    .text-outline {
+        color: white; /* Vit text */
+        text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black; /* Svart outline */
+    }
+
+    .custom-table {
+        background-color: rgba(0, 0, 0, 0);
+    }
+
+    .table th {
+        border-bottom: 3px solid #000; /* Tjock linje under rubrikerna */
+    }
+
+    .table tr {
+        border-bottom: 1px solid #000; /* Smala linjer mellan raderna */
+    }
+
+    .center-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh; /* För att fylla hela skärmen vertikalt */
+    }
+</style>
+
+<!-- Header -->
+<div id="header">
+    {% block header %}
+        {% include "header.html" %}
+    {% endblock %}
+</div>
+
+<!-- Innehåll -->
+<div class="center-content"
+     id="content" style="color: #DDE6ED; background-color: rgba(0, 0, 0, 0.5);">
+    {% block content %}
+    {% endblock %}
+</div>
+
+<!-- Footer -->
+<div id="footer">
+    {% block footer %}
+        {% include "footer.html" %}
+    {% endblock %}
+</div>
+</body>
+</html>
