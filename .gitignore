@@ -1,0 +1,6 @@
+# Filer
+application/spot_info.py
+
+# Mappar
+.venv/
+.pytest_cache
