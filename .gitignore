@@ -4,3 +4,4 @@ application/spot_info.py
 # Mappar
 .venv/
 .pytest_cache
+.flask_session
