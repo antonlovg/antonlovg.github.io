@@ -2,7 +2,6 @@ import base64
 import requests
 import json
 import pandas as pd
-from application import spot_info as sp
 import urllib.request
 import ssl
 from flask import session

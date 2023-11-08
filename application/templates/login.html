@@ -3,29 +3,30 @@
 {% endblock %}
 
 {% block content %}
-<h2 class="text-center text-outline" id="login">Log in with Spotify</h2>
-<h5 class="text-center text-outline">Log in with your Spotify API credentials</h5>
+    <h2 class="text-center text-outline" id="login">Log in with Spotify</h2>
+    <h5 class="text-center text-outline">Log in with your Spotify API credentials</h5>
 
-<form method="POST" action="/">
-    <div class="row justify-content-center">
-        <div class="col-md">
-            <div class="form-floating">
-                <input type="text" class="form-control shadow" id="client_id" placeholder="" name="client_id">
-                <label class="text-dark" for="client_id">Client ID</label>
+    <form method="POST" action="/login">
+        <div class="row justify-content-center">
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="text" class="form-control shadow" id="client_id" placeholder="" name="client_id">
+                    <label class="text-dark" for="client_id">Client ID</label>
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="text" class="form-control shadow" id="client_secret" placeholder=""
+                           name="client_secret">
+                    <label class="text-dark" for="client_secret">Client Secret</label>
+                </div>
             </div>
         </div>
-        <div class="col-md">
-            <div class="form-floating">
-                <input type="text" class="form-control shadow" id="client_secret" placeholder="" name="client_secret">
-                <label class="text-dark" for="client_secret">Client Secret</label>
+        <div class="row justify-content-center mt-3">
+            <div class="col-md-2 d-flex align-items-center">
+                <button class="btn btn-success shadow" type="submit">Save</button>
             </div>
         </div>
-    </div>
-    <div class="row justify-content-center mt-3">
-        <div class="col-md-2 d-flex align-items-center">
-            <button class="btn btn-success shadow" type="submit">Save</button>
-        </div>
-    </div>
-</form>
+    </form>
 {% endblock %}
 

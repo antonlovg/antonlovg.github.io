@@ -1,67 +1,73 @@
 {% extends "layout.html" %}
 {% block content %}
-<br>
-<h1 class="text-center text-outline">The Spotify Helper</h1>
-<br>
-<h2 class="text-center text-outline" id="search">Top 10 Songs by Artist</h2>
-<h5 class="text-center text-outline">Search for an artist and get the top 10 songs currently from the artist in the
-    country that you pick from the list</h5>
-<br>
+    <br>
+    <h1 class="text-center text-outline">The Spotify Helper</h1>
+    <p class="text-center text-outline">Here you can search for artists and get information based on what search option you pick</p>
+    <hr>
+    <hr>
+    <h2 class="text-center text-outline" id="search">Top 10 Songs by Artist</h2>
+    <h5 class="text-center text-outline">Search for an artist and get the top 10 songs currently from the artist in the
+        country that you pick from the list</h5>
+    <br>
 
-<form method="POST" action="/top10">
-    <div class="row justify-content-center">
-        <div class="col-md">
-            <div class="form-floating">
-                <input type="text" class="form-control shadow" id="formArtist" placeholder="" name="formArtist">
-                <label class="text-dark" for="formArtist">Artist</label>
+    <form method="POST" action="/top10">
+        <div class="row justify-content-center">
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="text" class="form-control shadow" id="formArtist" placeholder="" name="formArtist">
+                    <label class="text-dark" for="formArtist">Artist</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-floating">
+                    <select class="form-select shadow" id="formCC" name="countrycode">
+                        {{ data_form }}
+                        {% for row in data_form %}
+                            <option value="{{ row['countryCode'] }}">{{ row['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="formCC">Choose a country</label>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-center">
+                <button class="btn btn-success shadow" type="submit">Sök</button>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="form-floating">
-                <select class="form-select shadow" id="formCC" name="countrycode">
-                    {{ data_form }}
-                    {% for row in data_form %}
-                    <option value="{{ row['countryCode'] }}">{{ row['name'] }}</option>
-                    {% endfor %}
-                </select>
-                <label for="formCC">Choose a country</label>
+    </form>
+    <br>
+    <hr>
+    <hr>
+    <br>
+    <h2 class="text-center text-outline" id="recommendations">Recommendations</h2>
+    <h5 class="text-center text-outline">Get recommendations based on the preference that you enter in the following
+        form</h5>
+    <form method="POST" action="/recommendations">
+        <div class="row justify-content-center">
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="text" class="form-control shadow" id="recommendationArtist" placeholder=""
+                           name="recommendationArtist">
+                    <label class="text-dark" for="recommendationArtist">Artist</label>
+                </div>
             </div>
-        </div>
-        <div class="col-md-2 d-flex align-items-center">
-            <button class="btn btn-success shadow" type="submit">Sök</button>
-        </div>
-    </div>
-</form>
-<br>
-<br>
-<h2 class="text-center text-outline" id="recommendations">Recommendations</h2>
-<h5 class="text-center text-outline">Get recommendations based on the preference that you enter in the following
-    form</h5>
-<form method="POST" action="/recommendations">
-    <div class="row justify-content-center">
-        <div class="col-md">
-            <div class="form-floating">
-                <input type="text" class="form-control shadow" id="recommendationArtist" placeholder=""
-                       name="recommendationArtist">
-                <label class="text-dark" for="recommendationArtist">Artist</label>
-            </div>
-        </div>
 
-        <div class="col-md-4">
-            <div class="form-floating">
-                <select class="form-select shadow" id="formGenres" name="formGenres">
-                    {{ genres_form }}
-                    {% for genre in genres_form["genres"] %}
-                    <option value="{{ genre }}">{{ genre|capitalize }}</option>
-                    {% endfor %}
-                </select>
-                <label for="formGenres">Choose a genre</label>
+            <div class="col-md-4">
+                <div class="form-floating">
+                    <select class="form-select shadow" id="formGenres" name="formGenres">
+                        {{ genres_form }}
+                        {% for genre in genres_form["genres"] %}
+                            <option value="{{ genre }}">{{ genre|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="formGenres">Choose a genre</label>
+                </div>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-center">
+                <button class="btn btn-success shadow" type="submit">Sök</button>
             </div>
         </div>
-
-        <div class="col-md-2 d-flex align-items-center">
-            <button class="btn btn-success shadow" type="submit">Sök</button>
-        </div>
-    </div>
-</form>
+    </form>
+    <hr>
+    <p class="text-center text-outline">If you want to change your API-key or want to logout, please <a href="/logout">click here</a></p><br>
 {% endblock %}

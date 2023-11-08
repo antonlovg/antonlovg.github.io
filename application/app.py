@@ -20,6 +20,13 @@ def login():
     return render_template('login.html')
 
 
+@app.route("/logout")
+def logout():
+    session.clear()
+
+    return redirect(url_for('login'))
+
+
 @app.route("/", methods=['GET', 'POST'])
 def index():
     client_id = session.get('client_id')
