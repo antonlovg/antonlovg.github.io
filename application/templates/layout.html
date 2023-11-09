@@ -1,3 +1,7 @@
+<!--
+En "mall" som vi använder på alla sidor för att ha samma utseende.
+-->
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,29 +22,34 @@
         background-repeat: no-repeat;
     }
 
+    /* Outline på texter */
     .text-outline {
-        color: white; /* Vit text */
-        text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black; /* Svart outline */
+        color: white;
+        text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black;
     }
 
     .custom-table {
         background-color: rgba(0, 0, 0, 0);
     }
 
+    /* Linjer för pandas */
+    /* Tjock linje */
     .table th {
-        border-bottom: 3px solid #000; /* Tjock linje under rubrikerna */
+        border-bottom: 3px solid #000;
     }
 
+    /* Smal linje */
     .table tr {
-        border-bottom: 1px solid #000; /* Smala linjer mellan raderna */
+        border-bottom: 1px solid #000;
     }
 
+    /* Justera innehållets position */
     .center-content {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        min-height: 100vh; /* För att fylla hela skärmen vertikalt */
+        min-height: 100vh;
     }
 </style>
 

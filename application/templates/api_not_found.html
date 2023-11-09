@@ -8,16 +8,20 @@ Sedan skickar den med hjälp av javascript dig vidare till "/" efter 10 sekunder
 {% block header %}
 {% endblock %}
 {% block content %}
-    <meta http-equiv="Refresh" content="10;url=/login">
+    <meta http-equiv="Refresh" content="10;url=/">
     <br>
     <br>
     <h1 class="text-outline text-center">ERROR</h1>
     <br>
-    <h2 class="text-outline text-center">Can't access the site you tried to go to</h2>
+    <h3 class="text-outline text-center">You either have entered an artist that doesnt exist or have the wrong
+        API-key</h3>
     <br>
     <div id="countdown" class="text-center">
-        <p id="countdown-text">Sending you back to the homepage in <span id="countdown-number">10</span> seconds</p>
-        <p>If it's not sending you back you can <a href="/">click here</a></p>
+        <p id="countdown-text" class="text-outline">Sending you back in <span id="countdown-number">10</span> seconds
+        </p>
+        <p class="text-outline">If the problem keeps happening, logout and enter your API-keys again by <a
+                href="/login">clicking here</a></p>
+        <p class="text-outline">If it's not sending you back you can <a href="/">click here</a></p>
     </div>
     <br>
 

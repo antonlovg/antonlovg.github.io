@@ -1,3 +1,9 @@
+<!--
+Index-delen av min flask-applikation, skapar två sökrutor samt två dropdowns. En logout-knapp då jag använder mig av
+session (med hjälp av bland annat Tech With Tim https://www.youtube.com/watch?v=iIhAfX4iek0) så man kan byta API-key ifall
+det blev fel någonstans (clearar session)
+-->
+
 {% extends "layout.html" %}
 {% block content %}
     <br>
@@ -6,11 +12,14 @@
         you pick</p>
     <hr>
     <hr>
+
+    <!--
+    Form 1: Söker fram topp 10 låtar av en artists mest spelade låtar enligt Spotify
+    -->
     <h2 class="text-center text-outline" id="search">Top 10 Songs by Artist</h2>
     <h5 class="text-center text-outline">Search for an artist and get the top 10 songs currently from the artist in the
         country that you pick from the list</h5>
     <br>
-
     <form method="POST" action="/top10">
         <div class="row justify-content-center">
             <div class="col-md">
@@ -19,6 +28,8 @@
                     <label class="text-dark" for="formArtist">Artist</label>
                 </div>
             </div>
+
+            <!-- Använder samma API vi hade i tidigare lektion för att ta fram countrycode som dropdown -->
             <div class="col-md-4">
                 <div class="form-floating">
                     <select class="form-select shadow" id="formCC" name="countrycode">
@@ -35,10 +46,17 @@
             </div>
         </div>
     </form>
+    <!-- Slut på Form 1 -->
+
     <br>
     <hr>
     <hr>
     <br>
+
+    <!--
+    Form 2: Tar fram 10 rekommendationer från Spotify som baserar det på artist du väljer + genre du vill ha.
+    Tar fram genres via spotifys egna API.
+    -->
     <h2 class="text-center text-outline" id="recommendations">Recommendations</h2>
     <h5 class="text-center text-outline">Get recommendations based on the preference that you enter in the following
         form</h5>
@@ -52,6 +70,7 @@
                 </div>
             </div>
 
+            <!-- Här loopar den igenom genres som vi lärt oss i programmering 1 och använder det i en dropdown -->
             <div class="col-md-4">
                 <div class="form-floating">
                     <select class="form-select shadow" id="formGenres" name="formGenres">
@@ -63,12 +82,13 @@
                     <label for="formGenres">Choose a genre</label>
                 </div>
             </div>
-
             <div class="col-md-2 d-flex align-items-center">
                 <button class="btn btn-success shadow" type="submit">Sök</button>
             </div>
         </div>
     </form>
+    <!-- Slut på Form 2  -->
+
     <hr>
     <p class="text-center text-outline">If you want to change your API-key or want to logout, please <a href="/logout">click
         here</a></p><br>

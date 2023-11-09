@@ -1,14 +1,20 @@
+<!--
+Skriver ut en tabell med hjälp av Pandas där det går att se artistens top 10 låtar.
+(Tiden räckte inte till men ville även ha en knapp för att kunna lägga till ens personliga playlist på Spotify.)
+-->
+
 {% extends "layout.html" %}
 {% block content %}
     <br>
     <h1 class="text-outline text-center">Top 10 songs by: {{ artist_name }}</h1>
     <h5 class="text-outline text-center">These are the songs that's currently the most popular on Spotify.<br>Remember that this does not mean the most
-        played songs, just</h5>
+        played songs, just most played recently.<br>Popularity is a value between 0-100 based on an algorithm that
+        combines amount of plays with how recently it was.<br> T</h5>
     <br>
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-sm">
-                <div class="text-left text-light p-3 mb-3 rounded" style="background-color: rgba(0, 0, 0, 0.0);">
+                <div class="text-left text-light p-3 mb-3 rounded" style="background-color: rgba(0, 0, 0, 0.8);">
                     {{ data|safe }}
                 </div>
             </div>

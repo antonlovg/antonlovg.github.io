@@ -1,3 +1,13 @@
+"""
+Här hanterar vi alla funktioner för att:
+* Hämta token med client_id och client_secret
+* Byta ut strängen Artist som användaren skriver in till ett ID som spotify använder sig av
+* Skriva ut Recommendations och Top10 med Pandas
+* Skapa en preview som finns i HTML som standard
+* Skapa dropdowns med API:er
+"""
+
+# Alla moduler vi behöver
 import base64
 import requests
 import json
@@ -59,9 +69,6 @@ def search_for_id(token, artist_name):
     artists = json_result.get("artists")
     items = artists.get("items")
 
-    if not items:
-        return None
-
     return items[0]['id']
 
 
@@ -92,9 +99,6 @@ def get_top10(artist_name, country_code):
     tracks = json_result.get("tracks")
     df = pd.DataFrame(tracks)
 
-    if not tracks:
-        return None
-
     table_data = df.to_html(columns=["name", "popularity"], classes="custom-table text-outline", justify="left",
                             index=False, escape=False).replace('border="1"', 'border="0"')
 
@@ -120,6 +124,8 @@ def get_recommendations(genre_artist_name, genre):
 
     tracks = json_result.get('tracks', [])
 
+    # Skapar en ny lista där vi går igenom json_result för att lättare formatera hur och vad vi vill ha i pandas.
+    # Precis som i programmering 1 så loopar vi och appendar dictionary till listan för att skapa en egen liten "json"
     data_list = []
     for track in tracks:
         album = track['album']
@@ -137,15 +143,17 @@ def get_recommendations(genre_artist_name, genre):
     df['Preview URL'] = df['Preview URL'].apply(format_preview)
 
     # Tar bort border från pandas med replace med hjälp av: https://stackoverflow.com/questions/30531374/remove-border-from-html-table-created-via-pandas
+    # Med classes så ändrar vi utseende och tar bort tex index som ritas ut genom att sätta det till false
     table_data = df.to_html(classes="custom-table text-outline", justify="left", index=False, escape=False,
                             render_links=True).replace('border="1"', 'border="0"')
 
+    # Och sist returnerar allt till table_data
     return table_data
 
 
 def format_preview(preview_url):
     """
-    Skapar en player då vi har en länk till mp3 i pandas under get_recommendations() samt felhantering ifall preview saknas
+    Skapar en player då vi har en länk till mp3 i pandas under get_recommendations() samt felhantering ifall preview saknas i API:n
     """
     if pd.notna(preview_url):
         return f'<audio controls><source src="{preview_url}" type="audio/mpeg">Your browser does not support the audio element.</audio>'
@@ -153,7 +161,7 @@ def format_preview(preview_url):
         return 'There is no preview available for this song :('
 
 
-# -- Koder för dropdowns -- #
+# -- Dropdowns -- #
 
 def genres_form():
     """
@@ -179,8 +187,3 @@ def countrycode_form():
     data_form = json.loads(json_data)
 
     return data_form
-
-
-# -- Error -- #
-def error():
-    return error

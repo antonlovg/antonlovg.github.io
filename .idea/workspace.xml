@@ -5,7 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="63682ef1-a3af-428c-8759-8c83a5467b3a" name="Changes" comment="Hemsida test">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/application/templates/api_not_found.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/application/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/func.py" beforeDir="false" afterPath="$PROJECT_DIR$/application/func.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/404.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/404.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/footer.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/footer.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/header.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/header.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/layout.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/layout.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/new.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/recommendations.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/recommendations.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/templates/top10.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/top10.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,23 +56,68 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/GIT - Hemsida",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "settings.editor.selected.configurable": "preferences.lookFeel",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/GIT - Hemsida/application/templates&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\GIT - Hemsida\application\templates" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Flask server.GIT - Hemsida">
+    <configuration name="GIT - Hemsida" type="PythonConfigurationType" factoryName="Python">
+      <module name="GIT - Hemsida" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/application/app.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="GIT - Hemsida" type="Python.FlaskServer">
+      <module name="GIT - Hemsida" />
+      <option name="target" value="$PROJECT_DIR$/application/app.py" />
+      <option name="targetType" value="PATH" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="launchJavascriptDebuger" value="false" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -73,7 +130,13 @@
       <workItem from="1699210336217" duration="192000" />
       <workItem from="1699210642762" duration="877000" />
       <workItem from="1699211541893" duration="175000" />
-      <workItem from="1699211726648" duration="5626000" />
+      <workItem from="1699211726648" duration="7736000" />
+      <workItem from="1699281859205" duration="6472000" />
+      <workItem from="1699433279103" duration="2607000" />
+      <workItem from="1699436620430" duration="4351000" />
+      <workItem from="1699465457669" duration="2977000" />
+      <workItem from="1699549380638" duration="1129000" />
+      <workItem from="1699563913653" duration="4834000" />
     </task>
     <task id="LOCAL−00001" summary="Hemsida test">
       <option name="closed" value="true" />
@@ -82,7 +145,35 @@
       <option name="presentableId" value="LOCAL−00001" />
       <updated>1699210485848</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL−00002" summary="Hemsida test">
+      <option name="closed" value="true" />
+      <created>1699217608776</created>
+      <option name="number" value="LOCAL−00002" />
+      <option name="presentableId" value="LOCAL−00002" />
+      <updated>1699217608776</updated>
+    </task>
+    <task id="LOCAL−00003" summary="Hemsida test">
+      <option name="closed" value="true" />
+      <created>1699217646906</created>
+      <option name="number" value="LOCAL−00003" />
+      <option name="presentableId" value="LOCAL−00003" />
+      <updated>1699217646906</updated>
+    </task>
+    <task id="LOCAL−00004" summary="Hemsida test">
+      <option name="closed" value="true" />
+      <created>1699437455251</created>
+      <option name="number" value="LOCAL−00004" />
+      <option name="presentableId" value="LOCAL−00004" />
+      <updated>1699437455251</updated>
+    </task>
+    <task id="LOCAL−00005" summary="Hemsida test">
+      <option name="closed" value="true" />
+      <created>1699465511563</created>
+      <option name="number" value="LOCAL−00005" />
+      <option name="presentableId" value="LOCAL−00005" />
+      <updated>1699465511563</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
