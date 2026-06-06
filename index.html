@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Portfolio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="desktop">
+    <!-- About Window -->
+    <div class="window" style="top: 60px; left: 60px; width: 350px;">
+      <div class="title-bar">
+        <div class="title-bar-text">📄 About Me</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <h2>Welcome!</h2>
+        <p>Hi, I'm Anton, newly started my DevOps Engineer journey and Im excited to share my projects with you.</p>
+        <p>I love retro aesthetics and combining them with modern functionality.</p>
+        <p><strong>Skills:</strong></p>
+        <ul>
+          <li>DevOps</li>
+          <li>CI/CD</li>
+          <li>Cloud Computing</li>
+          <li>Problem Solving</li>
+        </ul>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Projects Window -->
+    <div class="window" style="top: 250px; left: 450px; width: 320px;">
+      <div class="title-bar">
+        <div class="title-bar-text">📁 Projects</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <h2>Recent Work</h2>
+        <p id="projects-list"><strong>This Portfolio</strong><br>A Windows 98-themed personal site.</p>
+        <p><strong>Web Projects</strong><br>Building interactive web experiences.</p>
+        <p><strong>Pipelines</strong><br>Automating deployment and development workflows.</p>
+        <button class="btn-98" id="view-all-projects-btn">View All</button>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Contact Window -->
+    <div class="window" style="top: 420px; left: 120px; width: 280px;">
+      <div class="title-bar">
+        <div class="title-bar-text">📧 Contact</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <h2>Where to find me</h2>
+        <p>💌 Email: <a href="mailto:anton@lovgren.dev" class="win98-link">anton@lovgren.dev</a></p>
+        <p>💻 GitHub: <a href="https://github.com/antonlovg" target="_blank" class="win98-link">github.com/antonlovg</a></p>
+        <p>🔗 LinkedIn: <a href="https://linkedin.com/in/anton" target="_blank" class="win98-link">linkedin.com/in/anton</a></p>
+        <button class="btn-98" id="send-email-btn">Send Email</button>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- My PC Window -->
+    <div class="window" style="top: 100px; left: 700px; width: 340px;">
+      <div class="title-bar">
+        <div class="title-bar-text">💻 My Computer</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <h2>System Information</h2>
+        <p><strong>Computer:</strong> Windows 98 Portfolio</p>
+        <p><strong>Owner:</strong> Anton Lovgren</p>
+        <p><strong>Processor:</strong> Awesome Idea™ 5000</p>
+        <p><strong>RAM:</strong> ∞ GB</p>
+        <p><strong>Status:</strong> Retro & Functional</p>
+        <button class="btn-98" id="properties-btn">Properties</button>        <button class="btn-98" id="resume-btn">📥 Download Resume</button>
+        <p style="margin-top: 12px; font-size: 10px;"><strong>Theme:</strong></p>
+        <div id="theme-selector" style="display: flex; gap: 4px;">
+          <button class="btn-98" data-theme="blue" style="background: #000080; color: #fff; border: none; font-weight: bold;">Blue</button>
+          <button class="btn-98" data-theme="green" style="background: #008000; color: #fff; border: none;">Green</button>
+          <button class="btn-98" data-theme="gray" style="background: #808080; color: #fff; border: none;">Gray</button>
+        </div>      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- File Explorer Window -->
+    <div class="window" style="top: 300px; left: 750px; width: 340px; display: none;">
+      <div class="title-bar">
+        <div class="title-bar-text">📂 File Explorer</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-menu-bar">
+        <span class="menu-item" id="explorer-file-menu">File</span>
+        <span class="menu-item" id="explorer-edit-menu">Edit</span>
+        <span class="menu-item" id="explorer-view-menu">View</span>
+        <span class="menu-item" id="explorer-help-menu">Help</span>
+      </div>
+      <div class="window-content">
+        <h2>Portfolio Files</h2>
+        <div class="file-list">
+          <div class="file-item"><span class="file-icon">📄</span> index.html</div>
+          <div class="file-item"><span class="file-icon">📄</span> style.css</div>
+          <div class="file-item"><span class="file-icon">📄</span> script.js</div>
+          <div class="file-item"><span class="file-icon">📁</span> projects</div>
+          <div class="file-item"><span class="file-icon">📁</span> assets</div>
+          <div class="file-item"><span class="file-icon">📄</span> README.md</div>
+        </div>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Notepad Window -->
+    <div class="window" style="top: 150px; left: 500px; width: 400px; height: 300px; display: none;">
+      <div class="title-bar">
+        <div class="title-bar-text">📝 Notepad</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-menu-bar">
+        <span class="menu-item">File</span>
+        <span class="menu-item">Edit</span>
+        <span class="menu-item">Search</span>
+        <span class="menu-item">Help</span>
+      </div>
+      <div class="window-content">
+        <textarea id="notepad-textarea" class="notepad-textarea" placeholder="Start typing... Your notes are automatically saved!"></textarea>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Desktop Icons -->
+    <div class="icon" id="my-pc-icon">
+      <div class="icon-img">💻</div>
+      <div>My Computer</div>
+    </div>
+
+    <div class="icon" id="file-explorer-icon">
+      <div class="icon-img">📂</div>
+      <div>File Explorer</div>
+    </div>
+
+    <div class="icon" id="notepad-icon">
+      <div class="icon-img">📝</div>
+      <div>Notepad</div>
+    </div>
+
+    <div class="icon" id="folder-icon">
+      <div class="icon-img">📁</div>
+      <div>My Folder</div>
+    </div>
+
+    <div class="icon" id="recycle-icon">
+      <div class="icon-img">🗑️</div>
+      <div>Recycle Bin</div>
+    </div>
+
+    <div class="icon" id="task-manager-icon">
+      <div class="icon-img">⚙️</div>
+      <div>Task Manager</div>
+    </div>
+
+    <div class="icon" id="calculator-icon">
+      <div class="icon-img">🧮</div>
+      <div>Calculator</div>
+    </div>
+
+    <div class="icon" id="cmd-icon">
+      <div class="icon-img">⌘</div>
+      <div>Command</div>
+    </div>
+
+    <div class="icon" id="minesweeper-icon">
+      <div class="icon-img">💣</div>
+      <div>Minesweeper</div>
+    </div>
+
+    <div class="icon" id="skills-icon">
+      <div class="icon-img">⭐</div>
+      <div>My Skills</div>
+    </div>
+
+    <!-- Task Manager Window -->
+    <div class="window" style="top: 80px; left: 1000px; width: 400px; display: none;">
+      <div class="title-bar">
+        <div class="title-bar-text">⚙️ Task Manager</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <h2>Running Applications</h2>
+        <div id="task-list" class="task-list"></div>
+        <button class="btn-98" id="end-task-btn">End Task</button>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Calculator Window -->
+    <div class="window" style="top: 200px; left: 1100px; width: 300px; display: none;">
+      <div class="title-bar">
+        <div class="title-bar-text">🧮 Calculator</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <input type="text" id="calc-display" class="calc-display" readonly value="0">
+        <div class="calc-buttons">
+          <button class="calc-btn" data-val="7">7</button>
+          <button class="calc-btn" data-val="8">8</button>
+          <button class="calc-btn" data-val="9">9</button>
+          <button class="calc-btn" data-op="/">÷</button>
+          
+          <button class="calc-btn" data-val="4">4</button>
+          <button class="calc-btn" data-val="5">5</button>
+          <button class="calc-btn" data-val="6">6</button>
+          <button class="calc-btn" data-op="*">×</button>
+          
+          <button class="calc-btn" data-val="1">1</button>
+          <button class="calc-btn" data-val="2">2</button>
+          <button class="calc-btn" data-val="3">3</button>
+          <button class="calc-btn" data-op="-">−</button>
+          
+          <button class="calc-btn" data-val="0">0</button>
+          <button class="calc-btn" data-val=".">.</button>
+          <button class="calc-btn" data-op="+">+</button>
+          <button class="calc-btn calc-equals" data-op="=">=</button>
+          
+          <button class="calc-btn calc-clear" style="grid-column: 1/5;">C</button>
+        </div>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Command Prompt Window -->
+    <div class="window" style="top: 350px; left: 900px; width: 450px; height: 300px; display: none;">
+      <div class="title-bar">
+        <div class="title-bar-text">⌘ Command Prompt</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content" style="background: #000; color: #00ff00; font-family: 'Courier New', monospace; overflow-y: auto;">
+        <div id="cmd-output" style="font-size: 11px;"></div>
+        <div style="display: flex; gap: 4px;">
+          <span>C:\\&gt;</span>
+          <input type="text" id="cmd-input" class="cmd-input" placeholder="type 'help' for commands" style="background: #000; color: #00ff00; border: none; flex: 1; font-family: 'Courier New', monospace; font-size: 11px;">
+        </div>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Minesweeper Window -->
+    <div class="window" style="top: 100px; left: 500px; width: 320px; display: none;">
+      <div class="title-bar">
+        <div class="title-bar-text">💣 Minesweeper</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <div style="text-align: center; margin-bottom: 8px;">
+          <span>Mines: <span id="mine-count">10</span></span> | 
+          <span>Time: <span id="mine-time">0</span>s</span>
+          <button class="btn-98" id="new-game-btn">New Game</button>
+        </div>
+        <div id="minesweeper-board" class="minesweeper-board"></div>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Skills & Experience Window -->
+    <div class="window" style="top: 450px; left: 250px; width: 400px; display: none;">
+      <div class="title-bar">
+        <div class="title-bar-text">⭐ Skills & Experience</div>
+        <div class="window-buttons">
+          <button class="window-btn">_</button>
+          <button class="window-btn">□</button>
+          <button class="window-btn">✕</button>
+        </div>
+      </div>
+      <div class="window-content">
+        <div id="skills-display">
+          <p><strong>Total XP:</strong> <span id="total-xp">0</span></p>
+          <p><strong>Level:</strong> <span id="level">1</span></p>
+          <div id="skills-list"></div>
+        </div>
+      </div>
+      <div class="window-resizer"></div>
+    </div>
+
+    <!-- Context Menu (Right-click) -->
+    <div id="context-menu" class="context-menu"></div>
+  </div>
+
+  <!-- Taskbar -->
+  <div class="taskbar">
+    <button class="start-btn">Start</button>
+    <div class="start-menu" id="start-menu"></div>
+    
+    <!-- Quick Launch Toolbar -->
+    <div class="quick-launch">
+      <button class="quick-launch-btn" id="ql-calc" title="Calculator">🧮</button>
+      <button class="quick-launch-btn" id="ql-notepad" title="Notepad">📝</button>
+      <button class="quick-launch-btn" id="ql-explorer" title="File Explorer">📂</button>
+      <button class="quick-launch-btn" id="ql-cmd" title="Command Prompt">⌘</button>
+    </div>
+    
+    <div class="taskbar-windows"></div>
+    <div class="taskbar-spacer"></div>
+    
+    <!-- System Tray -->
+    <div class="system-tray">
+      <div class="tray-icon" id="volume-icon" title="Volume">🔊</div>
+      <div class="tray-icon" id="network-icon" title="Network">📶</div>
+      <div class="tray-icon" id="battery-icon" title="Battery">🔋</div>
+    </div>
+    
+    <!-- Enhanced Clock -->
+    <div class="system-time" id="time-display" title="Click for system info">10:30 AM</div>
+    <div id="hover-info" class="hover-info"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
