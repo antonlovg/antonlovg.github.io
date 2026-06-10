@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA World Cup 2026 – Group Stage Schedule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C96A;
+    --red: #C0392B;
+    --dark: #0A0A0F;
+    --panel: #1A1A2E;
+    --border: rgba(201,168,76,0.25);
+    --text: #F0EDE6;
+    --muted: #9A9580;
+    --night: rgba(192,57,43,0.18); /* tint for overnight matches */
+  }
+
+  html, body {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--dark);
+    padding: 6mm 6mm 4mm;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .page::after {
+    content: '';
+    position: absolute;
+    bottom: 20px; left: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(192,57,43,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--gold);
+    padding-bottom: 3mm;
+    margin-bottom: 3mm;
+  }
+  .fifa-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 9pt;
+    letter-spacing: 4px;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38pt;
+    line-height: 0.9;
+    color: var(--text);
+    letter-spacing: 2px;
+  }
+  .title span { color: var(--gold); }
+  .subtitle {
+    font-size: 7pt;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 1mm;
+  }
+  .header-right { text-align: right; }
+  .tz-badge {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--dark);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14pt;
+    letter-spacing: 2px;
+    padding: 1mm 3mm;
+    line-height: 1.2;
+  }
+  .date-range {
+    font-size: 7pt;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 1mm;
+  }
+
+  /* ── GRID ── */
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2mm;
+  }
+
+  .group-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--gold);
+    padding: 2mm 2.5mm 2mm;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5mm;
+    margin-bottom: 1.5mm;
+    padding-bottom: 1.5mm;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-letter {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16pt;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .group-teams {
+    font-size: 5.5pt;
+    color: var(--muted);
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+  }
+
+  .match {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    align-items: center;
+    gap: 1.5mm;
+    padding: 1mm 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .match:last-child { border-bottom: none; }
+
+  /* night matches get a very subtle warm tint on the date badge */
+  .match.night .match-date {
+    background: rgba(192,57,43,0.20);
+  }
+  .match.night .match-date { color: #E07060; }
+  .match.night .match-time { color: #E07060; }
+
+  .match-date {
+    font-size: 5pt;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+    text-align: center;
+    background: rgba(201,168,76,0.1);
+    padding: 0.5mm 0;
+    border-radius: 1px;
+  }
+  .match-date .day { font-size: 4pt; color: var(--muted); display: block; }
+
+  .match-teams {
+    font-size: 5.8pt;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .match-teams .vs {
+    font-size: 4.5pt;
+    color: var(--muted);
+    font-weight: 400;
+    margin: 0 0.5mm;
+  }
+
+  .match-time {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 8pt;
+    color: var(--gold-light);
+    letter-spacing: 0.5px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 2mm;
+    border-top: 1px solid var(--border);
+    padding-top: 2mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4mm;
+  }
+  .footer-note {
+    font-size: 5pt;
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    line-height: 1.6;
+  }
+  .footer-legend {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    flex-shrink: 0;
+  }
+  .legend-dot {
+    width: 6px; height: 6px;
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+  .legend-gold { background: rgba(201,168,76,0.3); }
+  .legend-red  { background: rgba(192,57,43,0.35); }
+  .legend-label { font-size: 4.8pt; color: var(--muted); white-space: nowrap; }
+
+  @media print {
+    html, body { width: 210mm; }
+    .page { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="fifa-label">FIFA WORLD CUP™</div>
+      <div class="title">GROUP<br><span>STAGE</span> 2026</div>
+      <div class="subtitle">USA · Canada · Mexico &nbsp;·&nbsp; All dates &amp; times in CEST</div>
+    </div>
+    <div class="header-right">
+      <div class="tz-badge">CEST UTC+2</div>
+      <div class="date-range">11 June – 28 June 2026</div>
+    </div>
+  </div>
+
+  <div class="groups-grid">
+
+    <!-- GROUP A -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">A</div>
+        <div class="group-teams">Mexico · South Korea<br>Czechia · South Africa</div>
+      </div>
+      <div class="match">
+        <div class="match-date">11<span class="day">JUN</span></div>
+        <div class="match-teams">Mexico <span class="vs">v</span> S. Africa</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">12<span class="day">JUN</span></div>
+        <div class="match-teams">S. Korea <span class="vs">v</span> Czechia</div>
+        <div class="match-time">04:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">18<span class="day">JUN</span></div>
+        <div class="match-teams">Czechia <span class="vs">v</span> S. Africa</div>
+        <div class="match-time">18:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">19<span class="day">JUN</span></div>
+        <div class="match-teams">Mexico <span class="vs">v</span> S. Korea</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">25<span class="day">JUN</span></div>
+        <div class="match-teams">Mexico <span class="vs">v</span> Czechia</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">25<span class="day">JUN</span></div>
+        <div class="match-teams">S. Korea <span class="vs">v</span> S. Africa</div>
+        <div class="match-time">03:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP B -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">B</div>
+        <div class="group-teams">Canada · Qatar<br>Switzerland · Bosnia-Herz.</div>
+      </div>
+      <div class="match">
+        <div class="match-date">12<span class="day">JUN</span></div>
+        <div class="match-teams">Canada <span class="vs">v</span> Bosnia-Herz.</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">13<span class="day">JUN</span></div>
+        <div class="match-teams">Qatar <span class="vs">v</span> Switzerland</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">18<span class="day">JUN</span></div>
+        <div class="match-teams">Switz. <span class="vs">v</span> Bosnia-Herz.</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">19<span class="day">JUN</span></div>
+        <div class="match-teams">Canada <span class="vs">v</span> Qatar</div>
+        <div class="match-time">00:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">24<span class="day">JUN</span></div>
+        <div class="match-teams">Switz. <span class="vs">v</span> Canada</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">24<span class="day">JUN</span></div>
+        <div class="match-teams">Bosnia-Herz. <span class="vs">v</span> Qatar</div>
+        <div class="match-time">21:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP C -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">C</div>
+        <div class="group-teams">Brazil · Morocco<br>Haiti · Scotland</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">14<span class="day">JUN</span></div>
+        <div class="match-teams">Brazil <span class="vs">v</span> Morocco</div>
+        <div class="match-time">00:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">14<span class="day">JUN</span></div>
+        <div class="match-teams">Haiti <span class="vs">v</span> Scotland</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">19<span class="day">JUN</span></div>
+        <div class="match-teams">Scotland <span class="vs">v</span> Morocco</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">20<span class="day">JUN</span></div>
+        <div class="match-teams">Brazil <span class="vs">v</span> Haiti</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">25<span class="day">JUN</span></div>
+        <div class="match-teams">Brazil <span class="vs">v</span> Scotland</div>
+        <div class="match-time">00:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">25<span class="day">JUN</span></div>
+        <div class="match-teams">Morocco <span class="vs">v</span> Haiti</div>
+        <div class="match-time">00:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP D -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">D</div>
+        <div class="group-teams">USA · Paraguay<br>Australia · Türkiye</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">13<span class="day">JUN</span></div>
+        <div class="match-teams">USA <span class="vs">v</span> Paraguay</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">14<span class="day">JUN</span></div>
+        <div class="match-teams">Australia <span class="vs">v</span> Türkiye</div>
+        <div class="match-time">06:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">19<span class="day">JUN</span></div>
+        <div class="match-teams">USA <span class="vs">v</span> Australia</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">20<span class="day">JUN</span></div>
+        <div class="match-teams">Türkiye <span class="vs">v</span> Paraguay</div>
+        <div class="match-time">06:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">26<span class="day">JUN</span></div>
+        <div class="match-teams">USA <span class="vs">v</span> Türkiye</div>
+        <div class="match-time">04:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">26<span class="day">JUN</span></div>
+        <div class="match-teams">Paraguay <span class="vs">v</span> Australia</div>
+        <div class="match-time">04:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP E -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">E</div>
+        <div class="group-teams">Germany · Ivory Coast<br>Ecuador · Curaçao</div>
+      </div>
+      <div class="match">
+        <div class="match-date">14<span class="day">JUN</span></div>
+        <div class="match-teams">Germany <span class="vs">v</span> Curaçao</div>
+        <div class="match-time">19:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">15<span class="day">JUN</span></div>
+        <div class="match-teams">Ivory Coast <span class="vs">v</span> Ecuador</div>
+        <div class="match-time">01:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">20<span class="day">JUN</span></div>
+        <div class="match-teams">Germany <span class="vs">v</span> Ivory Coast</div>
+        <div class="match-time">22:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">21<span class="day">JUN</span></div>
+        <div class="match-teams">Ecuador <span class="vs">v</span> Curaçao</div>
+        <div class="match-time">02:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">25<span class="day">JUN</span></div>
+        <div class="match-teams">Ecuador <span class="vs">v</span> Germany</div>
+        <div class="match-time">22:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">25<span class="day">JUN</span></div>
+        <div class="match-teams">Curaçao <span class="vs">v</span> Ivory Coast</div>
+        <div class="match-time">22:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP F -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">F</div>
+        <div class="group-teams">Netherlands · Japan<br>Tunisia · Sweden</div>
+      </div>
+      <div class="match">
+        <div class="match-date">14<span class="day">JUN</span></div>
+        <div class="match-teams">Netherlands <span class="vs">v</span> Japan</div>
+        <div class="match-time">22:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">15<span class="day">JUN</span></div>
+        <div class="match-teams">Tunisia <span class="vs">v</span> Sweden</div>
+        <div class="match-time">04:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">20<span class="day">JUN</span></div>
+        <div class="match-teams">Netherlands <span class="vs">v</span> Sweden</div>
+        <div class="match-time">19:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">21<span class="day">JUN</span></div>
+        <div class="match-teams">Tunisia <span class="vs">v</span> Japan</div>
+        <div class="match-time">06:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">26<span class="day">JUN</span></div>
+        <div class="match-teams">Tunisia <span class="vs">v</span> Netherlands</div>
+        <div class="match-time">01:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">26<span class="day">JUN</span></div>
+        <div class="match-teams">Japan <span class="vs">v</span> Sweden</div>
+        <div class="match-time">01:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP G -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">G</div>
+        <div class="group-teams">Belgium · Iran<br>New Zealand · Egypt</div>
+      </div>
+      <div class="match">
+        <div class="match-date">15<span class="day">JUN</span></div>
+        <div class="match-teams">Belgium <span class="vs">v</span> Egypt</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">16<span class="day">JUN</span></div>
+        <div class="match-teams">Iran <span class="vs">v</span> New Zealand</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">21<span class="day">JUN</span></div>
+        <div class="match-teams">Belgium <span class="vs">v</span> Iran</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">22<span class="day">JUN</span></div>
+        <div class="match-teams">New Zealand <span class="vs">v</span> Egypt</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">27<span class="day">JUN</span></div>
+        <div class="match-teams">New Zealand <span class="vs">v</span> Belgium</div>
+        <div class="match-time">05:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">27<span class="day">JUN</span></div>
+        <div class="match-teams">Egypt <span class="vs">v</span> Iran</div>
+        <div class="match-time">05:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP H -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">H</div>
+        <div class="group-teams">Spain · Saudi Arabia<br>Uruguay · Cape Verde</div>
+      </div>
+      <div class="match">
+        <div class="match-date">15<span class="day">JUN</span></div>
+        <div class="match-teams">Spain <span class="vs">v</span> Cape Verde</div>
+        <div class="match-time">18:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">16<span class="day">JUN</span></div>
+        <div class="match-teams">Saudi Arabia <span class="vs">v</span> Uruguay</div>
+        <div class="match-time">00:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">21<span class="day">JUN</span></div>
+        <div class="match-teams">Spain <span class="vs">v</span> Saudi Arabia</div>
+        <div class="match-time">18:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">22<span class="day">JUN</span></div>
+        <div class="match-teams">Uruguay <span class="vs">v</span> Cape Verde</div>
+        <div class="match-time">00:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">27<span class="day">JUN</span></div>
+        <div class="match-teams">Uruguay <span class="vs">v</span> Spain</div>
+        <div class="match-time">02:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">27<span class="day">JUN</span></div>
+        <div class="match-teams">Cape Verde <span class="vs">v</span> Saudi Arabia</div>
+        <div class="match-time">02:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP I -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">I</div>
+        <div class="group-teams">France · Iraq<br>Norway · Senegal</div>
+      </div>
+      <div class="match">
+        <div class="match-date">16<span class="day">JUN</span></div>
+        <div class="match-teams">France <span class="vs">v</span> Senegal</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">17<span class="day">JUN</span></div>
+        <div class="match-teams">Iraq <span class="vs">v</span> Norway</div>
+        <div class="match-time">00:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">22<span class="day">JUN</span></div>
+        <div class="match-teams">France <span class="vs">v</span> Iraq</div>
+        <div class="match-time">23:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">23<span class="day">JUN</span></div>
+        <div class="match-teams">Norway <span class="vs">v</span> Senegal</div>
+        <div class="match-time">02:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">26<span class="day">JUN</span></div>
+        <div class="match-teams">Norway <span class="vs">v</span> France</div>
+        <div class="match-time">21:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">26<span class="day">JUN</span></div>
+        <div class="match-teams">Senegal <span class="vs">v</span> Iraq</div>
+        <div class="match-time">21:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP J -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">J</div>
+        <div class="group-teams">Argentina · Algeria<br>Austria · Jordan</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">17<span class="day">JUN</span></div>
+        <div class="match-teams">Argentina <span class="vs">v</span> Algeria</div>
+        <div class="match-time">03:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">17<span class="day">JUN</span></div>
+        <div class="match-teams">Austria <span class="vs">v</span> Jordan</div>
+        <div class="match-time">06:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">22<span class="day">JUN</span></div>
+        <div class="match-teams">Argentina <span class="vs">v</span> Austria</div>
+        <div class="match-time">19:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">23<span class="day">JUN</span></div>
+        <div class="match-teams">Jordan <span class="vs">v</span> Algeria</div>
+        <div class="match-time">05:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">28<span class="day">JUN</span></div>
+        <div class="match-teams">Argentina <span class="vs">v</span> Jordan</div>
+        <div class="match-time">04:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">28<span class="day">JUN</span></div>
+        <div class="match-teams">Algeria <span class="vs">v</span> Austria</div>
+        <div class="match-time">04:00</div>
+      </div>
+    </div>
+
+    <!-- GROUP K -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">K</div>
+        <div class="group-teams">Portugal · Colombia<br>Congo DR · Uzbekistan</div>
+      </div>
+      <div class="match">
+        <div class="match-date">17<span class="day">JUN</span></div>
+        <div class="match-teams">Portugal <span class="vs">v</span> Congo DR</div>
+        <div class="match-time">19:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">18<span class="day">JUN</span></div>
+        <div class="match-teams">Uzbekistan <span class="vs">v</span> Colombia</div>
+        <div class="match-time">04:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">23<span class="day">JUN</span></div>
+        <div class="match-teams">Portugal <span class="vs">v</span> Uzbekistan</div>
+        <div class="match-time">19:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">24<span class="day">JUN</span></div>
+        <div class="match-teams">Colombia <span class="vs">v</span> Congo DR</div>
+        <div class="match-time">04:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">28<span class="day">JUN</span></div>
+        <div class="match-teams">Colombia <span class="vs">v</span> Portugal</div>
+        <div class="match-time">01:30</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">28<span class="day">JUN</span></div>
+        <div class="match-teams">Congo DR <span class="vs">v</span> Uzbekistan</div>
+        <div class="match-time">01:30</div>
+      </div>
+    </div>
+
+    <!-- GROUP L -->
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">L</div>
+        <div class="group-teams">England · Croatia<br>Ghana · Panama</div>
+      </div>
+      <div class="match">
+        <div class="match-date">17<span class="day">JUN</span></div>
+        <div class="match-teams">England <span class="vs">v</span> Croatia</div>
+        <div class="match-time">22:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">18<span class="day">JUN</span></div>
+        <div class="match-teams">Ghana <span class="vs">v</span> Panama</div>
+        <div class="match-time">01:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">23<span class="day">JUN</span></div>
+        <div class="match-teams">England <span class="vs">v</span> Ghana</div>
+        <div class="match-time">22:00</div>
+      </div>
+      <div class="match night">
+        <div class="match-date">24<span class="day">JUN</span></div>
+        <div class="match-teams">Panama <span class="vs">v</span> Croatia</div>
+        <div class="match-time">01:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">27<span class="day">JUN</span></div>
+        <div class="match-teams">Panama <span class="vs">v</span> England</div>
+        <div class="match-time">23:00</div>
+      </div>
+      <div class="match">
+        <div class="match-date">27<span class="day">JUN</span></div>
+        <div class="match-teams">Croatia <span class="vs">v</span> Ghana</div>
+        <div class="match-time">23:00</div>
+      </div>
+    </div>
+
+  </div><!-- /groups-grid -->
+
+  <div class="footer">
+    <div class="footer-note">
+      All dates and kick-off times are in CEST (UTC+2) &nbsp;·&nbsp; Dates reflect when the match kicks off in Central Europe, which may differ from the local match date in North America
+    </div>
+    <div class="footer-legend">
+      <div class="legend-dot legend-gold"></div>
+      <div class="legend-label">Evening</div>
+      <div class="legend-dot legend-red"></div>
+      <div class="legend-label">Night / early AM</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
