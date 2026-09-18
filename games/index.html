@@ -1,0 +1,243 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game Library</title>
+    <meta name="description" content="A personal game library with custom lists." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css?v=7" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div class="brand-mark">🎮</div>
+          <div>
+            <p class="eyebrow">Shared library</p>
+            <h1>Game Library</h1>
+          </div>
+        </div>
+
+        <label class="search-field" aria-label="Search games">
+          <span class="search-icon">⌕</span>
+          <input id="searchInput" type="search" placeholder="Search your library..." />
+        </label>
+
+        <div class="topbar-actions">
+          <label class="user-picker" aria-label="Choose a game list">
+            <select id="collectionSelector"></select>
+          </label>
+          <button id="newCollectionButton" class="secondary-btn small-btn" type="button">+ New list</button>
+          <button id="deleteCollectionButton" class="secondary-btn small-btn danger-btn" type="button" aria-label="Delete current list" title="Delete current list">Delete list</button>
+          <div id="collectionCreate" class="collection-create hidden">
+            <input id="newCollectionInput" type="text" maxlength="32" placeholder="List name" aria-label="New list name" />
+            <button id="saveCollectionButton" class="secondary-btn small-btn" type="button">Save</button>
+          </div>
+          <button id="refreshButton" class="secondary-btn small-btn" type="button">↻ Refresh</button>
+          <button id="themeToggle" class="secondary-btn small-btn" type="button" aria-label="Switch to dark mode">☾ Dark</button>
+          <button id="addGameButton" class="primary-btn" type="button">+ Add Game</button>
+        </div>
+      </header>
+
+      <section class="stats-grid" id="statsGrid" aria-live="polite">
+        <article class="stat-card accent-purple">
+          <span class="stat-label">Games</span>
+          <strong id="statTotal">0</strong>
+        </article>
+        <article class="stat-card accent-green">
+          <span class="stat-label">Played</span>
+          <strong id="statPlayed">0</strong>
+        </article>
+        <article class="stat-card accent-yellow">
+          <span class="stat-label">Want to play</span>
+          <strong id="statWant">0</strong>
+        </article>
+        <article class="stat-card accent-blue">
+          <span class="stat-label">Co-op</span>
+          <strong id="statCoop">0</strong>
+        </article>
+      </section>
+
+      <section class="toolbar" aria-label="Filters and sorting">
+        <div class="filter-block">
+          <span class="filter-label">Status</span>
+          <div class="chip-group" id="statusFilters">
+            <button type="button" class="chip active" data-status="All">All</button>
+            <button type="button" class="chip" data-status="Want to play">Want to play</button>
+            <button type="button" class="chip" data-status="Playing">Playing</button>
+            <button type="button" class="chip" data-status="Played">Played</button>
+            <button type="button" class="chip" data-status="Abandoned">Abandoned</button>
+          </div>
+        </div>
+
+        <div class="filter-block">
+          <span class="filter-label">Type</span>
+          <div class="chip-group" id="typeFilters">
+            <button type="button" class="chip active" data-type="All">All</button>
+            <button type="button" class="chip" data-type="Singleplayer">Singleplayer</button>
+            <button type="button" class="chip" data-type="Multiplayer">Multiplayer</button>
+            <button type="button" class="chip" data-type="Co-op">Co-op</button>
+            <button type="button" class="chip" data-type="Singleplayer & Co-op">Singleplayer &amp; Co-op</button>
+          </div>
+        </div>
+
+        <div class="filter-block inline-select">
+          <label class="filter-label" for="genreFilter">Genre</label>
+          <select id="genreFilter">
+            <option value="All">All genres</option>
+          </select>
+        </div>
+
+        <div class="filter-block inline-select">
+          <label class="filter-label" for="sortSelect">Sort</label>
+          <select id="sortSelect">
+            <option value="recently-added">Recently added</option>
+            <option value="recently-updated">Recently updated</option>
+            <option value="az">A–Z</option>
+            <option value="za">Z–A</option>
+            <option value="release-year">Release year</option>
+            <option value="manual">Manual order</option>
+          </select>
+        </div>
+      </section>
+
+      <main class="content-grid">
+        <section class="library-panel">
+          <div class="panel-header">
+            <h2 id="libraryTitle">All Games</h2>
+            <div class="panel-tools">
+              <span id="resultsCount">0 games</span>
+              <div class="view-toggle" role="group" aria-label="Game list view">
+                <button id="gridViewButton" class="view-btn active" type="button" aria-label="Show game cards">▦</button>
+                <button id="listViewButton" class="view-btn" type="button" aria-label="Show compact list">☷</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="loadingState" class="state-panel" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p>Loading the game library...</p>
+          </div>
+
+          <div id="errorState" class="state-panel hidden" aria-live="assertive">
+            <p>Couldn't load the game library. Please try again.</p>
+          </div>
+
+          <div id="emptyState" class="state-panel hidden" aria-live="polite">
+            <p>No games match your filters.</p>
+          </div>
+
+          <div id="gamesGrid" class="games-grid" aria-live="polite"></div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="side-panel">
+            <h3>🎮 You might like</h3>
+            <div id="recommendationsList" class="suggestion-list"></div>
+          </section>
+
+          <section class="side-panel">
+            <h3>👥 Play Together</h3>
+            <div id="playTogetherList" class="suggestion-list"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div id="gameModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-backdrop" data-close="true"></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header">
+          <h3 id="modalTitle">Add Game</h3>
+          <button id="closeModalButton" class="icon-btn" type="button" aria-label="Close form">×</button>
+        </div>
+
+        <form id="gameForm">
+          <input id="gameId" type="hidden" />
+
+          <div class="form-grid">
+            <label>
+              <span>Game title</span>
+              <input id="gameTitle" name="title" type="text" required />
+            </label>
+
+            <label class="full-width">
+              <span>Description</span>
+              <textarea id="gameDescription" name="description" rows="3"></textarea>
+            </label>
+
+            <div class="steam-search full-width">
+              <label for="steamSearchInput">
+                <span>Find a game on Steam</span>
+                <small>Steam does not allow browser API searches from GitHub Pages, so this opens Steam's search page.</small>
+              </label>
+              <div class="steam-search-row">
+                <input id="steamSearchInput" type="search" placeholder="Search Steam games..." />
+                <button id="steamSearchButton" type="button" class="secondary-btn">Search Steam</button>
+              </div>
+              <div id="steamSearchStatus" class="form-hint" aria-live="polite"></div>
+              <div id="steamSearchResults" class="steam-search-results" aria-live="polite"></div>
+            </div>
+
+            <label class="full-width">
+              <span>Cover image URL</span>
+              <input id="gameCoverUrl" name="cover_url" type="url" placeholder="https://..." />
+            </label>
+
+            <label class="full-width">
+              <span>Steam URL</span>
+              <input id="gameSteamUrl" name="steam_url" type="url" placeholder="https://store.steampowered.com/app/..." />
+            </label>
+
+            <label>
+              <span>Status</span>
+              <select id="gameStatus" name="status">
+                <option value="Want to play">Want to play</option>
+                <option value="Playing">Playing</option>
+                <option value="Played">Played</option>
+                <option value="Abandoned">Abandoned</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Game type</span>
+              <select id="gameType" name="game_type">
+                <option value="Singleplayer">Singleplayer</option>
+                <option value="Multiplayer">Multiplayer</option>
+                <option value="Co-op">Co-op</option>
+                <option value="Singleplayer & Co-op">Singleplayer &amp; Co-op</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Release year</span>
+              <input id="gameReleaseYear" name="release_year" type="number" min="1900" max="2100" />
+            </label>
+
+            <label>
+              <span>Genres</span>
+              <input id="gameGenres" name="genres" type="text" placeholder="Horror, Co-op, Survival" />
+            </label>
+
+            <label class="full-width">
+              <span>Notes</span>
+              <textarea id="gameNotes" name="notes" rows="3"></textarea>
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" id="cancelGameButton" class="secondary-btn">Cancel</button>
+            <button type="submit" class="primary-btn">Save Game</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="script.js?v=7"></script>
+  </body>
+</html>
