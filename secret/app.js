@@ -106,7 +106,9 @@ const elements = {
   search: document.querySelector('#search-input'),
   genreFilter: document.querySelector('#genre-filter'),
   playersFilter: document.querySelector('#players-filter'),
-  priorityFilter: document.querySelector('#priority-filter')
+  priorityFilter: document.querySelector('#priority-filter'),
+  activeFilters: document.querySelector('#active-filters'),
+  filterCount: document.querySelector('#filter-count')
 };
 
 function makeId() {
@@ -278,6 +280,18 @@ function addText(parent, tagName, className, text) {
   return node;
 }
 
+function makeCoverPlaceholder(game) {
+  const placeholder = document.createElement('div');
+  const tone = [...game.title].reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 7) % 4;
+  const monogram = game.title.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
+  placeholder.className = `cover-placeholder cover-tone-${tone}`;
+  placeholder.setAttribute('role', 'img');
+  placeholder.setAttribute('aria-label', `${game.title}, cover art not added`);
+  addText(placeholder, 'span', 'cover-placeholder-mark', monogram || 'GL');
+  addText(placeholder, 'span', 'cover-placeholder-caption', game.genre || 'Cover art not added');
+  return placeholder;
+}
+
 function makeCard(game) {
   const card = document.createElement('article');
   card.className = 'game-card';
@@ -290,18 +304,10 @@ function makeCard(game) {
     image.alt = `${game.title} cover`;
     image.loading = 'lazy';
     image.referrerPolicy = 'no-referrer';
-    image.addEventListener('error', () => {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'cover-placeholder';
-      placeholder.textContent = game.title.slice(0, 1).toUpperCase();
-      image.replaceWith(placeholder);
-    }, { once: true });
+    image.addEventListener('error', () => image.replaceWith(makeCoverPlaceholder(game)), { once: true });
     cover.append(image);
   } else {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'cover-placeholder';
-    placeholder.textContent = game.title.slice(0, 1).toUpperCase();
-    cover.append(placeholder);
+    cover.append(makeCoverPlaceholder(game));
   }
   if (game.priority) addText(cover, 'span', 'priority-mark', '!');
   card.append(cover);
@@ -311,6 +317,7 @@ function makeCard(game) {
   const titleRow = document.createElement('div');
   titleRow.className = 'card-title-row';
   addText(titleRow, 'h3', 'card-title', game.title);
+  addText(titleRow, 'span', `card-status status-${game.status}`, STATUS_LABELS[game.status]);
   content.append(titleRow);
   if (game.description) addText(content, 'p', 'card-description', game.description);
 
@@ -325,9 +332,19 @@ function makeCard(game) {
     content.append(meta);
   }
   if (game.steamCategories.length) {
-    addText(content, 'p', 'steam-categories', `Steam categories: ${game.steamCategories.join(', ')}`);
+    const steamDetails = document.createElement('details');
+    steamDetails.className = 'steam-details';
+    addText(steamDetails, 'summary', '', `Steam categories (${game.steamCategories.length})`);
+    addText(steamDetails, 'p', 'steam-categories', game.steamCategories.join(', '));
+    content.append(steamDetails);
   }
-  if (game.notes) addText(content, 'p', 'card-notes', game.notes);
+  if (game.notes) {
+    const notesDetails = document.createElement('details');
+    notesDetails.className = 'notes-details';
+    addText(notesDetails, 'summary', '', 'Personal notes');
+    addText(notesDetails, 'p', 'card-notes', game.notes);
+    content.append(notesDetails);
+  }
   const spacer = document.createElement('div');
   spacer.className = 'card-spacer';
   content.append(spacer);
@@ -345,7 +362,7 @@ function makeCard(game) {
   actions.className = 'card-actions';
   const moveButton = document.createElement('button');
   moveButton.type = 'button';
-  moveButton.className = 'small-button';
+  moveButton.className = 'small-button card-advance';
   moveButton.textContent = game.status === 'to-play' ? 'Start' : game.status === 'in-progress' ? 'Mark played' : 'Replay';
   moveButton.setAttribute('aria-label', `${moveButton.textContent} ${game.title}`);
   moveButton.addEventListener('click', () => {
@@ -355,16 +372,24 @@ function makeCard(game) {
   actions.append(moveButton);
   const editButton = document.createElement('button');
   editButton.type = 'button';
-  editButton.className = 'small-button';
+  editButton.className = 'small-button card-edit';
   editButton.textContent = 'Edit';
   editButton.addEventListener('click', () => openEditor(game));
   actions.append(editButton);
+  const moreActions = document.createElement('details');
+  moreActions.className = 'card-more-actions';
+  const moreSummary = addText(moreActions, 'summary', '', 'More');
+  moreSummary.setAttribute('aria-label', `More actions for ${game.title}`);
   const deleteButton = document.createElement('button');
   deleteButton.type = 'button';
   deleteButton.className = 'small-button delete-button';
   deleteButton.textContent = 'Delete';
-  deleteButton.addEventListener('click', () => deleteGame(game));
-  actions.append(deleteButton);
+  deleteButton.addEventListener('click', () => {
+    moreActions.open = false;
+    deleteGame(game);
+  });
+  moreActions.append(deleteButton);
+  actions.append(moreActions);
   footer.append(actions);
   content.append(footer);
   card.append(content);
@@ -380,8 +405,44 @@ function renderGenres() {
   if (genres.includes(previous)) elements.genreFilter.value = previous;
 }
 
+function renderActiveFilters() {
+  const query = elements.search.value.trim();
+  const playerLabels = { '1': '1 player', '2': '2 players', '3': '3 players', '4': '4 players', '5+': '5+ players', unknown: 'Players not specified' };
+  const filters = [];
+  if (query) filters.push({ label: `Search: ${query}`, clear: () => { elements.search.value = ''; } });
+  if (elements.genreFilter.value) filters.push({ label: `Genre: ${elements.genreFilter.value}`, clear: () => { elements.genreFilter.value = ''; } });
+  if (elements.playersFilter.value) filters.push({ label: playerLabels[elements.playersFilter.value], clear: () => { elements.playersFilter.value = ''; } });
+  if (elements.priorityFilter.checked) filters.push({ label: 'Priority only', clear: () => { elements.priorityFilter.checked = false; } });
+
+  elements.activeFilters.replaceChildren();
+  elements.activeFilters.hidden = filters.length === 0;
+  elements.filterCount.textContent = filters.length;
+  elements.filterCount.hidden = filters.length === 0;
+  document.querySelector('#clear-filters').disabled = filters.length === 0;
+
+  for (const filter of filters) {
+    const chip = addText(elements.activeFilters, 'button', 'filter-chip', `${filter.label} ×`);
+    chip.type = 'button';
+    chip.title = `Remove ${filter.label}`;
+    chip.setAttribute('aria-label', `Remove ${filter.label} filter`);
+    chip.addEventListener('click', () => {
+      filter.clear();
+      render();
+    });
+  }
+}
+
+function clearFilters() {
+  elements.search.value = '';
+  elements.genreFilter.value = '';
+  elements.playersFilter.value = '';
+  elements.priorityFilter.checked = false;
+  render();
+}
+
 function render() {
   renderGenres();
+  renderActiveFilters();
   document.querySelectorAll('.view-tab').forEach(tab => {
     const selected = tab.dataset.view === activeView;
     tab.classList.toggle('is-active', selected);
@@ -692,6 +753,10 @@ document.querySelector('#markdown-export-button').addEventListener('click', () =
   document.querySelector('#markdown-dialog').showModal();
 });
 document.querySelector('#howto-button').addEventListener('click', () => document.querySelector('#howto-dialog').showModal());
+document.querySelector('.library-tools').addEventListener('click', event => {
+  if (event.target.closest('button')) document.querySelector('.library-tools').open = false;
+});
+document.querySelector('#clear-filters').addEventListener('click', clearFilters);
 document.querySelector('#close-markdown').addEventListener('click', () => document.querySelector('#markdown-dialog').close());
 document.querySelector('#close-markdown-bottom').addEventListener('click', () => document.querySelector('#markdown-dialog').close());
 document.querySelector('#close-howto').addEventListener('click', () => document.querySelector('#howto-dialog').close());
