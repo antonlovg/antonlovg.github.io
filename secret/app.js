@@ -4,6 +4,7 @@ const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
 const VALID_THEMES = ['forest', 'ocean', 'ember', 'light'];
 const VALID_SORTS = ['title', 'title-desc', 'priority', 'random'];
 const STEAM_PROXY_URL = 'https://curly-dawn-c08f.karlanton-lovgren.workers.dev';
+const SHARED_LIBRARY_URL = 'shared-library.json';
 const STATUS_LABELS = {
   'to-play': 'To Play',
   'in-progress': 'In Progress',
@@ -800,6 +801,47 @@ function exportLibrary() {
   }
 }
 
+async function getSharedUpdate() {
+  const button = document.querySelector('#shared-update-button');
+  button.disabled = true;
+  button.textContent = 'Loading shared library…';
+  try {
+    const response = await fetch(new URL(SHARED_LIBRARY_URL, window.location.href), {
+      cache: 'no-store',
+      credentials: 'same-origin',
+      redirect: 'error'
+    });
+    if (!response.ok) throw new Error(`Shared library returned HTTP ${response.status}.`);
+
+    let snapshot;
+    try {
+      snapshot = await response.json();
+    } catch {
+      throw new Error('The shared library is not valid JSON.');
+    }
+
+    const replacement = SharedLibrary.prepareSharedLibraryReplacement(snapshot);
+    if (!validateGameList(replacement)) throw new Error('The shared library contains invalid game data.');
+
+    const publishedAt = new Date(snapshot.exportedAt);
+    const publishedLabel = Number.isNaN(publishedAt.getTime()) ? 'unknown date' : publishedAt.toLocaleString();
+    const confirmation = [
+      `Shared library published: ${publishedLabel}`,
+      `Games in shared library: ${replacement.length}`,
+      `This will replace your current library of ${games.length} games, including local additions and changes. Export a backup first if you want to keep them.`
+    ].join('\n\n');
+    if (!confirm(confirmation)) return;
+
+    commitGames(replacement, `Shared library updated with ${replacement.length} games.`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not fetch the shared library.';
+    showToast(`${message} Your current library is unchanged.`, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Get shared update';
+  }
+}
+
 function escapeMarkdown(value) {
   return String(value).replace(/[\\`*_~|]/g, '\\$&').replace(/\s+/g, ' ').trim();
 }
@@ -978,6 +1020,7 @@ elements.form.addEventListener('submit', event => {
   if (commitGames(nextGames, exists ? 'Game updated.' : 'Game added.')) elements.dialog.close();
 });
 document.querySelector('#export-button').addEventListener('click', exportLibrary);
+document.querySelector('#shared-update-button').addEventListener('click', getSharedUpdate);
 document.querySelector('#markdown-export-button').addEventListener('click', () => {
   updateMarkdownPreview();
   document.querySelector('#markdown-dialog').showModal();

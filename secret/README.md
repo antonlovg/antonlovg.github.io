@@ -13,7 +13,11 @@ Download or clone the project, then open `index.html` in a modern browser. No in
 3. Under **Build and deployment**, choose **Deploy from a branch**, select the branch and root folder, then save.
 4. Open the Pages URL shown in the settings after deployment finishes.
 
-The site is static. Game changes are saved in the browser and do not require Git commits or repository updates.
+The site is static. Personal game changes are saved in the browser. The public shared snapshot is `shared-library.json` in this folder.
+
+## Tests
+
+Run the shared snapshot tests with `node --test tests/*.test.mjs`.
 
 ## Enable Steam lookup
 
@@ -35,9 +39,12 @@ Use **Export library** to download a JSON backup. Use **Import library** to choo
 
 Browser storage belongs to that browser and device. It is not shared with other people, browsers, or devices. Clearing the browser's site data can delete the library, so regular exports are recommended.
 
+To publish a shared update, export the desired library, replace `shared-library.json` with that export, and push the file to the repository. GitHub Pages publishes it with the site. Visitors select **Get shared update** in **Library tools** to fetch it. The app checks the snapshot and asks before replacing that browser's current library; cancel leaves the current data untouched. The snapshot is public, so do not include private notes or credentials.
+
 ## Manage games
 
 - Select **Add game** to create an entry. Only the title is required.
+- Select **Get shared update** in **Library tools** to replace this browser's library with the latest validated repository snapshot after confirmation.
 - Duplicate titles are blocked regardless of capitalization or extra spaces. If a Steam URL is provided, duplicate Steam app IDs are blocked too. Edit the existing entry instead; imports containing duplicates are rejected without changing the library.
 - Use **Edit** on a card to change its information.
 - Each card has a **Trailer** button. In **Edit**, add the game's Steam Store URL and select **Fetch trailers** to load and choose from its official Steam trailers. The player handles Steam HLS streams with HLS.js, and also accepts YouTube links or direct HTTPS MP4/WebM URLs. Playback stops when the dialog closes. Steam lookup requires the deployed proxy and an allowed published site origin; YouTube embeds need an HTTP(S) page origin, so use the hosted site or localhost rather than opening the HTML as `file://` for playback.
