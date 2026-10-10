@@ -1,5 +1,8 @@
 const STORAGE_KEY = 'personal-game-library-v1';
+const PREFERENCES_KEY = 'personal-game-library-preferences-v1';
 const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
+const VALID_THEMES = ['forest', 'ocean', 'ember', 'light'];
+const VALID_SORTS = ['title', 'title-desc', 'priority', 'random'];
 const STATUS_LABELS = {
   'to-play': 'To Play',
   'in-progress': 'In Progress',
@@ -89,6 +92,8 @@ let games = [];
 let activeView = 'to-play';
 let toastTimer;
 let steamCategories = [];
+let randomOrder = new Map();
+let suggestedGameId = null;
 
 const elements = {
   grid: document.querySelector('#game-grid'),
@@ -161,6 +166,7 @@ function initializeLibrary() {
     if (saved === null) {
       games = makeInitialGames();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
+      loadPreferences();
       return;
     }
     const parsed = JSON.parse(saved);
@@ -169,6 +175,44 @@ function initializeLibrary() {
   } catch (error) {
     games = [];
     showToast(error instanceof SyntaxError ? 'Saved library could not be read. Its stored data was left untouched.' : error.message, true);
+  }
+  loadPreferences();
+}
+
+function loadPreferences() {
+  try {
+    const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
+    const theme = VALID_THEMES.includes(preferences.theme) ? preferences.theme : 'forest';
+    const sort = VALID_SORTS.includes(preferences.sort) ? preferences.sort : 'title';
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('#theme-select').value = theme;
+    document.querySelector('#sort-select').value = sort;
+    if (sort === 'random') randomOrder = new Map(games.map(game => [game.id, Math.random()]));
+  } catch {
+    document.documentElement.dataset.theme = 'forest';
+    document.querySelector('#theme-select').value = 'forest';
+    document.querySelector('#sort-select').value = 'title';
+  }
+}
+
+function saveTheme(theme) {
+  if (!VALID_THEMES.includes(theme)) return;
+  document.documentElement.dataset.theme = theme;
+  try {
+    const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...preferences, theme }));
+  } catch {
+    showToast('Theme changed, but this browser could not save the preference.', true);
+  }
+}
+
+function saveSort(sort) {
+  if (!VALID_SORTS.includes(sort)) return;
+  try {
+    const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...preferences, sort }));
+  } catch {
+    showToast('Sort changed, but this browser could not save the preference.', true);
   }
 }
 
@@ -212,7 +256,17 @@ function getVisibleGames() {
       if (!haystack.includes(query)) return false;
     }
     return true;
-  }).sort((first, second) => first.title.localeCompare(second.title));
+  }).sort((first, second) => {
+    const sort = document.querySelector('#sort-select').value;
+    if (sort === 'random') {
+      if (!randomOrder.has(first.id)) randomOrder.set(first.id, Math.random());
+      if (!randomOrder.has(second.id)) randomOrder.set(second.id, Math.random());
+      return randomOrder.get(first.id) - randomOrder.get(second.id);
+    }
+    if (sort === 'priority' && first.priority !== second.priority) return first.priority ? -1 : 1;
+    const result = first.title.localeCompare(second.title);
+    return sort === 'title-desc' ? -result : result;
+  });
 }
 
 function addText(parent, tagName, className, text) {
@@ -342,6 +396,41 @@ function render() {
   document.querySelector('#results-count').textContent = `${visible.length} ${visible.length === 1 ? 'game' : 'games'}`;
   elements.grid.replaceChildren(...visible.map(makeCard));
   elements.empty.hidden = visible.length !== 0;
+}
+
+function showRandomSuggestion(previousId = null) {
+  const candidates = getVisibleGames();
+  const result = document.querySelector('#suggestion-result');
+  result.replaceChildren();
+  if (!candidates.length) {
+    suggestedGameId = null;
+    document.querySelector('#suggestion-title').textContent = 'No games to choose from';
+    addText(result, 'p', 'suggestion-description', 'Adjust the current view or filters, then try again.');
+    document.querySelector('#start-suggested-game').disabled = true;
+    document.querySelector('#suggest-another').disabled = true;
+    return;
+  }
+  const available = candidates.filter(game => game.id !== previousId);
+  const picked = (available.length ? available : candidates)[Math.floor(Math.random() * (available.length || candidates.length))];
+  suggestedGameId = picked.id;
+  document.querySelector('#suggestion-title').textContent = 'What should you play?';
+  addText(result, 'h3', 'suggestion-game-title', `${picked.priority ? '! ' : ''}${picked.title}`);
+  const details = [picked.genre, picked.players ? `${picked.players} ${picked.players === '1' ? 'player' : 'players'}` : ''].filter(Boolean).join(' · ');
+  if (details) addText(result, 'p', 'suggestion-meta', details);
+  if (picked.description) addText(result, 'p', 'suggestion-description', picked.description);
+  else if (picked.notes) addText(result, 'p', 'suggestion-description', picked.notes);
+  const startButton = document.querySelector('#start-suggested-game');
+  startButton.disabled = picked.status === 'in-progress';
+  startButton.textContent = picked.status === 'in-progress' ? 'Already in progress' : 'Start this game';
+  document.querySelector('#suggest-another').disabled = candidates.length < 2;
+}
+
+function startSuggestedGame() {
+  const picked = games.find(game => game.id === suggestedGameId);
+  if (!picked || picked.status === 'in-progress') return;
+  if (commitGames(games.map(game => game.id === picked.id ? { ...game, status: 'in-progress' } : game), `${picked.title} moved to In Progress.`)) {
+    document.querySelector('#suggestion-dialog').close();
+  }
 }
 
 function openEditor(game = null) {
@@ -551,6 +640,22 @@ elements.search.addEventListener('input', render);
 elements.genreFilter.addEventListener('change', render);
 elements.playersFilter.addEventListener('change', render);
 elements.priorityFilter.addEventListener('change', render);
+document.querySelector('#sort-select').addEventListener('change', () => {
+  const sort = document.querySelector('#sort-select').value;
+  if (sort === 'random') {
+    randomOrder = new Map(games.map(game => [game.id, Math.random()]));
+  }
+  saveSort(sort);
+  render();
+});
+document.querySelector('#theme-select').addEventListener('change', event => saveTheme(event.target.value));
+document.querySelector('#pick-game-button').addEventListener('click', () => {
+  showRandomSuggestion();
+  document.querySelector('#suggestion-dialog').showModal();
+});
+document.querySelector('#suggest-another').addEventListener('click', () => showRandomSuggestion(suggestedGameId));
+document.querySelector('#start-suggested-game').addEventListener('click', startSuggestedGame);
+document.querySelector('#close-suggestion').addEventListener('click', () => document.querySelector('#suggestion-dialog').close());
 document.querySelector('#add-button').addEventListener('click', () => openEditor());
 document.querySelector('#close-dialog').addEventListener('click', () => elements.dialog.close());
 document.querySelector('#cancel-dialog').addEventListener('click', () => elements.dialog.close());
