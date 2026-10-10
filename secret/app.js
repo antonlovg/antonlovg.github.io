@@ -486,11 +486,21 @@ async function fetchSteamInfo() {
   button.disabled = true;
   button.textContent = 'Fetching…';
   try {
-    const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${match[1]}&cc=se&l=english`);
-    if (!response.ok) throw new Error('Steam did not respond successfully.');
-    const result = await response.json();
+    let response;
+    try {
+      response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${match[1]}&cc=se&l=english`);
+    } catch {
+      throw new Error('Could not reach Steam. Check your connection; the browser or network may also be blocking this request.');
+    }
+    if (!response.ok) throw new Error(`Steam returned HTTP ${response.status}. Try again later.`);
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error('Steam returned an unreadable response. Try again later.');
+    }
     const details = result[match[1]];
-    if (!details?.success || !details.data) throw new Error('Steam has no public details for this app.');
+    if (!details?.success || !details.data) throw new Error('Steam returned no public details for this app. Check that the URL points to a public game page.');
     const data = details.data;
     const fetched = {
       title: typeof data.name === 'string' ? data.name : '',
@@ -516,8 +526,9 @@ async function fetchSteamInfo() {
     }
     if (fetched.categories.length && (steamCategories.length === 0 || wouldReplace)) steamCategories = fetched.categories;
     showToast('Steam info added to the form. Save the game to keep it.');
-  } catch {
-    showToast('Steam lookup failed, often because of browser CORS or network limits. Your entered information is unchanged; you can fill it in manually.', true);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Steam lookup failed. Your entered information is unchanged.';
+    showToast(`${message} Your entered information is unchanged.`, true);
   } finally {
     button.disabled = false;
     button.textContent = 'Fetch Steam info';
