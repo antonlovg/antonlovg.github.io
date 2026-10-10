@@ -221,6 +221,20 @@ function normalizeGame(game) {
   };
 }
 
+function normalizeGameTitle(title) {
+  return title.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+}
+
+function findDuplicateGame(gameToCheck, excludeId = '', candidates = games) {
+  const normalizedTitle = normalizeGameTitle(gameToCheck.title);
+  const steamAppId = getSteamAppId(gameToCheck.steamUrl);
+  return candidates.find(game => {
+    if (game.id === excludeId) return false;
+    if (normalizeGameTitle(game.title) === normalizedTitle) return true;
+    return steamAppId && getSteamAppId(game.steamUrl) === steamAppId;
+  });
+}
+
 function initializeLibrary() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -864,6 +878,20 @@ async function importLibrary(file) {
     const parsed = JSON.parse(await file.text());
     const imported = Array.isArray(parsed) ? parsed : parsed?.games;
     if (!validateGameList(imported)) throw new Error('This file is not a valid game library export. No data was changed.');
+    const importedTitles = new Set();
+    const importedSteamAppIds = new Set();
+    for (const game of imported) {
+      const normalizedTitle = normalizeGameTitle(game.title);
+      if (importedTitles.has(normalizedTitle)) {
+        throw new Error(`The import contains multiple entries named "${game.title.trim()}". No data was changed.`);
+      }
+      importedTitles.add(normalizedTitle);
+      const steamAppId = getSteamAppId(game.steamUrl);
+      if (steamAppId && importedSteamAppIds.has(steamAppId)) {
+        throw new Error(`The import contains multiple entries for the same Steam game (app ${steamAppId}). No data was changed.`);
+      }
+      if (steamAppId) importedSteamAppIds.add(steamAppId);
+    }
     if (!confirm(`Import ${imported.length} games? This will replace your current library of ${games.length} games. Export a backup first if you want to keep it.`)) return;
     const normalized = imported.map(normalizeGame);
     const ids = new Set();
@@ -934,6 +962,15 @@ elements.form.addEventListener('submit', event => {
   if (savedGame.trailerUrl && !parseTrailerUrl(savedGame.trailerUrl)) {
     showToast('Use a YouTube video link, direct HTTPS MP4/WebM, or a Steam trailer URL.', true);
     document.querySelector('#game-trailer-url').focus();
+    return;
+  }
+  const duplicate = findDuplicateGame(savedGame, savedGame.id);
+  if (duplicate) {
+    const duplicateReason = normalizeGameTitle(duplicate.title) === normalizeGameTitle(savedGame.title)
+      ? `"${duplicate.title}" is already in your library`
+      : `The Steam game "${duplicate.title}" is already in your library`;
+    showToast(`${duplicateReason}. Edit that entry instead.`, true);
+    document.querySelector('#game-title').focus();
     return;
   }
   const exists = games.some(game => game.id === savedGame.id);

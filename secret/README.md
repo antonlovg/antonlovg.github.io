@@ -38,6 +38,7 @@ Browser storage belongs to that browser and device. It is not shared with other 
 ## Manage games
 
 - Select **Add game** to create an entry. Only the title is required.
+- Duplicate titles are blocked regardless of capitalization or extra spaces. If a Steam URL is provided, duplicate Steam app IDs are blocked too. Edit the existing entry instead; imports containing duplicates are rejected without changing the library.
 - Use **Edit** on a card to change its information.
 - Each card has a **Trailer** button. In **Edit**, add the game's Steam Store URL and select **Fetch trailers** to load and choose from its official Steam trailers. The player handles Steam HLS streams with HLS.js, and also accepts YouTube links or direct HTTPS MP4/WebM URLs. Playback stops when the dialog closes. Steam lookup requires the deployed proxy and an allowed published site origin; YouTube embeds need an HTTP(S) page origin, so use the hosted site or localhost rather than opening the HTML as `file://` for playback.
 - Use **Start**, **Mark played**, or **Replay** to move it to the next status.
