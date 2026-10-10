@@ -95,11 +95,13 @@ let toastTimer;
 let steamCategories = [];
 let randomOrder = new Map();
 let suggestedGameId = null;
+let activeHlsPlayer = null;
 
 const elements = {
   grid: document.querySelector('#game-grid'),
   empty: document.querySelector('#empty-state'),
   dialog: document.querySelector('#game-dialog'),
+  trailerDialog: document.querySelector('#trailer-dialog'),
   form: document.querySelector('#game-form'),
   toast: document.querySelector('#toast'),
   importInput: document.querySelector('#import-input'),
@@ -118,7 +120,7 @@ function makeId() {
 function makeInitialGames() {
   return initialGames.map(([title, genre, notes, status, priority = false, players = '']) => ({
     id: makeId(), title, description: '', genre, tags: '', players,
-    steamUrl: '', coverUrl: '', notes, status, priority, steamCategories: []
+    steamUrl: '', trailerUrl: '', coverUrl: '', notes, status, priority, steamCategories: []
   }));
 }
 
@@ -130,6 +132,45 @@ function safeWebUrl(value) {
   try {
     const url = new URL(value);
     return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function parseTrailerUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:' || url.username || url.password) return null;
+
+  const host = url.hostname.toLowerCase();
+  const youtubeHosts = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'www.youtube-nocookie.com']);
+  if (youtubeHosts.has(host)) {
+    const videoId = host === 'youtu.be'
+      ? url.pathname.split('/').filter(Boolean)[0]
+      : url.pathname === '/watch'
+        ? url.searchParams.get('v')
+        : url.pathname.match(/^\/(?:embed|shorts|live)\/([\w-]{11})(?:\/|$)/)?.[1];
+    if (!/^[\w-]{11}$/.test(videoId || '')) return null;
+    return { type: 'youtube', source: url.href, player: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1` };
+  }
+
+  if (host === 'video.akamai.steamstatic.com'
+    && /^\/store_trailers\/\d+\/\d+\/[a-f\d]+\/\d+\/hls_264_master\.m3u8$/i.test(url.pathname)) {
+    return { type: 'steam-hls', source: url.href, player: url.href };
+  }
+  if (/\.(?:mp4|webm)$/i.test(url.pathname)) return { type: 'file', source: url.href, player: url.href };
+  return null;
+}
+
+function getSteamAppId(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || !['store.steampowered.com', 'www.store.steampowered.com'].includes(url.hostname.toLowerCase())) return '';
+    return url.pathname.match(/^\/app\/(\d+)(?:\/|$)/)?.[1] || '';
   } catch {
     return '';
   }
@@ -157,6 +198,7 @@ function validateGameList(value) {
     && isString(game.title) && game.title.trim().length > 0
     && VALID_STATUSES.includes(game.status)
     && ['description', 'genre', 'tags', 'players', 'steamUrl', 'coverUrl', 'notes'].every(key => isString(game[key]))
+    && (game.trailerUrl === undefined || isString(game.trailerUrl))
     && typeof game.priority === 'boolean'
     && (game.steamCategories === undefined || (Array.isArray(game.steamCategories) && game.steamCategories.every(isString))));
 }
@@ -170,6 +212,7 @@ function normalizeGame(game) {
     tags: game.tags,
     players: game.players,
     steamUrl: game.steamUrl,
+    trailerUrl: game.trailerUrl || '',
     coverUrl: game.coverUrl,
     notes: game.notes,
     status: game.status,
@@ -376,6 +419,13 @@ function makeCard(game) {
   }
   const actions = document.createElement('div');
   actions.className = 'card-actions';
+  const trailerButton = document.createElement('button');
+  trailerButton.type = 'button';
+  trailerButton.className = 'small-button trailer-button';
+  trailerButton.textContent = 'Trailer';
+  trailerButton.setAttribute('aria-label', `Watch ${game.title} trailer`);
+  trailerButton.addEventListener('click', () => openTrailer(game));
+  actions.append(trailerButton);
   const moveButton = document.createElement('button');
   moveButton.type = 'button';
   moveButton.className = 'small-button card-advance';
@@ -521,6 +571,9 @@ function openEditor(game = null) {
   document.querySelector('#game-tags').value = game?.tags || '';
   document.querySelector('#game-players').value = game?.players || '';
   document.querySelector('#game-steam-url').value = game?.steamUrl || '';
+  document.querySelector('#game-trailer-url').value = game?.trailerUrl || '';
+  document.querySelector('#steam-trailer-picker-wrap').hidden = true;
+  document.querySelector('#steam-trailer-picker').replaceChildren(new Option('Choose a trailer', ''));
   document.querySelector('#game-cover-url').value = game?.coverUrl || '';
   document.querySelector('#game-notes').value = game?.notes || '';
   document.querySelector('#game-status').value = game?.status || (activeView === 'all' ? 'to-play' : activeView);
@@ -528,6 +581,62 @@ function openEditor(game = null) {
   steamCategories = game?.steamCategories ? [...game.steamCategories] : [];
   elements.dialog.showModal();
   document.querySelector('#game-title').focus();
+}
+
+function openTrailer(game) {
+  const player = document.querySelector('#trailer-player');
+  const error = document.querySelector('#trailer-error');
+  const sourceLink = document.querySelector('#trailer-source-link');
+  const trailer = parseTrailerUrl(game.trailerUrl);
+  player.replaceChildren();
+  error.hidden = true;
+  document.querySelector('#trailer-title').textContent = game.title;
+  sourceLink.hidden = !trailer;
+  if (trailer) {
+    sourceLink.href = trailer.source;
+    if (trailer.type === 'youtube') {
+      const frame = document.createElement('iframe');
+      frame.src = trailer.player;
+      frame.title = `${game.title} trailer`;
+      frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      player.append(frame);
+    } else {
+      const video = document.createElement('video');
+      video.controls = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      video.addEventListener('error', () => { error.hidden = false; }, { once: true });
+      player.append(video);
+      if (trailer.type === 'steam-hls') {
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = trailer.player;
+        } else if (globalThis.Hls?.isSupported()) {
+          activeHlsPlayer = new Hls();
+          activeHlsPlayer.loadSource(trailer.player);
+          activeHlsPlayer.attachMedia(video);
+          activeHlsPlayer.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) error.hidden = false;
+          });
+        } else {
+          error.hidden = false;
+        }
+      } else {
+        video.src = trailer.player;
+      }
+    }
+  } else {
+    addText(player, 'p', 'trailer-empty', 'No trailer added yet. Fetch trailers from Steam or add a YouTube/direct video URL in Edit.');
+    sourceLink.hidden = true;
+  }
+  if (trailer?.type === 'steam-hls') {
+    const steamUrl = safeWebUrl(game.steamUrl);
+    sourceLink.hidden = !steamUrl;
+    if (steamUrl) sourceLink.href = steamUrl;
+  }
+  elements.trailerDialog.showModal();
 }
 
 function readFormGame() {
@@ -540,6 +649,7 @@ function readFormGame() {
     tags: document.querySelector('#game-tags').value.trim(),
     players: document.querySelector('#game-players').value,
     steamUrl: document.querySelector('#game-steam-url').value.trim(),
+    trailerUrl: document.querySelector('#game-trailer-url').value.trim(),
     coverUrl: document.querySelector('#game-cover-url').value.trim(),
     notes: document.querySelector('#game-notes').value.trim(),
     status: document.querySelector('#game-status').value,
@@ -616,6 +726,48 @@ async function fetchSteamInfo() {
   } finally {
     button.disabled = false;
     button.textContent = 'Fetch Steam info';
+  }
+}
+
+async function fetchSteamTrailers() {
+  const appId = getSteamAppId(document.querySelector('#game-steam-url').value.trim());
+  if (!appId) {
+    showToast('Enter a valid Steam Store game URL first.', true);
+    return;
+  }
+  if (!STEAM_PROXY_URL) {
+    showToast('Steam lookup needs a deployed proxy. Set STEAM_PROXY_URL in app.js after deploying the Worker.', true);
+    return;
+  }
+
+  const button = document.querySelector('#fetch-steam-trailers');
+  button.disabled = true;
+  button.textContent = 'Fetching…';
+  try {
+    const proxyUrl = new URL('/appdetails', STEAM_PROXY_URL);
+    proxyUrl.searchParams.set('appids', appId);
+    const response = await fetch(proxyUrl, { credentials: 'omit', redirect: 'error' });
+    if (!response.ok) throw new Error(`Steam returned HTTP ${response.status}. Try again later.`);
+    const result = await response.json();
+    const details = result[appId];
+    if (!details?.success || !details.data) throw new Error('Steam returned no public details for this game.');
+    const movies = Array.isArray(details.data.movies) ? details.data.movies : [];
+    const options = movies.map(movie => ({
+      title: typeof movie.name === 'string' ? movie.name.trim() : '',
+      url: typeof movie.hls_h264 === 'string' ? movie.hls_h264 : ''
+    })).filter(movie => movie.title && parseTrailerUrl(movie.url)?.type === 'steam-hls');
+    const picker = document.querySelector('#steam-trailer-picker');
+    picker.replaceChildren(new Option('Choose a trailer', ''));
+    for (const movie of options) picker.add(new Option(movie.title, movie.url));
+    document.querySelector('#steam-trailer-picker-wrap').hidden = options.length === 0;
+    if (!options.length) throw new Error('Steam has no compatible trailers for this game.');
+    showToast(`Found ${options.length} Steam ${options.length === 1 ? 'trailer' : 'trailers'}. Choose one from the list.`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Steam trailer lookup failed.';
+    showToast(`${message} Your entered information is unchanged.`, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Fetch trailers';
   }
 }
 
@@ -754,11 +906,36 @@ document.querySelector('#close-suggestion').addEventListener('click', () => docu
 document.querySelector('#add-button').addEventListener('click', () => openEditor());
 document.querySelector('#close-dialog').addEventListener('click', () => elements.dialog.close());
 document.querySelector('#cancel-dialog').addEventListener('click', () => elements.dialog.close());
+document.querySelector('#close-trailer').addEventListener('click', () => elements.trailerDialog.close());
+elements.trailerDialog.addEventListener('click', event => {
+  if (event.target === elements.trailerDialog) elements.trailerDialog.close();
+});
+elements.trailerDialog.addEventListener('close', () => {
+  activeHlsPlayer?.destroy();
+  activeHlsPlayer = null;
+  document.querySelector('#trailer-player').replaceChildren();
+  document.querySelector('#trailer-error').hidden = true;
+});
 document.querySelector('#fetch-steam').addEventListener('click', fetchSteamInfo);
+document.querySelector('#fetch-steam-trailers').addEventListener('click', fetchSteamTrailers);
+document.querySelector('#game-steam-url').addEventListener('input', () => {
+  document.querySelector('#steam-trailer-picker-wrap').hidden = true;
+  document.querySelector('#steam-trailer-picker').replaceChildren(new Option('Choose a trailer', ''));
+});
+document.querySelector('#steam-trailer-picker').addEventListener('change', event => {
+  if (event.target.value && parseTrailerUrl(event.target.value)?.type === 'steam-hls') {
+    document.querySelector('#game-trailer-url').value = event.target.value;
+  }
+});
 elements.form.addEventListener('submit', event => {
   event.preventDefault();
   if (!elements.form.reportValidity()) return;
   const savedGame = readFormGame();
+  if (savedGame.trailerUrl && !parseTrailerUrl(savedGame.trailerUrl)) {
+    showToast('Use a YouTube video link, direct HTTPS MP4/WebM, or a Steam trailer URL.', true);
+    document.querySelector('#game-trailer-url').focus();
+    return;
+  }
   const exists = games.some(game => game.id === savedGame.id);
   const nextGames = exists ? games.map(game => game.id === savedGame.id ? savedGame : game) : [...games, savedGame];
   if (commitGames(nextGames, exists ? 'Game updated.' : 'Game added.')) elements.dialog.close();

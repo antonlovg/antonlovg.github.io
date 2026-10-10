@@ -25,7 +25,7 @@ Steam does not allow browser requests from this site's origin. The optional **Fe
 4. In `app.js`, set `STEAM_PROXY_URL` near the top to that URL, keeping the quotes and omitting a trailing slash.
 5. Push the updated site to GitHub Pages. Steam lookup will then go through the Worker.
 
-The Worker only forwards numeric Steam app IDs to Steam's public appdetails endpoint. It accepts requests from `lovgren.dev`, `www.lovgren.dev`, the GitHub Pages origin, and local-file testing. No Steam API key is required.
+The Worker only forwards numeric Steam app IDs to Steam's public appdetails endpoint. It accepts requests from `lovgren.dev`, `www.lovgren.dev`, and the GitHub Pages origin. Opening the page as `file://` is not supported for Steam lookup because browsers send an opaque origin that the Worker rejects. No Steam API key is required.
 
 ## Your library and backups
 
@@ -39,6 +39,7 @@ Browser storage belongs to that browser and device. It is not shared with other 
 
 - Select **Add game** to create an entry. Only the title is required.
 - Use **Edit** on a card to change its information.
+- Each card has a **Trailer** button. In **Edit**, add the game's Steam Store URL and select **Fetch trailers** to load and choose from its official Steam trailers. The player handles Steam HLS streams with HLS.js, and also accepts YouTube links or direct HTTPS MP4/WebM URLs. Playback stops when the dialog closes. Steam lookup requires the deployed proxy and an allowed published site origin; YouTube embeds need an HTTP(S) page origin, so use the hosted site or localhost rather than opening the HTML as `file://` for playback.
 - Use **Start**, **Mark played**, or **Replay** to move it to the next status.
 - Use **Delete** to remove one game; the site asks before deleting.
 - Search looks through titles, descriptions, genres, tags, and notes. Genre, player-count, and priority filters combine with the selected view.
