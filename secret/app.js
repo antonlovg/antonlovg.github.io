@@ -3,6 +3,7 @@ const PREFERENCES_KEY = 'personal-game-library-preferences-v1';
 const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
 const VALID_THEMES = ['forest', 'ocean', 'ember', 'light'];
 const VALID_SORTS = ['title', 'title-desc', 'priority', 'random'];
+const STEAM_PROXY_URL = 'https://curly-dawn-c08f.karlanton-lovgren.workers.dev';
 const STATUS_LABELS = {
   'to-play': 'To Play',
   'in-progress': 'In Progress',
@@ -482,15 +483,21 @@ async function fetchSteamInfo() {
     showToast('Enter a Steam Store URL containing an app ID first.', true);
     return;
   }
+  if (!STEAM_PROXY_URL) {
+    showToast('Steam lookup needs a deployed proxy. Set STEAM_PROXY_URL in app.js after deploying the Worker.', true);
+    return;
+  }
   const button = document.querySelector('#fetch-steam');
   button.disabled = true;
   button.textContent = 'Fetching…';
   try {
     let response;
     try {
-      response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${match[1]}&cc=se&l=english`);
+      const proxyUrl = new URL('/appdetails', STEAM_PROXY_URL);
+      proxyUrl.searchParams.set('appids', match[1]);
+      response = await fetch(proxyUrl);
     } catch {
-      throw new Error('Could not reach Steam. Check your connection; the browser or network may also be blocking this request.');
+      throw new Error('Could not reach the Steam lookup proxy. Check the proxy URL and your connection.');
     }
     if (!response.ok) throw new Error(`Steam returned HTTP ${response.status}. Try again later.`);
     let result;

@@ -15,6 +15,18 @@ Download or clone the project, then open `index.html` in a modern browser. No in
 
 The site is static. Game changes are saved in the browser and do not require Git commits or repository updates.
 
+## Enable Steam lookup
+
+Steam does not allow browser requests from this site's origin. The optional **Fetch Steam info** feature therefore uses a small Cloudflare Worker as a proxy. The rest of the site remains static, and no changes to Porkbun DNS or the GitHub Pages setup are needed.
+
+1. In the Cloudflare dashboard, open **Workers & Pages**, create a Worker named `steam-appdetails-proxy`, and open its code editor.
+2. Replace the starter code with the contents of [`steam-worker/index.mjs`](steam-worker/index.mjs), then deploy it.
+3. Copy the Worker URL, which looks like `https://steam-appdetails-proxy.<account-subdomain>.workers.dev`.
+4. In `app.js`, set `STEAM_PROXY_URL` near the top to that URL, keeping the quotes and omitting a trailing slash.
+5. Push the updated site to GitHub Pages. Steam lookup will then go through the Worker.
+
+The Worker only forwards numeric Steam app IDs to Steam's public appdetails endpoint. It accepts requests from `lovgren.dev`, `www.lovgren.dev`, the GitHub Pages origin, and local-file testing. No Steam API key is required.
+
 ## Your library and backups
 
 The library is saved automatically in `localStorage` for the website's browser origin. The starter games are added only the first time the app is opened when no library has been saved. Later code updates do not reseed or replace your saved library.
@@ -33,4 +45,4 @@ Browser storage belongs to that browser and device. It is not shared with other 
 - Use **Markdown for Discord** to choose which status groups and details to include, then copy the preview or download it as a Markdown file. The preview warns when it exceeds Discord's 2,000-character message limit.
 - Select **How-to** in the header for in-app steps covering game details, Steam links, cover images, status changes, and backups.
 - Use the sort menu to order games by title, priority, or random order. **Pick a game** suggests a random game from the current view and filters; start it to move it to In Progress. The appearance menu offers Forest dark, Ocean dark, Ember dark, and Soft light themes. Theme and sort choices are saved in browser preferences separately from the game list.
-- A Steam Store URL can be saved manually. **Fetch Steam info** is an optional best-effort lookup; browsers may block it. Steam genres and store categories are kept separate from community tags, and a warning appears before filled-in details are replaced.
+- A Steam Store URL can be saved manually. **Fetch Steam info** uses the optional Worker described above. Steam genres and store categories are kept separate from community tags, and a warning appears before filled-in details are replaced.
