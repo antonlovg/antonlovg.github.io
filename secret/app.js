@@ -93,6 +93,7 @@ let games = [];
 let activeView = 'to-play';
 let toastTimer;
 let steamCategories = [];
+let steamTrailer = { url: '', thumbnail: '' };
 let randomOrder = new Map();
 let suggestedGameId = null;
 
@@ -118,7 +119,7 @@ function makeId() {
 function makeInitialGames() {
   return initialGames.map(([title, genre, notes, status, priority = false, players = '']) => ({
     id: makeId(), title, description: '', genre, tags: '', players,
-    steamUrl: '', coverUrl: '', notes, status, priority, steamCategories: []
+    steamUrl: '', coverUrl: '', notes, status, priority, steamCategories: [], trailerUrl: '', trailerThumbnail: ''
   }));
 }
 
@@ -158,6 +159,8 @@ function validateGameList(value) {
     && VALID_STATUSES.includes(game.status)
     && ['description', 'genre', 'tags', 'players', 'steamUrl', 'coverUrl', 'notes'].every(key => isString(game[key]))
     && typeof game.priority === 'boolean'
+    && (game.trailerUrl === undefined || isString(game.trailerUrl))
+    && (game.trailerThumbnail === undefined || isString(game.trailerThumbnail))
     && (game.steamCategories === undefined || (Array.isArray(game.steamCategories) && game.steamCategories.every(isString))));
 }
 
@@ -174,7 +177,9 @@ function normalizeGame(game) {
     notes: game.notes,
     status: game.status,
     priority: game.priority,
-    steamCategories: game.steamCategories || []
+    steamCategories: game.steamCategories || [],
+    trailerUrl: game.trailerUrl || '',
+    trailerThumbnail: game.trailerThumbnail || ''
   };
 }
 
@@ -367,6 +372,11 @@ function makeCard(game) {
 
   const footer = document.createElement('div');
   footer.className = 'card-footer';
+  if (safeWebUrl(game.trailerUrl)) {
+    const trailerButton = addText(footer, 'button', 'small-button trailer-button', 'Watch trailer');
+    trailerButton.type = 'button';
+    trailerButton.addEventListener('click', () => showGameTrailer(game));
+  }
   const steamUrl = safeWebUrl(game.steamUrl);
   if (steamUrl) {
     const link = addText(footer, 'a', 'steam-link', 'Open Steam ↗');
@@ -526,6 +536,7 @@ function openEditor(game = null) {
   document.querySelector('#game-status').value = game?.status || (activeView === 'all' ? 'to-play' : activeView);
   document.querySelector('#game-priority').checked = game?.priority || false;
   steamCategories = game?.steamCategories ? [...game.steamCategories] : [];
+  steamTrailer = { url: game?.trailerUrl || '', thumbnail: game?.trailerThumbnail || '' };
   elements.dialog.showModal();
   document.querySelector('#game-title').focus();
 }
@@ -544,8 +555,22 @@ function readFormGame() {
     notes: document.querySelector('#game-notes').value.trim(),
     status: document.querySelector('#game-status').value,
     priority: document.querySelector('#game-priority').checked,
-    steamCategories: [...steamCategories]
+    steamCategories: [...steamCategories],
+    trailerUrl: steamTrailer.url,
+    trailerThumbnail: steamTrailer.thumbnail
   };
+}
+
+function showGameTrailer(game) {
+  const trailerUrl = safeWebUrl(game.trailerUrl);
+  if (!trailerUrl) return;
+  const dialog = document.querySelector('#trailer-dialog');
+  const video = document.querySelector('#trailer-video');
+  document.querySelector('#trailer-title').textContent = `${game.title} trailer`;
+  video.poster = safeWebUrl(game.trailerThumbnail);
+  video.src = trailerUrl;
+  dialog.showModal();
+  video.play().catch(() => {});
 }
 
 function deleteGame(game) {
@@ -591,7 +616,13 @@ async function fetchSteamInfo() {
       description: typeof data.short_description === 'string' ? data.short_description : '',
       coverUrl: typeof data.header_image === 'string' ? data.header_image : '',
       genre: Array.isArray(data.genres) ? data.genres.map(item => item.description).filter(Boolean).join(', ') : '',
-      categories: Array.isArray(data.categories) ? data.categories.map(item => item.description).filter(Boolean) : []
+      categories: Array.isArray(data.categories) ? data.categories.map(item => item.description).filter(Boolean) : [],
+      trailerUrl: Array.isArray(data.movies)
+        ? data.movies.map(movie => movie.mp4?.max || movie.mp4?.['480']).find(url => typeof url === 'string' && safeWebUrl(url)) || ''
+        : '',
+      trailerThumbnail: Array.isArray(data.movies)
+        ? data.movies.map(movie => movie.thumbnail).find(url => typeof url === 'string' && safeWebUrl(url)) || ''
+        : ''
     };
     const current = {
       title: document.querySelector('#game-title').value.trim(),
@@ -600,7 +631,8 @@ async function fetchSteamInfo() {
       genre: document.querySelector('#game-genre').value.trim()
     };
     const wouldReplace = Object.keys(current).some(key => current[key] && fetched[key] && current[key] !== fetched[key])
-      || (steamCategories.length > 0 && fetched.categories.length > 0);
+      || (steamCategories.length > 0 && fetched.categories.length > 0)
+      || (steamTrailer.url && fetched.trailerUrl && steamTrailer.url !== fetched.trailerUrl);
     if (wouldReplace && !confirm('Steam has information for fields you have already filled in. Replace those fields with Steam data?')) return;
     for (const key of Object.keys(current)) {
       if (fetched[key] && (!current[key] || wouldReplace)) {
@@ -609,7 +641,10 @@ async function fetchSteamInfo() {
       }
     }
     if (fetched.categories.length && (steamCategories.length === 0 || wouldReplace)) steamCategories = fetched.categories;
-    showToast('Steam info added to the form. Save the game to keep it.');
+    if (fetched.trailerUrl && (!steamTrailer.url || wouldReplace)) {
+      steamTrailer = { url: fetched.trailerUrl, thumbnail: fetched.trailerThumbnail };
+    }
+    showToast(`${fetched.trailerUrl ? 'Steam info and trailer' : 'Steam info'} added to the form. Save the game to keep it.`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Steam lookup failed. Your entered information is unchanged.';
     showToast(`${message} Your entered information is unchanged.`, true);
@@ -754,6 +789,14 @@ document.querySelector('#close-suggestion').addEventListener('click', () => docu
 document.querySelector('#add-button').addEventListener('click', () => openEditor());
 document.querySelector('#close-dialog').addEventListener('click', () => elements.dialog.close());
 document.querySelector('#cancel-dialog').addEventListener('click', () => elements.dialog.close());
+document.querySelector('#close-trailer').addEventListener('click', () => document.querySelector('#trailer-dialog').close());
+document.querySelector('#trailer-dialog').addEventListener('close', () => {
+  const video = document.querySelector('#trailer-video');
+  video.pause();
+  video.removeAttribute('src');
+  video.removeAttribute('poster');
+  video.load();
+});
 document.querySelector('#fetch-steam').addEventListener('click', fetchSteamInfo);
 elements.form.addEventListener('submit', event => {
   event.preventDefault();
