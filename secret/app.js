@@ -135,6 +135,21 @@ function safeWebUrl(value) {
   }
 }
 
+function getGenreCategory(value) {
+  const genre = value.split(/[,/;|]/)[0].trim().toLocaleLowerCase();
+  if (!genre) return '';
+
+  if (['adventure', 'open world', 'story-driven', 'narrative', 'detective', '2d'].includes(genre)) return 'Adventure';
+  if (['action', 'combat', 'shooter', 'sniper', 'stealth', 'soulslike', 'roguelike'].includes(genre)) return 'Action';
+  if (['action rpg', 'rpg'].includes(genre)) return 'RPG';
+  if (['co-op', 'multiplayer'].includes(genre)) return 'Multiplayer';
+  if (['puzzle', 'escape room'].includes(genre)) return 'Puzzle';
+  if (['simulation', 'driving'].includes(genre)) return 'Simulation';
+  if (['survival', 'space survival'].includes(genre)) return 'Survival';
+  if (genre === 'horror') return 'Horror';
+  return 'Other';
+}
+
 function validateGameList(value) {
   if (!Array.isArray(value)) return false;
   return value.every(game => game && typeof game === 'object' && !Array.isArray(game)
@@ -248,7 +263,7 @@ function getVisibleGames() {
 
   return games.filter(game => {
     if (activeView !== 'all' && game.status !== activeView) return false;
-    if (genre && game.genre !== genre) return false;
+    if (genre && getGenreCategory(game.genre) !== genre) return false;
     if (priorityOnly && !game.priority) return false;
     if (players === 'unknown' && game.players) return false;
     if (players && players !== 'unknown') {
@@ -288,7 +303,7 @@ function makeCoverPlaceholder(game) {
   placeholder.setAttribute('role', 'img');
   placeholder.setAttribute('aria-label', `${game.title}, cover art not added`);
   addText(placeholder, 'span', 'cover-placeholder-mark', monogram || 'GL');
-  addText(placeholder, 'span', 'cover-placeholder-caption', game.genre || 'Cover art not added');
+  addText(placeholder, 'span', 'cover-placeholder-caption', getGenreCategory(game.genre) || 'Cover art not added');
   return placeholder;
 }
 
@@ -322,7 +337,8 @@ function makeCard(game) {
   if (game.description) addText(content, 'p', 'card-description', game.description);
 
   const chips = [];
-  if (game.genre) chips.push(game.genre);
+  const genreCategory = getGenreCategory(game.genre);
+  if (genreCategory) chips.push(genreCategory);
   if (game.players) chips.push(`${game.players} ${game.players === '1' ? 'player' : 'players'}`);
   for (const tag of game.tags.split(',').map(item => item.trim()).filter(Boolean)) chips.push(tag);
   if (chips.length) {
@@ -398,7 +414,7 @@ function makeCard(game) {
 
 function renderGenres() {
   const previous = elements.genreFilter.value;
-  const genres = [...new Set(games.map(game => game.genre.trim()).filter(Boolean))]
+  const genres = [...new Set(games.map(game => getGenreCategory(game.genre)).filter(Boolean))]
     .sort((first, second) => first.localeCompare(second));
   elements.genreFilter.replaceChildren(new Option('All genres', ''));
   for (const genre of genres) elements.genreFilter.add(new Option(genre, genre));
