@@ -39,12 +39,12 @@ Use **Export library** to download a JSON backup. Use **Import library** to choo
 
 Browser storage belongs to that browser and device. It is not shared with other people, browsers, or devices. Clearing the browser's site data can delete the library, so regular exports are recommended.
 
-To publish a shared update, export the desired library, replace `shared-library.json` with that export, and push the file to the repository. GitHub Pages publishes it with the site. Visitors select **Get shared update** in **Library tools** to fetch it. The app checks the snapshot and asks before replacing that browser's current library; cancel leaves the current data untouched. The snapshot is public, so do not include private notes or credentials.
+To publish a shared update, export the desired library, replace `shared-library.json` with that export, and push the file to the repository. GitHub Pages publishes it with the site. Visitors select **Get shared update** in **Manage library** to fetch it. The app checks the snapshot and asks before replacing that browser's current library; cancel leaves the current data untouched. The snapshot is public, so do not include private notes or credentials.
 
 ## Manage games
 
 - Select **Add game** to create an entry. Only the title is required.
-- Select **Get shared update** in **Library tools** to replace this browser's library with the latest validated repository snapshot after confirmation.
+- Select **Get shared update** in **Manage library** to replace this browser's library with the latest validated repository snapshot after confirmation.
 - Duplicate titles are blocked regardless of capitalization or extra spaces. If a Steam URL is provided, duplicate Steam app IDs are blocked too. Edit the existing entry instead; imports containing duplicates are rejected without changing the library.
 - Use **Edit** on a card to change its information.
 - Each card has a **Trailer** button. In **Edit**, add the game's Steam Store URL and select **Fetch trailers** to load and choose from its official Steam trailers. The player handles Steam HLS streams with HLS.js, and also accepts YouTube links or direct HTTPS MP4/WebM URLs. Playback stops when the dialog closes. Steam lookup requires the deployed proxy and an allowed published site origin; YouTube embeds need an HTTP(S) page origin, so use the hosted site or localhost rather than opening the HTML as `file://` for playback.
@@ -52,6 +52,6 @@ To publish a shared update, export the desired library, replace `shared-library.
 - Use **Delete** to remove one game; the site asks before deleting.
 - Search looks through titles, descriptions, genres, tags, and notes. Genre, player-count, and priority filters combine with the selected view.
 - Use **Markdown for Discord** to choose which status groups and details to include, then copy the preview or download it as a Markdown file. The preview warns when it exceeds Discord's 2,000-character message limit.
-- Select **How-to** in the header for in-app steps covering game details, Steam links, cover images, status changes, and backups.
+- Select **Help** in the header for in-app steps covering game details, Steam links, cover images, status changes, and backups.
 - Use the sort menu to order games by title, priority, or random order. **Pick a game** suggests a random game from the current view and filters; start it to move it to In Progress. The appearance menu offers Forest dark, Ocean dark, Ember dark, and Soft light themes. Theme and sort choices are saved in browser preferences separately from the game list.
 - A Steam Store URL can be saved manually. **Fetch Steam info** uses the optional Worker described above. Steam genres and store categories are kept separate from community tags, and a warning appears before filled-in details are replaced.

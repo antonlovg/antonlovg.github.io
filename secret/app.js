@@ -2,7 +2,7 @@ const STORAGE_KEY = 'personal-game-library-v1';
 const PREFERENCES_KEY = 'personal-game-library-preferences-v1';
 const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
 const VALID_THEMES = ['forest', 'ocean', 'ember', 'light'];
-const VALID_SORTS = ['title', 'title-desc', 'priority', 'random'];
+const VALID_SORTS = ['title', 'title-desc', 'priority', 'recently-added', 'random'];
 const STEAM_PROXY_URL = 'https://curly-dawn-c08f.karlanton-lovgren.workers.dev';
 const SHARED_LIBRARY_URL = 'shared-library.json';
 const STATUS_LABELS = {
@@ -198,27 +198,27 @@ function validateGameList(value) {
     && isString(game.id) && game.id.length > 0
     && isString(game.title) && game.title.trim().length > 0
     && VALID_STATUSES.includes(game.status)
-    && ['description', 'genre', 'tags', 'players', 'steamUrl', 'coverUrl', 'notes'].every(key => isString(game[key]))
-    && (game.trailerUrl === undefined || isString(game.trailerUrl))
+    && ['description', 'genre', 'tags', 'players', 'steamUrl', 'coverUrl', 'notes'].every(key => game[key] === undefined || game[key] === null || isString(game[key]))
+    && (game.trailerUrl === undefined || game.trailerUrl === null || isString(game.trailerUrl))
     && typeof game.priority === 'boolean'
-    && (game.steamCategories === undefined || (Array.isArray(game.steamCategories) && game.steamCategories.every(isString))));
+    && (game.steamCategories === undefined || game.steamCategories === null || (Array.isArray(game.steamCategories) && game.steamCategories.every(isString))));
 }
 
 function normalizeGame(game) {
   return {
     id: game.id,
-    title: game.title.trim(),
-    description: game.description,
-    genre: game.genre,
-    tags: game.tags,
-    players: game.players,
-    steamUrl: game.steamUrl,
-    trailerUrl: game.trailerUrl || '',
-    coverUrl: game.coverUrl,
-    notes: game.notes,
-    status: game.status,
-    priority: game.priority,
-    steamCategories: game.steamCategories || []
+    title: String(game.title).trim(),
+    description: game.description ?? '',
+    genre: game.genre ?? '',
+    tags: game.tags ?? '',
+    players: game.players ?? '',
+    steamUrl: game.steamUrl ?? '',
+    trailerUrl: game.trailerUrl ?? '',
+    coverUrl: game.coverUrl ?? '',
+    notes: game.notes ?? '',
+    status: VALID_STATUSES.includes(game.status) ? game.status : 'to-play',
+    priority: Boolean(game.priority),
+    steamCategories: Array.isArray(game.steamCategories) ? game.steamCategories.filter(item => isString(item)) : []
   };
 }
 
@@ -340,6 +340,10 @@ function getVisibleGames() {
       return randomOrder.get(first.id) - randomOrder.get(second.id);
     }
     if (sort === 'priority' && first.priority !== second.priority) return first.priority ? -1 : 1;
+    if (sort === 'recently-added') {
+      const positions = new Map(games.map((game, index) => [game.id, index]));
+      return positions.get(second.id) - positions.get(first.id);
+    }
     const result = first.title.localeCompare(second.title);
     return sort === 'title-desc' ? -result : result;
   });
@@ -521,9 +525,16 @@ function clearFilters() {
   render();
 }
 
+function renderBackupTip() {
+  const tip = document.querySelector('#backup-tip');
+  const dismissed = localStorage.getItem('library-backup-tip-dismissed') === 'true';
+  if (tip) tip.hidden = dismissed;
+}
+
 function render() {
   renderGenres();
   renderActiveFilters();
+  renderBackupTip();
   document.querySelectorAll('.view-tab').forEach(tab => {
     const selected = tab.dataset.view === activeView;
     tab.classList.toggle('is-active', selected);
@@ -539,6 +550,7 @@ function render() {
   document.querySelector('#results-count').textContent = `${visible.length} ${visible.length === 1 ? 'game' : 'games'}`;
   elements.grid.replaceChildren(...visible.map(makeCard));
   elements.empty.hidden = visible.length !== 0;
+  document.querySelector('#empty-state-clear').disabled = !elements.search.value && !elements.genreFilter.value && !elements.playersFilter.value && !elements.priorityFilter.checked;
 }
 
 function showRandomSuggestion(previousId = null) {
@@ -1045,6 +1057,17 @@ elements.importInput.addEventListener('change', event => {
 document.querySelector('#reset-button').addEventListener('click', () => {
   if (!confirm(`Delete all ${games.length} games and reset to the original starter library? This cannot be undone. Export a backup first if you want to keep your data.`)) return;
   commitGames(makeInitialGames(), 'Library reset to the original starter games.');
+});
+document.querySelector('#backup-tip-close').addEventListener('click', () => {
+  localStorage.setItem('library-backup-tip-dismissed', 'true');
+  renderBackupTip();
+});
+document.querySelector('#empty-state-clear').addEventListener('click', clearFilters);
+document.addEventListener('click', event => {
+  const detailsToClose = [document.querySelector('.library-tools'), document.querySelector('#filter-menu')];
+  for (const details of detailsToClose) {
+    if (details && details.open && !details.contains(event.target)) details.open = false;
+  }
 });
 
 initializeLibrary();

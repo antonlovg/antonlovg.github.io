@@ -73,6 +73,38 @@ test('rejects an unsupported or malformed shared export', () => {
   assert.throws(() => prepareSharedLibraryReplacement({ schemaVersion: 1, games: {} }), /does not contain a game list/i);
 });
 
+test('legacy entries without optional fields are normalized into safe empty strings', () => {
+  const legacySnapshot = {
+    schemaVersion: 1,
+    exportedAt: '2026-10-10T22:01:44.227Z',
+    games: [{
+      id: 'legacy-id',
+      title: 'Legacy Game',
+      status: 'to-play',
+      priority: false,
+      steamCategories: ['Co-op']
+    }]
+  };
+
+  const replacement = prepareSharedLibraryReplacement(legacySnapshot);
+
+  assert.deepEqual(replacement[0], {
+    id: 'legacy-id',
+    title: 'Legacy Game',
+    description: '',
+    genre: '',
+    tags: '',
+    players: '',
+    steamUrl: '',
+    trailerUrl: '',
+    coverUrl: '',
+    notes: '',
+    status: 'to-play',
+    priority: false,
+    steamCategories: ['Co-op']
+  });
+});
+
 test('rejects duplicate game IDs, normalized titles, and Steam app IDs', () => {
   assert.throws(() => prepareSharedLibraryReplacement({
     ...snapshot,

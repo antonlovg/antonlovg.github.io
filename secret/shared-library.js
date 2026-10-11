@@ -45,17 +45,28 @@
       ids.add(game.id);
       titles.add(title);
 
-      const steamAppId = getSteamAppId(game.steamUrl || '');
+      const normalizedGame = {
+        ...game,
+        description: typeof game.description === 'string' ? game.description : '',
+        genre: typeof game.genre === 'string' ? game.genre : '',
+        tags: typeof game.tags === 'string' ? game.tags : '',
+        players: typeof game.players === 'string' ? game.players : '',
+        steamUrl: typeof game.steamUrl === 'string' ? game.steamUrl : '',
+        trailerUrl: typeof game.trailerUrl === 'string' ? game.trailerUrl : '',
+        coverUrl: typeof game.coverUrl === 'string' ? game.coverUrl : '',
+        notes: typeof game.notes === 'string' ? game.notes : '',
+        status: game.status === 'in-progress' || game.status === 'played' || game.status === 'to-play' ? game.status : 'to-play',
+        priority: Boolean(game.priority),
+        steamCategories: Array.isArray(game.steamCategories) ? game.steamCategories.filter(item => typeof item === 'string') : []
+      };
+
+      const steamAppId = getSteamAppId(normalizedGame.steamUrl);
       if (steamAppId && steamAppIds.has(steamAppId)) {
         throw new Error(`The shared library contains duplicate Steam app ${steamAppId}. No data was changed.`);
       }
       if (steamAppId) steamAppIds.add(steamAppId);
 
-      return {
-        ...game,
-        trailerUrl: game.trailerUrl || '',
-        steamCategories: Array.isArray(game.steamCategories) ? [...game.steamCategories] : []
-      };
+      return normalizedGame;
     });
 
     return games;
