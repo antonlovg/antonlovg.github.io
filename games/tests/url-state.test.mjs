@@ -6,13 +6,14 @@ const { parse, build, sameState } = urlState;
 const BASE = 'https://lovgren.dev/games/';
 
 test('parses a full shareable link', () => {
-  assert.deepEqual(parse(`${BASE}?q=portal&genre=Puzzle&players=2&priority=1#in-progress`), {
-    view: 'in-progress', q: 'portal', genre: 'Puzzle', players: '2', priority: true
+  assert.deepEqual(parse(`${BASE}?q=portal&genre=Puzzle&players=2&priority=1&sale=1#in-progress`), {
+    view: 'in-progress', q: 'portal', genre: 'Puzzle', players: '2', priority: true, sale: true
   });
 });
 
 test('defaults when nothing is set, and keeps old #view links working', () => {
-  assert.deepEqual(parse(BASE), { view: 'to-play', q: '', genre: '', players: '', priority: false });
+  assert.deepEqual(parse(BASE), { view: 'to-play', q: '', genre: '', players: '', priority: false, sale: false });
+  assert.equal(parse(`${BASE}?sale=yes`).sale, false);
   assert.equal(parse(`${BASE}#played`).view, 'played');
   assert.equal(parse(`${BASE}#all`).view, 'all');
 });
@@ -32,9 +33,9 @@ test('rejects unknown or hostile values', () => {
 
 test('builds compact URLs and round-trips', () => {
   assert.equal(build(BASE, { view: 'to-play', q: '', genre: '', players: '', priority: false }), '/games/');
-  const state = { view: 'in-progress', q: 'it takes two', genre: 'Puzzle', players: '2', priority: true };
+  const state = { view: 'in-progress', q: 'it takes two', genre: 'Puzzle', players: '2', priority: true, sale: true };
   const href = build(BASE, state);
-  assert.equal(href, '/games/?q=it+takes+two&genre=Puzzle&players=2&priority=1#in-progress');
+  assert.equal(href, '/games/?q=it+takes+two&genre=Puzzle&players=2&priority=1&sale=1#in-progress');
   assert.ok(sameState(parse(new URL(href, BASE).href), state));
 });
 

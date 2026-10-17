@@ -7,11 +7,13 @@ Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions p
 | `/` | Homepage: live pipeline panel, now playing, projects, terminal (`index.html`, `style.css`, `home.js`) |
 | `/privacy/`, `/cookies/` | Privacy and cookie policies (share `style.css`) |
 | `/games/` | Shared game library, see [`games/README.md`](games/README.md) |
+| `/ops/`, `/status/`, `/changelog/` | DORA metrics, deploys, last-run replay, architecture; hourly uptime; changelog + RSS. Templates filled at build time |
 | `/wc2026/` | World Cup 2026 group-stage schedule in CEST (archive) |
 | `/secret/` | Redirect to `/games/` (old address) |
 | `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`), favicon, self-hosted fonts and the social preview image |
 | `404.html` | Not-found page |
-| `scripts/` | Build and audit scripts used by the pipeline (not deployed) |
+| `scripts/` | Build, audit, uptime and price scripts used by the workflows (not deployed) |
+| `status/incidents/` | Optional incident notes for the status page (not deployed) |
 
 ## Shared shell
 
@@ -28,10 +30,21 @@ The header markup is repeated in each page. `tests/site-pages.test.mjs` checks t
 
 `.github/workflows/pipeline.yml` runs on every push and pull request:
 
-1. **Test**: unit tests (shared library, URL state, page consistency and security rules; also validates `games/shared-library.json`) and a syntax check of all scripts.
+1. **Test**: unit tests (shared library, URL state, wheel, shell, games, Minesweeper, DORA/uptime/changelog maths, HTML escaping, page consistency and security rules; also validates `games/shared-library.json`) and a syntax check of all scripts.
 2. **Build**: `scripts/build-site.mjs` copies only git-tracked files into `_site/`, so ignored local files can never be deployed. It also writes `now-playing.json` (the in-progress games, with cover URLs on Steam's image CDN) and a provisional `status.json`.
-3. **Audit**: `scripts/audit-site.mjs` serves `_site/`, runs axe-core (WCAG 2.1 AA) on every page, counts cookies and third-party requests, and runs Lighthouse on the homepage. Results go into `status.json`, which the homepage's pipeline panel shows. **Any accessibility violation, cookie, or third-party request on the homepage, policy, 404 or World Cup pages fails the run and blocks the deploy.** The only allowed exception is images from `*.steamstatic.com` on the homepage (the “Now playing” covers), which the homepage's CSP also limits to.
-4. **Deploy**: pushes to `main` publish `_site/` with GitHub Pages. Pull requests stop after the audit.
+3. **Prices**: `scripts/fetch-prices.mjs` fetches Steam prices in euro for the game library into `games/prices.json`. Visitors never contact Steam for prices; if Steam is unreachable the build continues without them.
+4. **Audit**: `scripts/audit-site.mjs` serves `_site/`, runs axe-core (WCAG 2.1 AA) on every page, counts cookies and third-party requests, and runs Lighthouse on the homepage. Results go into `status.json`, which the homepage's pipeline panel shows. **Any accessibility violation, cookie, or third-party request on the homepage, policy, 404 or World Cup pages fails the run and blocks the deploy.** The only allowed exception is images from `*.steamstatic.com` on the homepage (the “Now playing” covers), which the homepage's CSP also limits to.
+5. **Deploy**: pushes to `main` publish `_site/` with GitHub Pages. Pull requests stop after the audit.
+
+The build step also runs `scripts/build-ops.mjs`, which fills the `/ops`, `/status` and `/changelog` templates (between `<!-- build:name -->` markers) from the git history, this workflow's run history (via the GitHub API) and the uptime data. All of it is HTML-escaped, and every source may be missing without breaking the build.
+
+## Uptime monitor
+
+`.github/workflows/uptime.yml` runs every hour: `scripts/check-uptime.mjs` checks the homepage (must contain the site header), the game library's data (must parse) and the Steam proxy (must return real game data). Results are kept for 90 days in `uptime.json` on the **`uptime-data`** branch, which is force-pushed as a single commit so history doesn't grow. The monitor then starts the pipeline to rebuild `/status`. DORA metrics count only pushes, so these refreshes don't skew them.
+
+To publish a note about an incident, add `status/incidents/YYYY-MM-DD-short-name.md` with a `# Title` line and plain paragraphs; it appears on the status page after the next deploy.
+
+GitHub pauses scheduled workflows in repositories with no activity for 60 days. If the status page stops updating, re-enable the workflow under **Actions → Uptime**.
 
 One-time setup: in the repository on GitHub, open **Settings → Pages** and set **Source** to **GitHub Actions**. Until then the old branch deploy keeps serving the repository as-is, and the homepage panel shows “Awaiting first run”.
 
@@ -47,10 +60,11 @@ python -m http.server 8000 --directory _site
 
 Then open <http://localhost:8000/>. For a quick look without the pipeline, serve the repository root instead; the homepage falls back to reading the game library directly, without covers. The audit needs Chrome (set `CHROME_PATH` if it isn't found) and `--lighthouse` downloads Lighthouse with `npx`.
 
-## Homepage extras
+## Terminal and games
 
-- **Terminal**: press <kbd>Ctrl</kbd>+<kbd>K</kbd> (or <kbd>/</kbd>), or use the button in the header. Try `help`, `status` and `playing`.
-- **Easter egg**: type `win98` in the terminal, or enter the Konami code (↑ ↑ ↓ ↓ ← → ← → B A).
+- **lovsh**: press <kbd>Ctrl</kbd>+<kbd>K</kbd> (or <kbd>/</kbd> on pages without a search box), or use the button in the header. It's a small shell over a virtual file system: `ls`, `cd`, `cat`, `tree`, `open`, pipes (`log | grep Fix`, `ls -a | wc -l`), tab completion, `man`, `history`, `neofetch`, `status`, `uptime`, `replay` (the last real pipeline run) and `log`. It loads only when first opened (`assets/shell-core.js`, `assets/terminal-games.js`, `assets/terminal.js`).
+- **Games**: `snake`, `adventure` (a tiny text adventure) and `minesweeper`.
+- **Windows 98 easter egg**: `win98`, the Konami code (↑ ↑ ↓ ↓ ← → ← → B A), or `/#win98`. Minesweeper is on its desktop (`/#minesweeper` opens it directly).
 
 ## Privacy rules for this repo
 

@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'personal-game-library-v1';
 const PREFERENCES_KEY = 'personal-game-library-preferences-v1';
 const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
-const VALID_SORTS = ['title', 'title-desc', 'priority', 'recently-added', 'random'];
+const VALID_SORTS = ['title', 'title-desc', 'priority', 'recently-added', 'price', 'random'];
 const STEAM_PROXY_URL = 'https://curly-dawn-c08f.karlanton-lovgren.workers.dev';
 const SHARED_LIBRARY_URL = 'shared-library.json';
 const GITHUB_REPO = 'antonlovg/antonlovg.github.io';
@@ -123,6 +123,7 @@ const elements = {
   genreFilter: document.querySelector('#genre-filter'),
   playersFilter: document.querySelector('#players-filter'),
   priorityFilter: document.querySelector('#priority-filter'),
+  saleFilter: document.querySelector('#sale-filter'),
   activeFilters: document.querySelector('#active-filters'),
   filterCount: document.querySelector('#filter-count')
 };
@@ -447,6 +448,8 @@ function animatedRender() {
   } catch {
     transition = document.startViewTransition(render);
   }
+  // A newer transition skips this one; that's expected, so the rejection is handled here.
+  transition.ready.catch(() => {});
   transition.finished.finally(() => {
     transitionIds = new Set();
     for (const card of elements.grid.querySelectorAll('.game-card')) {
@@ -473,13 +476,60 @@ function makeSkeletonCard() {
   return card;
 }
 
+// ---------- Steam prices (EUR), fetched by the pipeline into prices.json ----------
+
+let prices = new Map();
+let pricesFetchedAt = null;
+const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
+const formatEuro = cents => euro.format(cents / 100);
+
+function priceFor(game) {
+  const id = getSteamAppId(game.steamUrl);
+  return id ? prices.get(id) : undefined;
+}
+
+async function loadPrices() {
+  try {
+    const response = await fetch('prices.json', { cache: 'no-cache', credentials: 'same-origin' });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (data?.currency !== 'EUR' || !data.prices || typeof data.prices !== 'object') return;
+    prices = new Map(Object.entries(data.prices).filter(([id, price]) => /^\d{1,10}$/.test(id)
+      && Number.isInteger(price?.final) && Number.isInteger(price?.initial) && price.final >= 0
+      && Number.isInteger(price.discount) && price.discount >= 0 && price.discount < 100));
+    pricesFetchedAt = Number.isNaN(Date.parse(data.fetchedAt)) ? null : data.fetchedAt;
+    render();
+  } catch {
+    // No prices in local previews or if the build couldn't reach Steam.
+  }
+}
+
+function makePriceTag(price) {
+  const tag = document.createElement('p');
+  tag.className = `price-tag${price.discount > 0 ? ' is-sale' : ''}`;
+  const visual = document.createElement('span');
+  visual.setAttribute('aria-hidden', 'true');
+  if (price.discount > 0) {
+    addText(visual, 'span', 'sale-badge', `−${price.discount}%`);
+    addText(visual, 's', 'price-was', formatEuro(price.initial));
+  }
+  addText(visual, 'span', 'price-now', price.final === 0 ? 'Free' : formatEuro(price.final));
+  tag.append(visual);
+  addText(tag, 'span', 'sr-only', price.discount > 0
+    ? `On sale: ${formatEuro(price.final)}, ${price.discount}% off (was ${formatEuro(price.initial)})`
+    : `Price: ${price.final === 0 ? 'free' : formatEuro(price.final)}`);
+  return tag;
+}
+
 function getVisibleGames() {
   const query = elements.search.value.trim().toLocaleLowerCase();
   const genre = elements.genreFilter.value;
   const players = elements.playersFilter.value;
   const priorityOnly = elements.priorityFilter.checked;
+  const saleOnly = elements.saleFilter.checked;
 
   return games.filter(game => {
+    if (saleOnly && !(priceFor(game)?.discount > 0)) return false;
     if (activeView !== 'all' && game.status !== activeView) return false;
     if (genre && getGenreCategory(game.genre) !== genre) return false;
     if (priorityOnly && !game.priority) return false;
@@ -500,6 +550,12 @@ function getVisibleGames() {
       return randomOrder.get(first.id) - randomOrder.get(second.id);
     }
     if (sort === 'priority' && first.priority !== second.priority) return first.priority ? -1 : 1;
+    if (sort === 'price') {
+      // Cheapest first; games without a Steam price go last.
+      const a = priceFor(first)?.final ?? Infinity;
+      const b = priceFor(second)?.final ?? Infinity;
+      if (a !== b) return a - b;
+    }
     if (sort === 'recently-added') {
       const positions = new Map(games.map((game, index) => [game.id, index]));
       return positions.get(second.id) - positions.get(first.id);
@@ -596,6 +652,8 @@ function makeCard(game) {
     priority.prepend(makeIcon('star'));
   }
   cover.append(badges);
+  const price = priceFor(game);
+  if (price) cover.append(makePriceTag(price));
   const trailerButton = makeButton('cover-play trailer-button', { icon: 'play', name: `Watch ${game.title} trailer` });
   trailerButton.addEventListener('click', () => openTrailer(game));
   cover.append(trailerButton);
@@ -716,6 +774,7 @@ function renderActiveFilters() {
   if (elements.genreFilter.value) filters.push({ label: `Genre: ${elements.genreFilter.value}`, clear: () => { elements.genreFilter.value = ''; } });
   if (elements.playersFilter.value) filters.push({ label: playerLabels[elements.playersFilter.value], clear: () => { elements.playersFilter.value = ''; } });
   if (elements.priorityFilter.checked) filters.push({ label: 'Priority only', clear: () => { elements.priorityFilter.checked = false; } });
+  if (elements.saleFilter.checked) filters.push({ label: 'On sale', clear: () => { elements.saleFilter.checked = false; } });
 
   elements.activeFilters.replaceChildren();
   elements.activeFilters.hidden = filters.length === 0;
@@ -742,6 +801,7 @@ function clearFilters() {
   elements.genreFilter.value = '';
   elements.playersFilter.value = '';
   elements.priorityFilter.checked = false;
+  elements.saleFilter.checked = false;
   pendingGenre = '';
   animatedRender();
 }
@@ -773,7 +833,7 @@ function render() {
   const inProgress = games.filter(game => game.status === 'in-progress').length;
   document.querySelector('#library-count').textContent = isLoadingLibrary
     ? 'Loading the shared library…'
-    : `${games.length} ${games.length === 1 ? 'game' : 'games'} · ${inProgress} in progress`;
+    : `${games.length} ${games.length === 1 ? 'game' : 'games'} · ${inProgress} in progress${prices.size ? ` · ${games.filter(game => priceFor(game)?.discount > 0).length} on sale` : ''}`;
   document.querySelector('#view-heading').textContent = activeView === 'all' ? 'All Games' : STATUS_LABELS[activeView];
   const visible = getVisibleGames();
   document.querySelector('#results-count').textContent = isLoadingLibrary
@@ -784,14 +844,31 @@ function render() {
   elements.grid.replaceChildren(...(isLoadingLibrary ? Array.from({ length: 8 }, makeSkeletonCard) : visible.map(makeCard)));
   elements.empty.hidden = isLoadingLibrary || visible.length !== 0;
   if (!isLoadingLibrary && !pendingGenre) syncUrl();
-  document.querySelector('#empty-state-clear').disabled = !elements.search.value && !elements.genreFilter.value && !elements.playersFilter.value && !elements.priorityFilter.checked;
+  document.querySelector('#empty-state-clear').disabled = !elements.search.value && !elements.genreFilter.value && !elements.playersFilter.value && !elements.priorityFilter.checked && !elements.saleFilter.checked;
+  renderPriceNote();
 }
 
-function showRandomSuggestion(previousId = null) {
+function renderPriceNote() {
+  const note = document.querySelector('#prices-note');
+  if (!pricesFetchedAt || !prices.size) { note.hidden = true; return; }
+  const seconds = (Date.parse(pricesFetchedAt) - Date.now()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  const [unit, size] = [['day', 86400], ['hour', 3600], ['minute', 60]].find(([, value]) => Math.abs(seconds) >= value) || ['second', 1];
+  note.textContent = `Prices in euro from the Steam store, updated ${size === 1 ? 'just now' : rtf.format(Math.round(seconds / size), unit)}.`;
+  note.hidden = false;
+}
+
+let wheel = null;
+let spinning = false;
+
+async function showRandomSuggestion(previousId = null) {
+  if (spinning) return;
   const candidates = getVisibleGames();
   const result = document.querySelector('#suggestion-result');
+  const wheelArea = document.querySelector('#suggestion-wheel');
   result.replaceChildren();
   if (!candidates.length) {
+    wheelArea.hidden = true;
     suggestedGameId = null;
     document.querySelector('#suggestion-title').textContent = 'No games to choose from';
     addText(result, 'p', 'suggestion-description', 'Adjust the current view or filters, then try again.');
@@ -802,6 +879,28 @@ function showRandomSuggestion(previousId = null) {
   const available = candidates.filter(game => game.id !== previousId);
   const picked = (available.length ? available : candidates)[Math.floor(Math.random() * (available.length || candidates.length))];
   suggestedGameId = picked.id;
+  const startButton = document.querySelector('#start-suggested-game');
+  const anotherButton = document.querySelector('#suggest-another');
+
+  // Spin the wheel (a sample of up to 12 of the matching games, always including the pick).
+  if (candidates.length > 1 && globalThis.GameWheel) {
+    spinning = true;
+    startButton.disabled = true;
+    anotherButton.disabled = true;
+    document.querySelector('#suggestion-title').textContent = 'Spinning the wheel…';
+    addText(result, 'p', 'sr-only', 'Spinning the wheel…');
+    wheelArea.hidden = false;
+    wheel ||= GameWheel.create(wheelArea);
+    const { items, winner } = GameWheel.sample(candidates, candidates.indexOf(picked));
+    try {
+      await wheel.spin(items.map(game => game.title), winner, { reducedMotion: prefersReducedMotion.matches });
+      if (!prefersReducedMotion.matches) await new Promise(resolve => setTimeout(resolve, 450));
+    } finally {
+      spinning = false;
+    }
+    result.replaceChildren();
+  }
+  wheelArea.hidden = true;
   document.querySelector('#suggestion-title').textContent = 'What should you play?';
   const art = document.createElement('div');
   art.className = 'suggestion-art';
@@ -826,13 +925,14 @@ function showRandomSuggestion(previousId = null) {
   }
   const details = [picked.genre, playersLabel(picked.players), STATUS_LABELS[picked.status]].filter(Boolean).join(' · ');
   if (details) addText(text, 'p', 'suggestion-meta', details);
+  const pickedPrice = priceFor(picked);
+  if (pickedPrice) text.append(makePriceTag(pickedPrice));
   if (picked.description) addText(text, 'p', 'suggestion-description', picked.description);
   else if (picked.notes) addText(text, 'p', 'suggestion-description', picked.notes);
   result.append(text);
-  const startButton = document.querySelector('#start-suggested-game');
   startButton.disabled = picked.status === 'in-progress';
   startButton.textContent = picked.status === 'in-progress' ? 'Already in progress' : 'Start this game';
-  document.querySelector('#suggest-another').disabled = candidates.length < 2;
+  anotherButton.disabled = candidates.length < 2;
 }
 
 function startSuggestedGame() {
@@ -1443,6 +1543,7 @@ function readUrlState() {
   elements.search.value = state.q;
   elements.playersFilter.value = state.players;
   elements.priorityFilter.checked = state.priority;
+  elements.saleFilter.checked = state.sale;
   pendingGenre = state.genre;
 }
 
@@ -1452,7 +1553,8 @@ function currentUrlState() {
     q: elements.search.value.trim(),
     genre: pendingGenre || elements.genreFilter.value,
     players: elements.playersFilter.value,
-    priority: elements.priorityFilter.checked
+    priority: elements.priorityFilter.checked,
+    sale: elements.saleFilter.checked
   };
 }
 
@@ -1477,6 +1579,7 @@ elements.search.addEventListener('input', render);
 elements.genreFilter.addEventListener('change', () => { pendingGenre = ''; animatedRender(); });
 elements.playersFilter.addEventListener('change', animatedRender);
 elements.priorityFilter.addEventListener('change', animatedRender);
+elements.saleFilter.addEventListener('change', animatedRender);
 document.querySelector('#sort-select').addEventListener('change', () => {
   const sort = document.querySelector('#sort-select').value;
   if (sort === 'random') {
@@ -1491,6 +1594,7 @@ document.querySelector('#pick-game-button').addEventListener('click', () => {
   document.querySelector('#suggestion-dialog').showModal();
 });
 document.querySelector('#suggest-another').addEventListener('click', () => showRandomSuggestion(suggestedGameId));
+// Closing during a spin is fine: the pick still finishes in the background without stealing focus.
 document.querySelector('#start-suggested-game').addEventListener('click', startSuggestedGame);
 document.querySelector('#close-suggestion').addEventListener('click', () => document.querySelector('#suggestion-dialog').close());
 document.querySelector('#add-button').addEventListener('click', () => openEditor());
@@ -1630,6 +1734,7 @@ function showGame(id) {
   elements.genreFilter.value = '';
   elements.playersFilter.value = '';
   elements.priorityFilter.checked = false;
+  elements.saleFilter.checked = false;
   pendingGenre = '';
   elements.search.value = game.title;
   syncUrl(true);
@@ -1643,6 +1748,7 @@ function showGame(id) {
 }
 
 syncThemeSelect();
+loadPrices();
 if (initializeLibrary()) {
   render();
   checkForSharedUpdate();

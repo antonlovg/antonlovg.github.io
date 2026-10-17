@@ -26,6 +26,7 @@
         <ul>
           <li><a href="/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a></li>
           <li><a href="/games/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 7.5h10a5 5 0 0 1 4.8 6.4l-1 3.3a2.4 2.4 0 0 1-4.2.9L14.7 15.5H9.3l-1.9 2.6a2.4 2.4 0 0 1-4.2-.9l-1-3.3A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/></svg>Games</a></li>
+          <li><a href="/ops/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Ops</a></li>
           <li><a href="/wc2026/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>World Cup</a></li>
         </ul>
       </nav>
@@ -58,7 +59,7 @@
       <p>The game library saves your games and settings in your browser's <em>local storage</em> so they're still there next time. This data never leaves your device unless you export it yourself, and you can delete it at any time by clearing this site's data in your browser. The <a href="/cookies/">cookie policy</a> lists every item that may be stored.</p>
 
       <h2>Requests to other services</h2>
-      <p>This page, the cookie policy and the World Cup page load nothing from other servers, and fonts are hosted on this site. The homepage loads only the game cover pictures in “Now playing” from Steam's image servers. An automated check blocks any update that would make these pages contact any other server. A few features in the game library also contact other services. Each of the services below receives your IP address when it's used:</p>
+      <p>This page, the cookie policy, the World Cup page and the ops, status and changelog pages load nothing from other servers, and fonts are hosted on this site. The homepage loads only the game cover pictures in “Now playing” from Steam's image servers. An automated check blocks any update that would make these pages contact any other server. A few features in the game library also contact other services. Each of the services below receives your IP address when it's used:</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -86,6 +87,11 @@
               <td>The video stream request</td>
             </tr>
             <tr>
+              <td>Steam store prices</td>
+              <td>Never from your browser: the site’s build fetches prices in euro once per deploy</td>
+              <td>Nothing about you</td>
+            </tr>
+            <tr>
               <td>YouTube (privacy-enhanced mode)</td>
               <td>Only after you choose to load a YouTube trailer</td>
               <td>The video request; YouTube may store data in your browser while it plays</td>
@@ -94,6 +100,9 @@
         </table>
       </div>
       <p>Each of these services handles that data under its own privacy policy.</p>
+
+      <h2>Uptime monitoring</h2>
+      <p>An automated job checks once an hour that the site and its Steam lookup helper respond, and publishes the results on the <a href="/status/">status page</a>. It only measures the site itself and collects nothing about visitors.</p>
 
       <h2>Sharing and transfers</h2>
       <p>I don't sell, rent or share personal data. Because GitHub and the services above are global companies, data they receive may be processed outside the EU/EEA under their own safeguards.</p>

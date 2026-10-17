@@ -125,8 +125,12 @@
     win98.querySelectorAll('.w98-window').forEach(other => other.classList.toggle('is-front', other === windowEl));
   }
 
+  let minesweeper = null;
+
   function openWindow(id) {
     const windowEl = $(`#${id}`);
+    // Minesweeper is set up the first time its window opens.
+    if (id === 'w98-mines' && !minesweeper && globalThis.Minesweeper) minesweeper = Minesweeper.mount($('#minesweeper-board'));
     windowEl.hidden = false;
     bringToFront(windowEl);
     windowEl.querySelector('.w98-button, .w98-control')?.focus();
@@ -159,7 +163,8 @@
 
   win98.addEventListener('close', () => {
     clearInterval(clockTimer);
-    if (location.hash === '#win98') history.replaceState(null, '', location.pathname + location.search);
+    minesweeper?.stop();
+    if (['#win98', '#minesweeper'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
   });
   win98.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !startMenu.hidden) {
@@ -205,8 +210,16 @@
   }
 
   // Opened by the terminal's "win98" command, the Konami code, or a /#win98 link from another page.
+  function openMinesweeperWindow() {
+    openWin98();
+    openWindow('w98-mines');
+    $('#minesweeper-board .ms-cell')?.focus();
+  }
+
   document.addEventListener('site:win98', openWin98);
+  document.addEventListener('site:minesweeper', openMinesweeperWindow);
   if (location.hash === '#win98') openWin98();
+  if (location.hash === '#minesweeper') openMinesweeperWindow();
 
   const hint = $('#footer-hint');
   hint.hidden = matchMedia('(pointer: coarse)').matches;

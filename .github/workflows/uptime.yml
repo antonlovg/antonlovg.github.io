@@ -1,0 +1,60 @@
+# Hourly uptime monitor for lovgren.dev.
+# Checks the website, the game library and the Steam proxy, stores the results as a single commit
+# on the "uptime-data" branch (force-pushed, so history doesn't grow), then starts the pipeline so
+# the /status page is rebuilt with fresh data. A failed check is recorded, not treated as an error.
+name: Uptime
+
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # push to the uptime-data branch only
+      actions: write # start the pipeline to refresh /status
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Load previous results
+        run: |
+          if git fetch --no-tags --depth=1 origin uptime-data:refs/remotes/origin/uptime-data; then
+            git show origin/uptime-data:uptime.json > uptime.json
+          else
+            echo "Starting a new uptime history."
+          fi
+
+      - name: Check the site
+        run: node scripts/check-uptime.mjs uptime.json
+
+      - name: Save results to the uptime-data branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          data_dir="$(mktemp -d)"
+          cp uptime.json "$data_dir/"
+          cd "$data_dir"
+          git init -q -b uptime-data
+          git add uptime.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Uptime data"
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" uptime-data
+
+      - name: Refresh the status page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pipeline.yml --ref main

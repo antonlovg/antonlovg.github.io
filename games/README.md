@@ -69,9 +69,15 @@ The snapshot is public, including personal notes, so don't put anything private 
 - Select **Help** in the header for in-app steps covering game details, Steam links, cover images, status changes, and backups.
 - Use the sort menu to order games by title, priority, or random order. **Pick a game** suggests a random game from the current view and filters; start it to move it to In Progress. The appearance menu offers Midnight, Ocean and Ember (dark) and Daylight (light) themes; all meet WCAG AA contrast. Theme and sort choices are saved in browser preferences separately from the game list.
 - A Steam Store URL can be saved manually. **Fetch Steam info** uses the optional Worker described above. Steam genres and store categories are kept separate from community tags, and a warning appears before filled-in details are replaced.
+## Prices and picking a game
+
+- Cards show the current Steam price in euro (Swedish store) and a sale badge with the original price when discounted. Prices come from `prices.json`, which the pipeline fetches at build time; local previews simply show no prices.
+- **On sale only** (in Filters) and **Price: low to high** (in Sort) use those prices. The subtitle counts how many games are on sale.
+- **Pick a game** spins a wheel of up to 12 games from the current view and filters (the pick is made first, uniformly at random; the wheel then lands on it). Reduced-motion settings skip the animation.
+
 ## Links and shortcuts
 
-- The view and filters are kept in the address, so links can be shared and Back/Forward work: `/games/?q=portal&genre=Adventure&players=2&priority=1#in-progress`. Values from the address are validated in `url-state.js` (tested in `tests/url-state.test.mjs`) and only ever written into form controls.
+- The view and filters are kept in the address, so links can be shared and Back/Forward work: `/games/?q=portal&genre=Adventure&players=2&priority=1&sale=1#in-progress`. Values from the address are validated in `url-state.js` (tested in `tests/url-state.test.mjs`) and only ever written into form controls.
 - <kbd>/</kbd> focuses the search. <kbd>Ctrl</kbd>+<kbd>K</kbd> opens the sitewide terminal, which also finds games by title.
 - Starting, finishing, deleting, importing and resetting can be undone from the notification. Bulk replacements ask first in a styled dialog instead of the browser's `confirm()`.
 - If the browser blocks site storage, the library still loads and works for the visit, and says that changes won't be kept.

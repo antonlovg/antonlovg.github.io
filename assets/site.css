@@ -348,6 +348,23 @@ html:active-view-transition-type(page)::view-transition-new(root) { animation: s
 .term-suggestions li span { overflow: hidden; color: var(--term-dim); font-size: .85em; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .term-suggestions li .term-group { margin-right: auto; padding: 0 6px; border-radius: 5px; background: rgb(165 168 255 / 14%); color: var(--term-accent); font-size: .75em; line-height: 1.7; }
 .term-suggestions li[aria-selected="true"] { background: var(--term-selected); }
+.term-line.cmd-plain::before { color: var(--term-accent); content: '> '; }
+.term-game {
+  margin: 10px 0 4px;
+  color: var(--term-ok);
+  font: 600 14px/1.15 var(--shell-mono);
+  letter-spacing: 0.04em;
+  white-space: pre;
+  overflow-x: auto;
+}
+.term-pad { display: none; gap: 6px; margin: 8px 0; grid-template-columns: repeat(3, 44px) 1fr; grid-template-areas: ". up . quit" "left down right quit"; }
+.term-pad button { min-height: 44px; border: 1px solid var(--term-line); border-radius: 10px; background: var(--term-surface); color: var(--term-text); font: 700 16px var(--shell-mono); cursor: pointer; }
+.term-pad .pad-up { grid-area: up; }
+.term-pad .pad-left { grid-area: left; }
+.term-pad .pad-down { grid-area: down; }
+.term-pad .pad-right { grid-area: right; }
+.term-pad .pad-quit { grid-area: quit; justify-self: end; padding: 0 16px; font-size: 13px; }
+@media (pointer: coarse) { .term-pad { display: grid; } }
 .term-hint { flex: none; margin: 0; padding: 9px 18px 11px; border-top: 1px solid var(--term-line); color: var(--term-dim); font: 500 12.5px var(--shell-mono); }
 .term-hint kbd { padding: 1px 5px; border: 1px solid var(--term-line); border-radius: 5px; background: var(--term-surface); color: var(--term-text); font: 600 11px var(--shell-mono); }
 

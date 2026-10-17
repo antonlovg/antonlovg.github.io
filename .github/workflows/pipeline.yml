@@ -4,12 +4,15 @@
 # homepage shows as the live pipeline panel. Requires Settings → Pages → Source: "GitHub Actions".
 # Actions are pinned to full commit SHAs (supply-chain safety); Dependabot keeps them current.
 # The runner image is pinned too, so an OS migration can't silently change the audit browser.
+# The build also generates /ops (DORA metrics from this workflow's own run history), /status
+# (from the hourly uptime monitor's data branch), /changelog (from git history) and Steam prices.
 name: Pipeline
 
 on:
   push:
     branches: [main]
   pull_request:
+  # Also started by the hourly uptime monitor to refresh /status. DORA metrics only count pushes.
   workflow_dispatch:
 
 permissions:
@@ -18,10 +21,18 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read # pipeline run history for the DORA metrics
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # full history for the changelog and lead times
+
+      - name: Load uptime data
+        run: git fetch --no-tags --depth=1 origin uptime-data:refs/remotes/origin/uptime-data || echo "No uptime data yet."
+
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -33,12 +44,16 @@ jobs:
         run: node --test --test-reporter=tap tests/*.test.mjs games/tests/*.test.mjs | tee test-report.tap
 
       - name: JavaScript syntax
-        run: for file in home.js assets/*.js games/app.js games/shared-library.js games/url-state.js scripts/*.mjs; do node --check "$file"; done
+        run: for file in home.js assets/*.js games/*.js ops/*.js scripts/*.mjs scripts/lib/*.mjs; do node --check "$file"; done
 
       - name: Build site
         run: node scripts/build-site.mjs _site
         env:
           TEST_REPORT: test-report.tap
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Fetch Steam prices
+        run: node scripts/fetch-prices.mjs _site
 
       - name: Install audit tools
         run: npm install --no-save --no-package-lock --prefix .audit axe-core@4.10.2

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'inline-speculation-rules'; style-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Ops · lovgren.dev</title>
+  <meta name="description" content="DORA metrics, deployments, the last pipeline run and the architecture of lovgren.dev, generated from real data.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <script src="/assets/theme.js"></script>
+  <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/assets/site.js" defer></script>
+  <script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/secret/*"}}]},"eagerness":"moderate"}]}</script>
+  <link rel="stylesheet" href="/ops/ops.css">
+  <script src="/ops/ops.js" defer></script>
+</head>
+<body class="ops-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-logo" href="/"><span class="monogram" aria-hidden="true">AL</span><span class="site-logo-text">lovgren.dev</span><span class="sr-only">, home</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a></li>
+          <li><a href="/games/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 7.5h10a5 5 0 0 1 4.8 6.4l-1 3.3a2.4 2.4 0 0 1-4.2.9L14.7 15.5H9.3l-1.9 2.6a2.4 2.4 0 0 1-4.2-.9l-1-3.3A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/></svg>Games</a></li>
+          <li><a href="/ops/" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Ops</a></li>
+          <li><a href="/wc2026/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>World Cup</a></li>
+        </ul>
+      </nav>
+      <div class="site-actions"></div>
+    </div>
+  </header>
+
+  <div class="wrap wrap-wide">
+    <main id="main">
+      <div class="page-head">
+        <p class="eyebrow">~/ops</p>
+        <h1>Ops</h1>
+      </div>
+      <nav class="subnav" aria-label="Ops sections">
+        <ul>
+          <li><a href="/ops/" aria-current="page">Overview</a></li>
+          <li><a href="/status/">Status</a></li>
+          <li><a href="/changelog/">Changelog</a></li>
+        </ul>
+      </nav>
+
+      <section class="ops-section" aria-labelledby="dora-title">
+        <div class="section-head">
+          <h2 class="section-title" id="dora-title"><span aria-hidden="true">~/</span>dora-metrics</h2>
+          <a class="section-link" href="https://dora.dev/guides/dora-metrics-four-keys/" rel="noopener">What is DORA? <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="section-lede">The four key metrics of software delivery performance, calculated from this site’s own GitHub Actions history.</p>
+        <!-- build:dora --><p class="slot-empty">The DORA metrics are calculated by the pipeline. They appear after the next deploy.</p><!-- /build:dora -->
+      </section>
+
+      <section class="ops-section" aria-labelledby="deploys-title">
+        <div class="section-head">
+          <h2 class="section-title" id="deploys-title"><span aria-hidden="true">~/</span>deployments</h2>
+          <a class="section-link" href="https://github.com/antonlovg/antonlovg.github.io/actions/workflows/pipeline.yml" rel="noopener">All runs <span aria-hidden="true">↗</span></a>
+        </div>
+        <!-- build:deploys --><p class="slot-empty">Deployment history appears after the next deploy.</p><!-- /build:deploys -->
+      </section>
+
+      <section class="ops-section" aria-labelledby="replay-title">
+        <div class="section-head">
+          <h2 class="section-title" id="replay-title"><span aria-hidden="true">~/</span>last-run</h2>
+        </div>
+        <p class="section-lede">Every step of the most recent pipeline run, with real timings. Press replay to watch it again, or type <code>replay</code> in the terminal.</p>
+        <!-- build:replay --><p class="slot-empty">The last run appears after the next deploy.</p><!-- /build:replay -->
+      </section>
+
+      <section class="ops-section" aria-labelledby="arch-title">
+        <div class="section-head">
+          <h2 class="section-title" id="arch-title"><span aria-hidden="true">~/</span>architecture</h2>
+        </div>
+        <p class="section-lede">How the pieces fit together. Select a box to see what it does and the code behind it.</p>
+        <div class="arch" data-edges="push>repo dependabot>repo repo>actions actions>pages uptime>pages uptime>actions pages>browser browser>worker worker>steam actions>steam">
+          <svg class="arch-edges" aria-hidden="true" focusable="false"><defs><marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z"/></marker></defs></svg>
+          <ol class="arch-grid">
+          <li class="arch-node" data-node="push">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-push"><span class="arch-kind">Changes</span><span class="arch-title">git push</span></button>
+            <div class="arch-detail" id="arch-detail-push" role="region" aria-label="git push" hidden>
+              <p>Every change arrives as a commit: from my editor, or from the game library’s <strong>Publish to GitHub</strong> button, which commits <code>games/shared-library.json</code> through the GitHub API.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/games/app.js" rel="noopener">Publish code ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="repo">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-repo"><span class="arch-kind">Source</span><span class="arch-title">GitHub repo</span></button>
+            <div class="arch-detail" id="arch-detail-repo" role="region" aria-label="GitHub repo" hidden>
+              <p>Plain HTML, CSS and JavaScript with no framework. Every file that ends up on the site is tracked here; ignored files can never be deployed.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io" rel="noopener">Repository ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="actions">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-actions"><span class="arch-kind">GitHub Actions</span><span class="arch-title">Pipeline</span></button>
+            <div class="arch-detail" id="arch-detail-actions" role="region" aria-label="Pipeline" hidden>
+              <p>Test → build → audit → deploy. The audit runs axe, counts cookies and third-party requests, runs Lighthouse, and blocks the deploy if anything fails. It also computes the DORA metrics on this page.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/.github/workflows/pipeline.yml" rel="noopener">pipeline.yml ↗</a> · <a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/scripts/audit-site.mjs" rel="noopener">audit-site.mjs ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="pages">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-pages"><span class="arch-kind">Hosting</span><span class="arch-title">GitHub Pages</span></button>
+            <div class="arch-detail" id="arch-detail-pages" role="region" aria-label="GitHub Pages" hidden>
+              <p>Serves the pipeline’s build artifact at lovgren.dev. GitHub receives visitors’ IP addresses like any web host; the site itself sets no cookies.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/CNAME" rel="noopener">CNAME ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="dependabot">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-dependabot"><span class="arch-kind">Updates</span><span class="arch-title">Dependabot</span></button>
+            <div class="arch-detail" id="arch-detail-dependabot" role="region" aria-label="Dependabot" hidden>
+              <p>Opens a weekly pull request when the pinned GitHub Actions have new versions. Every pull request runs the full pipeline before it can be merged.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/.github/dependabot.yml" rel="noopener">dependabot.yml ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="uptime">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-uptime"><span class="arch-kind">Every hour</span><span class="arch-title">Uptime monitor</span></button>
+            <div class="arch-detail" id="arch-detail-uptime" role="region" aria-label="Uptime monitor" hidden>
+              <p>Checks the website, the game library and the Steam proxy, stores the results on the <code>uptime-data</code> branch and refreshes the site so the status page stays current.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/.github/workflows/uptime.yml" rel="noopener">uptime.yml ↗</a> · <a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/scripts/check-uptime.mjs" rel="noopener">check-uptime.mjs ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="browser">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-browser"><span class="arch-kind">Visitor</span><span class="arch-title">Your browser</span></button>
+            <div class="arch-detail" id="arch-detail-browser" role="region" aria-label="Your browser" hidden>
+              <p>Loads static files from GitHub Pages. Your theme choice is the only thing stored, and only if you pick one. Game covers load from Steam’s image servers.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/assets/site.js" rel="noopener">site.js ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="steam">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-steam"><span class="arch-kind">Data</span><span class="arch-title">Steam</span></button>
+            <div class="arch-detail" id="arch-detail-steam" role="region" aria-label="Steam" hidden>
+              <p>Game details and trailers (through the proxy), cover images, and prices in euro, which the pipeline fetches at build time so visitors never contact Steam for them.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/scripts/fetch-prices.mjs" rel="noopener">fetch-prices.mjs ↗</a></p>
+            </div>
+          </li>
+          <li class="arch-node" data-node="worker">
+            <button class="arch-button" type="button" aria-expanded="false" aria-controls="arch-detail-worker"><span class="arch-kind">Steam proxy</span><span class="arch-title">Cloudflare Worker</span></button>
+            <div class="arch-detail" id="arch-detail-worker" role="region" aria-label="Cloudflare Worker" hidden>
+              <p>Powers “Fetch Steam info” in the game library: forwards one numeric app ID to Steam’s store API and only answers requests from lovgren.dev.</p>
+              <p class="arch-links"><a href="https://github.com/antonlovg/antonlovg.github.io/blob/main/games/steam-worker/index.mjs" rel="noopener">Worker code ↗</a></p>
+            </div>
+          </li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>© 2026 Anton Lövgren · No cookies, no tracking. Data on this page is generated by the <a href="https://github.com/antonlovg/antonlovg.github.io/actions/workflows/pipeline.yml" rel="noopener">pipeline</a>.</p>
+      <nav aria-label="Legal">
+        <ul>
+          <li><a href="/privacy/">Privacy policy</a></li>
+          <li><a href="/cookies/">Cookie policy</a></li>
+        </ul>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

@@ -20,8 +20,8 @@ const axePath = option('--axe') || 'node_modules/axe-core/axe.min.js';
 
 // Pages audited for accessibility; the privacy pages must not contact any other host,
 // except declared image hosts (the homepage shows game covers from Steam's image CDN).
-const PAGES = ['/', '/privacy/', '/cookies/', '/404.html', '/wc2026/', '/games/'];
-const NO_THIRD_PARTY = ['/', '/privacy/', '/cookies/', '/404.html', '/wc2026/'];
+const PAGES = ['/', '/privacy/', '/cookies/', '/404.html', '/wc2026/', '/games/', '/ops/', '/status/', '/changelog/'];
+const NO_THIRD_PARTY = ['/', '/privacy/', '/cookies/', '/404.html', '/wc2026/', '/ops/', '/status/', '/changelog/'];
 const ALLOWED_IMAGE_HOSTS = { '/': [/\.steamstatic\.com$/] };
 const LIGHTHOUSE_VERSION = '12.2.1';
 

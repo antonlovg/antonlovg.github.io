@@ -614,7 +614,7 @@ li code { font: 0.9em var(--mono); overflow-wrap: anywhere; }
   box-shadow: inset 1px 1px #ffffff, inset -1px -1px #808080;
 }
 .w98-menu-brand {
-  grid-row: 1 / span 6;
+  grid-row: 1 / span 7;
   margin: 0;
   padding: 0.4rem 0;
   background: linear-gradient(0deg, #000080, #1084d0);
@@ -639,6 +639,51 @@ li code { font: 0.9em var(--mono); overflow-wrap: anywhere; }
 .w98-menu a:hover,
 .w98-menu button:focus-visible,
 .w98-menu a:focus-visible { outline: none; background: #000080; color: #ffffff; }
+
+/* Minesweeper, Windows 98 style */
+.w98-mines { top: 16%; left: 34%; width: auto; transform: none; }
+.ms { padding: 6px; }
+.ms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding: 4px 6px;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #ffffff;
+}
+.ms-counter { min-width: 3.4ch; padding: 1px 4px; background: #000000; color: #ff2a2a; font: 700 20px/1 'Courier New', monospace; letter-spacing: 1px; text-align: center; }
+.ms-face { width: 32px; height: 32px; padding: 0; border: 0; background: #c0c0c0; font-size: 18px; line-height: 1; box-shadow: inset -1px -1px #000000, inset 1px 1px #ffffff, inset -2px -2px #808080, inset 2px 2px #dfdfdf; cursor: pointer; }
+.ms-face:active { box-shadow: inset 1px 1px #808080; }
+.ms-grid { display: grid; width: max-content; border: 3px solid; border-color: #808080 #ffffff #ffffff #808080; }
+.ms-row { display: flex; }
+.ms-gridcell { display: block; }
+.ms-cell {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: #c0c0c0;
+  color: #000000;
+  font: 800 14px/1 Tahoma, Verdana, sans-serif;
+  box-shadow: inset -2px -2px #808080, inset 2px 2px #ffffff;
+  cursor: pointer;
+}
+.ms-cell.is-revealed { box-shadow: inset 1px 1px #808080; cursor: default; }
+.ms-cell.is-flagged { color: #a00000; }
+.ms-cell.is-exploded { background: #ff2a2a; }
+.ms-cell:focus-visible { outline: 2px solid #000080; outline-offset: -3px; }
+/* Classic number colours, darkened where needed for 4.5:1 on grey. */
+.ms-cell.n1 { color: #0000c0; }
+.ms-cell.n2 { color: #005a00; }
+.ms-cell.n3 { color: #a00000; }
+.ms-cell.n4 { color: #000070; }
+.ms-cell.n5 { color: #6b0000; }
+.ms-cell.n6 { color: #004d4d; }
+.ms-cell.n7 { color: #000000; }
+.ms-cell.n8 { color: #3d3d3d; }
+.ms-status { margin: 6px 2px 0; font-size: 12px; }
 
 /* ---------- Motion ---------- */
 
@@ -681,6 +726,8 @@ li code { font: 0.9em var(--mono); overflow-wrap: anywhere; }
   .status-list dd { text-align: left; }
   .w98-icons { width: 5rem; }
   .w98-window { width: calc(100vw - 6.5rem); left: calc(50% + 2.5rem); }
+  .w98-mines { left: 5.5rem; width: auto; }
+  .ms-cell { width: 24px; height: 24px; }
   #w98-about,
   #w98-bin { left: calc(50% + 2.5rem); }
 }

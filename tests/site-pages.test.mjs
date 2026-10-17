@@ -7,6 +7,9 @@ const PAGES = {
   'index.html': '/',
   'games/index.html': '/games/',
   'wc2026/index.html': '/wc2026/',
+  'ops/index.html': '/ops/',
+  'status/index.html': '/ops/',
+  'changelog/index.html': '/ops/',
   'privacy/index.html': null,
   'cookies/index.html': null,
   '404.html': null

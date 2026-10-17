@@ -1,17 +1,19 @@
 // Assembles the deployable site in _site/ (or the folder given as the first argument):
 //   1. copies git-tracked files only, so ignored local files (.env, credentials) can never be deployed,
 //   2. writes now-playing.json for the homepage (covers stay on Steam's image CDN),
-//   3. writes a provisional status.json (commit + tests); audit-site.mjs adds the audit results.
+//   3. fills /ops, /status and /changelog with DORA metrics, uptime and git history (build-ops.mjs),
+//   4. writes a provisional status.json (commit + tests); audit-site.mjs adds the audit results.
 // Usage: node scripts/build-site.mjs [_site]   (set TEST_REPORT to a TAP file to include test counts)
 import { execFileSync } from 'node:child_process';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { buildOps } from './build-ops.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const out = path.resolve(root, process.argv[2] || '_site');
 const REPO = process.env.GITHUB_REPOSITORY || 'antonlovg/antonlovg.github.io';
 const SERVER = process.env.GITHUB_SERVER_URL || 'https://github.com';
-const NOT_DEPLOYED = [/^\.github\//, /^scripts\//, /(^|\/)README\.md$/, /(^|\/)\.gitignore$/, /^tests\//, /^games\/tests\//, /^games\/steam-worker\//];
+const NOT_DEPLOYED = [/^\.github\//, /^scripts\//, /(^|\/)README\.md$/, /(^|\/)\.gitignore$/, /^tests\//, /^games\/tests\//, /^games\/steam-worker\//, /^status\/incidents\//];
 const MAX_NOW_PLAYING = 8;
 
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
@@ -92,5 +94,7 @@ async function writeProvisionalStatus() {
 
 const fileCount = await copyTrackedFiles();
 const nowPlaying = await buildNowPlaying();
+const ops = await buildOps({ root, out, repo: REPO });
 const status = await writeProvisionalStatus();
+console.log(`Ops pages: DORA ${ops.dora ? 'yes' : 'no'}, last run ${ops.lastRun ? 'yes' : 'no'}, ${ops.uptimeChecks} uptime checks, ${ops.commits} commits.`);
 console.log(`Built ${path.relative(root, out) || out}: ${fileCount} files, ${nowPlaying.length} now-playing games, commit ${status.commit.short}.`);

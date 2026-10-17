@@ -1181,3 +1181,41 @@ html:active-view-transition-type(cards)::view-transition-new(root) { animation-d
 @media (max-width: 380px) {
   .option-group { grid-template-columns: 1fr; }
 }
+
+/* ---------- Steam prices ---------- */
+
+.page-note { margin: 4px 0 0; color: var(--text-3); font-size: 13px; font-weight: 600; }
+/* Price tags sit on cover photos, so they use fixed high-contrast colours in every theme. */
+.price-tag {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 10px;
+  min-height: 30px;
+  border-radius: 999px;
+  background: rgb(8 11 10 / 84%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.price-tag > span[aria-hidden] { display: inline-flex; align-items: center; gap: 8px; }
+.sale-badge { margin-left: -6px; padding: 2px 8px; border-radius: 999px; background: #b91c1c; color: #ffffff; font-size: 12px; }
+.price-was { color: #c9d1cc; font-weight: 600; }
+.suggestion-text .price-tag { position: static; margin-top: 10px; }
+
+/* ---------- Spin the wheel ---------- */
+
+.suggestion-wheel { display: grid; place-items: center; padding: 6px 0 4px; }
+.wheel { width: min(320px, 78vw); height: auto; filter: drop-shadow(0 18px 30px rgb(0 0 0 / 28%)); }
+.wheel-rotor { transform-origin: 100px 100px; transform-box: view-box; }
+.wheel-segment { stroke: var(--dialog); stroke-width: 1.2; }
+.wheel-label { fill: #ffffff; font-size: 7.4px; font-weight: 800; letter-spacing: 0.01em; pointer-events: none; }
+.wheel-hub { fill: var(--dialog); stroke: var(--accent); stroke-width: 3; }
+.wheel-pointer { fill: var(--text); }
