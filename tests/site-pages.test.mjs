@@ -12,6 +12,7 @@ const PAGES = {
   'changelog/index.html': '/ops/',
   'privacy/index.html': null,
   'cookies/index.html': null,
+  'island/index.html': null,
   '404.html': null
 };
 

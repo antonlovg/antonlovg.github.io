@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" data-weather="off">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'inline-speculation-rules'; style-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>The island · lovgren.dev</title>
+  <meta name="description" content="lovgren.dev as a pixel-art island: every page is a building, with live lights, weather and time of day from Stockholm.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <script src="/assets/theme.js"></script>
+  <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/jetbrains-mono-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/island/island.css">
+  <script src="/assets/i18n.js" defer></script>
+  <script src="/assets/site.js" defer></script>
+  <script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/secret/*"}}]},"eagerness":"moderate"}]}</script>
+  <script src="/island/island.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-logo" href="/"><span class="monogram" aria-hidden="true">AL</span><span class="site-logo-text">lovgren.dev</span><span class="sr-only">, home</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a></li>
+          <li><a href="/games/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 7.5h10a5 5 0 0 1 4.8 6.4l-1 3.3a2.4 2.4 0 0 1-4.2.9L14.7 15.5H9.3l-1.9 2.6a2.4 2.4 0 0 1-4.2-.9l-1-3.3A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/></svg>Games</a></li>
+          <li><a href="/ops/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Ops</a></li>
+        </ul>
+      </nav>
+      <div class="site-actions"></div>
+    </div>
+  </header>
+
+  <div class="wrap island-wrap">
+
+    <main id="main" class="island-page">
+      <p class="eyebrow">~/island</p>
+      <h1>The island</h1>
+      <p class="island-lede">Every page on this site is a building. Drag to look around and click a building to go inside. The lights, the weather and the time of day are live from Stockholm.</p>
+
+      <div class="island-view" id="island-view" hidden>
+        <div class="island-world" id="island-world"><canvas class="island-canvas" id="island-canvas" width="480" height="320" aria-hidden="true"></canvas></div>
+        <div class="island-tip" id="island-tip" hidden></div>
+        <p class="island-hint" id="island-hint" hidden>Hold Ctrl and scroll to zoom</p>
+        <div class="island-controls" id="island-controls" hidden>
+          <button class="island-button" type="button" id="island-zoom-in" aria-label="Zoom in"><span aria-hidden="true">+</span></button>
+          <button class="island-button" type="button" id="island-zoom-out" aria-label="Zoom out"><span aria-hidden="true">−</span></button>
+          <button class="island-button island-reset" type="button" id="island-reset">Fly home</button>
+        </div>
+      </div>
+
+      <h2 class="island-places-title" id="places-title">Places on the island</h2>
+      <ul class="island-places" aria-labelledby="places-title">
+        <li data-island-place="home">
+          <a href="/"><strong>The red cottage</strong> Home</a>
+          <p>Smoke from the chimney, and lights on in the evening.</p>
+          <p class="island-state" data-island-state="home" hidden></p>
+        </li>
+        <li data-island-place="games">
+          <a href="/games/"><strong>The arcade</strong> Game library</a>
+          <p>One lit window for every game in progress.</p>
+          <p class="island-state" data-island-state="games" hidden></p>
+        </li>
+        <li data-island-place="ops">
+          <a href="/ops/"><strong>The control tower</strong> Ops dashboard</a>
+          <p>The beacon shows the last pipeline run: green when it passed, red when it failed.</p>
+          <p class="island-state" data-island-state="ops" hidden></p>
+        </li>
+        <li data-island-place="status">
+          <a href="/status/"><strong>The lighthouse</strong> Status</a>
+          <p>Lit while the site is up, flickering during a partial outage and dark when the site is down.</p>
+          <p class="island-state" data-island-state="status" hidden></p>
+        </li>
+        <li data-island-place="changelog">
+          <a href="/changelog/"><strong>The log cabin</strong> Changelog</a>
+          <p>Where else would a log live?</p>
+          <p class="island-state" data-island-state="changelog" hidden></p>
+        </li>
+        <li data-island-place="privacy">
+          <a href="/privacy/"><strong>The vault</strong> Privacy policy</a>
+          <p>Heavily guarded, and almost empty inside.</p>
+        </li>
+        <li data-island-place="cookies">
+          <a href="/cookies/"><strong>The bakery</strong> Cookie policy</a>
+          <p>The shelves are empty. No cookies are baked here.</p>
+        </li>
+        <li data-island-place="terminal" hidden>
+          <button type="button" data-terminal-open><strong>The shed</strong> Terminal</button>
+          <p>A blinking cursor. Try <kbd>help</kbd> once you're in.</p>
+        </li>
+        <li data-island-place="wc2026">
+          <a href="/wc2026/"><strong>The stadium</strong> World Cup 2026</a>
+          <p>The group-stage schedule, archived on its own islet (in English).</p>
+        </li>
+      </ul>
+    </main>
+
+    <footer class="site-footer">
+      <p>© 2026 Anton Lövgren · No cookies, no tracking.</p>
+      <nav aria-label="Legal">
+        <ul>
+          <li><a href="/privacy/">Privacy policy</a></li>
+          <li><a href="/cookies/">Cookie policy</a></li>
+        </ul>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

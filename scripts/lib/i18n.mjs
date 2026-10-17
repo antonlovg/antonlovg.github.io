@@ -229,7 +229,7 @@ export function addDictionaryScript(html, code) {
 // ---------- Strings used by scripts ----------
 
 // The JavaScript files whose t('…') and N_('…') strings must all be translated.
-export const SCRIPT_SOURCES = ['assets/site.js', 'assets/not-found.js', 'assets/weather.js', 'home.js', 'ops/ops.js', 'games/app.js', 'games/shared-library.js', 'scripts/lib/render.mjs', 'scripts/lib/html.mjs', 'scripts/make-og.mjs'];
+export const SCRIPT_SOURCES = ['assets/site.js', 'assets/not-found.js', 'assets/weather.js', 'home.js', 'ops/ops.js', 'games/app.js', 'games/shared-library.js', 'island/island.js', 'scripts/lib/render.mjs', 'scripts/lib/html.mjs', 'scripts/make-og.mjs'];
 
 const LITERAL = String.raw`'((?:\\.|[^'\\])*)'`;
 const CALLS = [

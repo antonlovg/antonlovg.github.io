@@ -50,6 +50,8 @@ async function statsFor(card, t, data) {
     case '/privacy/':
     case '/cookies/':
       return [t(N_('No cookies')), t(N_('No trackers'))];
+    case '/island/':
+      return [t(N_('Every page is a building'))];
     case '/wc2026/':
       return [t(N_('Archive'))];
     default:

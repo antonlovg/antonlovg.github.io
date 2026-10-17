@@ -21,7 +21,7 @@ const axePath = option('--axe') || 'node_modules/axe-core/axe.min.js';
 
 // Pages audited for accessibility; the privacy pages must not contact any other host,
 // except declared image hosts (the homepage shows game covers from Steam's image CDN).
-const BASE_PAGES = ['/', '/privacy/', '/cookies/', '/games/', '/ops/', '/status/', '/changelog/'];
+const BASE_PAGES = ['/', '/privacy/', '/cookies/', '/games/', '/ops/', '/status/', '/changelog/', '/island/'];
 const LANG_PREFIXES = ['', '/sv', '/no'];
 const PAGES = [...LANG_PREFIXES.flatMap(prefix => BASE_PAGES.map(page => `${prefix}${page}`)), '/404.html', '/sv/no-such-page', '/wc2026/'];
 const NO_THIRD_PARTY = PAGES.filter(page => !/\/games\/$/.test(page));

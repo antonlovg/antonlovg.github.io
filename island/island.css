@@ -1,0 +1,143 @@
+/* The island (/island/): a pixel-art map of the site, drawn by island.js into a 480×320 canvas
+   that is scaled up with crisp pixels, plus the list of places under it. */
+
+.island-page h1 { margin: 0.2rem 0 0.6rem; font-size: var(--step-4); line-height: 1.05; letter-spacing: -0.03em; }
+.island-lede { max-width: 44rem; margin: 0 0 1.6rem; color: var(--muted); font-size: var(--step-1); text-wrap: pretty; }
+
+/* ---------- Map ---------- */
+
+.island-view {
+  position: relative;
+  height: clamp(340px, 66vh, 700px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--island-sea, #1f4677);
+  box-shadow: var(--shadow);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.island-view.is-pointing { cursor: pointer; }
+.island-view.is-dragging { cursor: grabbing; }
+.island-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 480px;
+  height: 320px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.island-canvas {
+  display: block;
+  width: 480px;
+  height: 320px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.island-tip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  max-width: 16rem;
+  padding: 6px 10px 7px;
+  border: 2px solid #14162a;
+  border-radius: 4px;
+  background: #f1eee6;
+  color: #14162a;
+  box-shadow: 3px 3px 0 #14162a;
+  font: 600 var(--step--1)/1.3 var(--mono);
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
+.island-tip.is-below { transform: translate(-50%, 0); }
+.island-tip strong { font-weight: 800; }
+.island-tip span { color: #3c3f55; font-weight: 500; }
+
+.island-hint {
+  position: absolute;
+  inset: auto 0 50%;
+  width: max-content;
+  margin: 0 auto;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgb(10 12 24 / 78%);
+  color: #fff;
+  font: 600 var(--step--1) var(--font);
+  pointer-events: none;
+}
+
+.island-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+}
+.island-button {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 2px solid #14162a;
+  border-radius: 6px;
+  background: #f1eee6;
+  color: #14162a;
+  box-shadow: 2px 2px 0 #14162a;
+  font: 800 var(--step-0)/1 var(--mono);
+  cursor: pointer;
+}
+.island-button:hover { background: #fff; }
+.island-button:active { box-shadow: none; transform: translate(2px, 2px); }
+.island-reset { font-size: var(--step--1); }
+
+/* ---------- Places ---------- */
+
+.island-places-title { margin: 2.6rem 0 1rem; font-size: var(--step-2); }
+.island-places {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.island-places li {
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color .15s, transform .15s var(--ease);
+}
+.island-places li.is-active { border-color: var(--accent); transform: translateY(-2px); }
+.island-places a,
+.island-places button {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: 600 var(--step--1)/1.35 var(--font);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.island-places strong { color: var(--ink); font-size: var(--step-0); }
+.island-places a:hover strong,
+.island-places button:hover strong { text-decoration: underline; text-underline-offset: 0.18em; }
+.island-places p { margin: 0.45rem 0 0; color: var(--muted); font-size: var(--step--1); line-height: 1.5; }
+.island-places .island-state { color: var(--ink); font-family: var(--mono); font-weight: 600; }
+
+@media (max-width: 40rem) {
+  .island-view { height: 58vh; border-radius: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island-places li { transition: none; }
+  .island-places li.is-active { transform: none; }
+}

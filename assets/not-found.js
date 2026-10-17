@@ -15,6 +15,7 @@
     { path: '/games/', label: N_('Game library'), words: ['games', 'game', 'spel', 'spill', 'library', 'bibliotek', 'backlog', 'secret', 'steam', 'wheel'] },
     { path: '/ops/', label: N_('Ops dashboard'), words: ['ops', 'dora', 'metrics', 'pipeline', 'ci', 'cd', 'deploy', 'deploys', 'dashboard', 'architecture'] },
     { path: '/status/', label: N_('Status'), words: ['status', 'uptime', 'health', 'monitor', 'drift', 'incidents'] },
+    { path: '/island/', label: N_('The island'), words: ['island', 'map', 'explore', 'pixel', 'karta', 'kart', 'øya', 'oya'] },
     { path: '/changelog/', label: N_('Changelog'), words: ['changelog', 'changes', 'news', 'log', 'releases', 'history', 'rss', 'andringar', 'endringer'] },
     { path: '/privacy/', label: N_('Privacy policy'), words: ['privacy', 'gdpr', 'integritet', 'integritetspolicy', 'personvern', 'policy'] },
     { path: '/cookies/', label: N_('Cookie policy'), words: ['cookies', 'cookie', 'kakor', 'informasjonskapsler'] },

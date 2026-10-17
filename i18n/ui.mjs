@@ -15,6 +15,13 @@ export default [
   ['Language', 'Språk', 'Språk'],
   ['Terminal', 'Terminal', 'Terminal'],
 
+  // ---------- The island (island/island.js) ----------
+  ['The island', 'Ön', 'Øya'],
+  ['The last pipeline run passed', 'Senaste pipelinekörningen gick igenom', 'Siste pipelinekjøring gikk gjennom'],
+  ['The last pipeline run failed', 'Senaste pipelinekörningen misslyckades', 'Siste pipelinekjøring feilet'],
+  ['No pipeline runs yet', 'Inga pipelinekörningar än', 'Ingen pipelinekjøringer ennå'],
+  ['Latest: {text}', 'Senast: {text}', 'Sist: {text}'],
+
   // ---------- Stockholm weather (assets/weather.js, home.js) ----------
   ['Weather effects', 'Vädereffekter', 'Væreffekter'],
   ['Weather data: Open-Meteo.com', 'Väderdata: Open-Meteo.com', 'Værdata: Open-Meteo.com'],

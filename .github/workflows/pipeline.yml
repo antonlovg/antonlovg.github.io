@@ -45,7 +45,7 @@ jobs:
         run: node --test --test-reporter=tap tests/*.test.mjs games/tests/*.test.mjs | tee test-report.tap
 
       - name: JavaScript syntax
-        run: for file in home.js assets/*.js games/*.js ops/*.js scripts/*.mjs scripts/lib/*.mjs i18n/*.mjs; do node --check "$file"; done
+        run: for file in home.js assets/*.js games/*.js ops/*.js island/*.js scripts/*.mjs scripts/lib/*.mjs i18n/*.mjs; do node --check "$file"; done
 
       - name: Build site
         run: node scripts/build-site.mjs _site

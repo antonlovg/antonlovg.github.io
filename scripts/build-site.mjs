@@ -25,10 +25,10 @@ const NOT_DEPLOYED = [/^\.github\//, /^scripts\//, /^i18n\//, /(^|\/)README\.md$
 const MAX_NOW_PLAYING = 8;
 const SITE_URL = 'https://lovgren.dev';
 // Source file of every page in SiteI18n.PAGES; each is built in every language.
-const PAGE_FILES = { '/': 'index.html', '/games/': 'games/index.html', '/ops/': 'ops/index.html', '/status/': 'status/index.html', '/changelog/': 'changelog/index.html', '/privacy/': 'privacy/index.html', '/cookies/': 'cookies/index.html' };
+const PAGE_FILES = { '/': 'index.html', '/games/': 'games/index.html', '/ops/': 'ops/index.html', '/status/': 'status/index.html', '/changelog/': 'changelog/index.html', '/privacy/': 'privacy/index.html', '/cookies/': 'cookies/index.html', '/island/': 'island/index.html' };
 // Social preview cards (scripts/make-og.mjs renders them): page → image name and eyebrow.
 const CARDS = { '/': ['home', 'whoami'], '/games/': ['games', '~/games'], '/ops/': ['ops', '~/ops'], '/status/': ['status', '~/status'], '/changelog/': ['changelog', '~/changelog'],
-  '/privacy/': ['privacy', '~/privacy'], '/cookies/': ['cookies', '~/cookies'], '/wc2026/': ['wc2026', '~/wc2026'] };
+  '/privacy/': ['privacy', '~/privacy'], '/cookies/': ['cookies', '~/cookies'], '/island/': ['island', '~/island'], '/wc2026/': ['wc2026', '~/wc2026'] };
 const OG_LOCALES = { en: 'en_GB', sv: 'sv_SE', nb: 'nb_NO' };
 const { LANGS, byCode, localize } = i18nApi;
 

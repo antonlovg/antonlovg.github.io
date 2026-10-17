@@ -8,7 +8,7 @@ import { TABLES, SAME, CODES, pageEntries, uiEntries } from '../i18n/index.mjs';
 import { translatePage, normalizeDictionary, parseHtml, localizeUrl, extractScriptStrings, SCRIPT_SOURCES, dictionaryScript } from '../scripts/lib/i18n.mjs';
 
 const read = file => readFile(new URL(`../${file}`, import.meta.url), 'utf8');
-const PAGE_FILES = { '/': 'index.html', '/games/': 'games/index.html', '/ops/': 'ops/index.html', '/status/': 'status/index.html', '/changelog/': 'changelog/index.html', '/privacy/': 'privacy/index.html', '/cookies/': 'cookies/index.html' };
+const PAGE_FILES = { '/': 'index.html', '/games/': 'games/index.html', '/ops/': 'ops/index.html', '/status/': 'status/index.html', '/changelog/': 'changelog/index.html', '/privacy/': 'privacy/index.html', '/cookies/': 'cookies/index.html', '/island/': 'island/index.html' };
 const BROWSER_SCRIPTS = SCRIPT_SOURCES.filter(file => !file.startsWith('scripts/'));
 const placeholders = text => [...text.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort();
 // Links within the site and email links must survive; external links may point at a local-language version.

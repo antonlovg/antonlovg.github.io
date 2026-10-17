@@ -9,6 +9,7 @@ Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions p
 | `/privacy/`, `/cookies/` | Privacy and cookie policies (share `style.css`) |
 | `/games/` | Shared game library, see [`games/README.md`](games/README.md) |
 | `/ops/`, `/status/`, `/changelog/` | DORA metrics, deploys, last-run replay, architecture; hourly uptime; changelog + RSS. Templates filled at build time |
+| `/island/` | The whole site as a pixel-art island you can fly over, with live lights and Stockholm's weather (`island/`), see [The island](#the-island) |
 | `/wc2026/` | World Cup 2026 group-stage schedule in CEST (archive) |
 | `/secret/` | Redirect to `/games/` (old address) |
 | `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`, `i18n.js`, `weather.js`), favicon and self-hosted fonts (Manrope, JetBrains Mono) |
@@ -82,6 +83,14 @@ Then open <http://localhost:8000/>. For a quick look without the pipeline, serve
 ## Not-found page
 
 GitHub Pages serves one `404.html` for every address, so the page takes its language from the address (`/sv/…`, `/no/…`) and loads both dictionaries. `assets/not-found.js` compares the address with every page and common words for it (in all three languages, allowing a typo or two swapped letters), turns `/games/<title>` into a library search, and offers the terminal. The address is only ever shown as text.
+
+## The island
+
+`/island/` draws the site as a pixel-art island in which every page is a building: the red cottage (home), the arcade (game library), the control tower (ops), the lighthouse (status), the log cabin (changelog), the vault (privacy), the bakery (cookies), a shed that opens the terminal, and the World Cup stadium on its own islet. `island/island.js` rasterizes the scene itself into a 480×320 buffer without anti-aliasing and scales it up with `image-rendering: pixelated`, so edges stay real pixel art.
+
+- **Live**: the lighthouse is lit while `/status` is operational, flickers during a partial outage and goes dark in an outage; the tower's beacon shows the last pipeline run; the arcade lights a window per game in progress. It's day, dusk or night with Stockholm's weather (rain, snow, fog), from the same `weather.json`.
+- **Moving around**: drag to pan, pinch or <kbd>Ctrl</kbd>+scroll to zoom, or use the buttons. Clicking a building zooms into it and then opens the page. The map is for pointers; the list of places under it has the same links and live states for keyboards and screen readers, and focusing one flies the camera there.
+- Still for reduced motion, paused in hidden tabs. `tests/island.test.mjs` checks that every page has a building on land with a path to its door, the rasterizer and the live-state rules.
 
 ## Terminal and games
 

@@ -12,6 +12,8 @@ test('typos and swapped letters still find the page', () => {
   assert.equal(first('/chnagelog/'), '/changelog/');
   assert.equal(first('/privcy'), '/privacy/');
   assert.equal(first('/statsu'), '/status/');
+  assert.equal(first('/islnad'), '/island/');
+  assert.equal(first('/karta'), '/island/');
   assert.equal(distance('gmaes', 'games'), 1);
 });
 
@@ -48,5 +50,5 @@ test('nonsense gets no guesses, and bad encodings do not throw', () => {
 });
 
 test('every page on the site is listed', () => {
-  assert.deepEqual(ROUTES.map(route => route.path).sort(), ['/', '/changelog/', '/cookies/', '/games/', '/ops/', '/privacy/', '/status/', '/wc2026/']);
+  assert.deepEqual(ROUTES.map(route => route.path).sort(), ['/', '/changelog/', '/cookies/', '/games/', '/island/', '/ops/', '/privacy/', '/status/', '/wc2026/']);
 });

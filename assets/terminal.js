@@ -11,7 +11,7 @@
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark', ocean: 'Ocean', ember: 'Ember' };
   // Pages "open" may navigate to (by name or path).
-  const PAGES = { home: '/', games: '/games/', ops: '/ops/', status: '/status/', changelog: '/changelog/', worldcup: '/wc2026/', privacy: '/privacy/', cookies: '/cookies/' };
+  const PAGES = { home: '/', games: '/games/', ops: '/ops/', status: '/status/', changelog: '/changelog/', worldcup: '/wc2026/', privacy: '/privacy/', cookies: '/cookies/', island: '/island/' };
   // Site links stay in the visitor's language (/sv/…, /no/…).
   const localize = href => (globalThis.SiteI18n ? SiteI18n.path(href) : href);
 

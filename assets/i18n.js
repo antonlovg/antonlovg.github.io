@@ -13,7 +13,7 @@
     Object.freeze({ code: 'nb', prefix: '/no', locale: 'nb-NO', label: 'Norsk', short: 'NO', currency: 'NOK' })
   ]);
   // Pages that exist in every language. Everything else (the World Cup archive, files) is English only.
-  const PAGES = Object.freeze(['/', '/games/', '/ops/', '/status/', '/changelog/', '/privacy/', '/cookies/']);
+  const PAGES = Object.freeze(['/', '/games/', '/ops/', '/status/', '/changelog/', '/privacy/', '/cookies/', '/island/']);
 
   const byCode = code => LANGS.find(lang => lang.code === code) || LANGS[0];
 
