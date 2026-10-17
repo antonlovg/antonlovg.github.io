@@ -1,10 +1,6 @@
 const STORAGE_KEY = 'personal-game-library-v1';
 const PREFERENCES_KEY = 'personal-game-library-preferences-v1';
 const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
-// Theme names and resolution live in theme-init.js, which runs before first paint.
-const { RENAMED: RENAMED_THEMES, resolve: resolveTheme, prefersLight } = GameLibraryTheme;
-const VALID_THEMES = ['system', ...GameLibraryTheme.THEMES];
-let themePreference = 'system';
 const VALID_SORTS = ['title', 'title-desc', 'priority', 'recently-added', 'random'];
 const STEAM_PROXY_URL = 'https://curly-dawn-c08f.karlanton-lovgren.workers.dev';
 const SHARED_LIBRARY_URL = 'shared-library.json';
@@ -101,6 +97,11 @@ const initialGames = [
 let games = [];
 let activeView = 'to-play';
 let toastTimer;
+let toastAction = null;
+let pendingGenre = '';
+// Cards on screen get a view-transition-name so they glide to their new place when the list changes.
+let transitionIds = new Set();
+const transitionNames = new Map();
 let steamCategories = [];
 let randomOrder = new Map();
 let suggestedGameId = null;
@@ -248,8 +249,28 @@ function findDuplicateGame(gameToCheck, excludeId = '', candidates = games) {
   });
 }
 
+// Some browsers (strict privacy modes) block site storage entirely. The library then runs in memory:
+// everything works for the visit, and the visitor is told that changes won't be kept.
+let storageBlocked = false;
+
+function storageAvailable() {
+  try {
+    const key = '__library_storage_test__';
+    localStorage.setItem(key, '1');
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Returns false when this browser has no saved library yet, so the caller can seed one.
 function initializeLibrary() {
+  if (!storageAvailable()) {
+    storageBlocked = true;
+    loadPreferences();
+    return false;
+  }
   let hasSavedLibrary = true;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -280,6 +301,7 @@ async function seedLibrary() {
     isLoadingLibrary = false;
     commitGames(makeInitialGames());
   }
+  if (storageBlocked) showToast('This browser blocks site storage, so your changes only last until you close the tab.', true);
 }
 
 function readPreferences() {
@@ -303,57 +325,152 @@ function savePreferences(changes) {
 function loadPreferences() {
   try {
     const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
-    const savedTheme = RENAMED_THEMES[preferences.theme] || preferences.theme;
-    themePreference = VALID_THEMES.includes(savedTheme) ? savedTheme : 'system';
     const sort = VALID_SORTS.includes(preferences.sort) ? preferences.sort : 'title';
-    document.documentElement.dataset.theme = resolveTheme(themePreference);
-    document.querySelector('#theme-select').value = themePreference;
     document.querySelector('#sort-select').value = sort;
     if (sort === 'random') randomOrder = new Map(games.map(game => [game.id, Math.random()]));
   } catch {
-    themePreference = 'system';
-    document.documentElement.dataset.theme = resolveTheme('system');
-    document.querySelector('#theme-select').value = 'system';
     document.querySelector('#sort-select').value = 'title';
   }
 }
 
-function saveTheme(theme) {
-  if (!VALID_THEMES.includes(theme)) return;
-  themePreference = theme;
-  document.documentElement.dataset.theme = resolveTheme(theme);
-  if (!savePreferences({ theme })) showToast('Theme changed, but this browser could not save the preference.', true);
+// The theme is a sitewide setting (assets/theme.js); this menu and the header's theme switch stay in sync.
+function syncThemeSelect() {
+  document.querySelector('#theme-select').value = SiteTheme.preference;
 }
-
-// "System" follows the device when it switches between light and dark.
-prefersLight.addEventListener('change', () => {
-  if (themePreference === 'system') document.documentElement.dataset.theme = resolveTheme('system');
-});
+document.addEventListener('site:themechange', syncThemeSelect);
 
 function saveSort(sort) {
   if (!VALID_SORTS.includes(sort)) return;
   if (!savePreferences({ sort })) showToast('Sort changed, but this browser could not save the preference.', true);
 }
 
-function commitGames(nextGames, message) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextGames));
-    games = nextGames;
-    render();
-    if (message) showToast(message);
-    return true;
-  } catch {
-    showToast('Could not save to this browser. Check available site storage.', true);
-    return false;
+// Saves and re-renders. With { undoable: true } the toast offers Undo, which restores the previous library.
+function commitGames(nextGames, message, { undoable = false, animate = true } = {}) {
+  const previous = games;
+  if (!storageBlocked) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextGames));
+    } catch {
+      showToast('Could not save to this browser. Check available site storage.', true);
+      return false;
+    }
   }
+  games = nextGames;
+  if (animate) animatedRender();
+  else render();
+  if (message) {
+    showToast(message, false, undoable ? { label: 'Undo', run: () => commitGames(previous, 'Change undone.') } : null);
+  }
+  return true;
 }
 
-function showToast(message, isError = false) {
+const toastText = document.querySelector('#toast-text');
+const toastButton = document.querySelector('#toast-action');
+
+function hideToast() {
   clearTimeout(toastTimer);
-  elements.toast.textContent = message;
+  elements.toast.classList.remove('is-visible');
+  toastAction = null;
+  toastButton.hidden = true;
+}
+
+function scheduleToastHide(delay) {
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, delay);
+}
+
+function showToast(message, isError = false, action = null) {
+  toastText.textContent = message;
+  toastAction = action;
+  toastButton.hidden = !action;
+  if (action) toastButton.textContent = action.label;
   elements.toast.classList.toggle('is-error', isError);
+  elements.toast.classList.toggle('has-action', Boolean(action));
   elements.toast.classList.add('is-visible');
-  toastTimer = setTimeout(() => elements.toast.classList.remove('is-visible'), 3600);
+  // Toasts with an action stay longer, and pause while hovered or focused.
+  scheduleToastHide(action ? 8000 : 3600);
+}
+
+toastButton.addEventListener('click', () => {
+  const action = toastAction;
+  hideToast();
+  action?.run();
+});
+elements.toast.addEventListener('pointerenter', () => clearTimeout(toastTimer));
+elements.toast.addEventListener('pointerleave', () => { if (toastAction) scheduleToastHide(4000); });
+elements.toast.addEventListener('focusin', () => clearTimeout(toastTimer));
+elements.toast.addEventListener('focusout', () => { if (toastAction) scheduleToastHide(4000); });
+
+// ---------- Styled confirmation (replaces the browser's confirm()) ----------
+
+function confirmAction({ title, message, confirmLabel = 'Confirm', danger = false }) {
+  const dialog = document.querySelector('#confirm-dialog');
+  document.querySelector('#confirm-title').textContent = title;
+  document.querySelector('#confirm-message').textContent = message;
+  const accept = document.querySelector('#confirm-accept');
+  accept.textContent = confirmLabel;
+  accept.classList.toggle('button-danger', danger);
+  dialog.returnValue = '';
+  dialog.showModal();
+  // Destructive actions start on Cancel so Enter never replaces data by accident.
+  (danger ? document.querySelector('#confirm-cancel') : accept).focus();
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
+  });
+}
+
+// ---------- Motion ----------
+
+const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+function transitionName(id) {
+  if (!transitionNames.has(id)) transitionNames.set(id, `card-${transitionNames.size + 1}`);
+  return transitionNames.get(id);
+}
+
+function animatedRender() {
+  if (!document.startViewTransition || prefersReducedMotion.matches || document.hidden) {
+    render();
+    return;
+  }
+  const margin = 120;
+  transitionIds = new Set([...elements.grid.querySelectorAll('.game-card[data-game-id]')].filter(card => {
+    const rect = card.getBoundingClientRect();
+    return rect.bottom > -margin && rect.top < innerHeight + margin;
+  }).map(card => card.dataset.gameId));
+  for (const card of elements.grid.querySelectorAll('.game-card[data-game-id]')) {
+    if (transitionIds.has(card.dataset.gameId)) applyTransitionName(card, card.dataset.gameId);
+  }
+  let transition;
+  try {
+    transition = document.startViewTransition({ update: render, types: ['cards'] });
+  } catch {
+    transition = document.startViewTransition(render);
+  }
+  transition.finished.finally(() => {
+    transitionIds = new Set();
+    for (const card of elements.grid.querySelectorAll('.game-card')) {
+      card.style.viewTransitionName = '';
+      card.style.viewTransitionClass = '';
+    }
+  });
+}
+
+function applyTransitionName(card, id) {
+  card.style.viewTransitionName = transitionName(id);
+  card.style.viewTransitionClass = 'card';
+}
+
+function makeSkeletonCard() {
+  const card = document.createElement('div');
+  card.className = 'game-card skeleton-card';
+  card.setAttribute('aria-hidden', 'true');
+  for (const part of ['skeleton-cover', 'skeleton-line is-title', 'skeleton-line', 'skeleton-line is-short', 'skeleton-footer']) {
+    const block = document.createElement('div');
+    block.className = part;
+    card.append(block);
+  }
+  return card;
 }
 
 function getVisibleGames() {
@@ -452,6 +569,9 @@ function makeCard(game) {
   card.className = `game-card status-card-${game.status}`;
   const titleId = `game-title-${game.id}`;
   card.setAttribute('aria-labelledby', titleId);
+  card.dataset.gameId = game.id;
+  card.tabIndex = -1;
+  if (transitionIds.has(game.id)) applyTransitionName(card, game.id);
 
   const cover = document.createElement('div');
   cover.className = 'cover-wrap';
@@ -532,7 +652,7 @@ function makeCard(game) {
   const advance = ADVANCE_ACTIONS[game.status];
   const moveButton = makeButton('small-button card-advance', { label: advance.label, icon: advance.icon, name: `${advance.label} ${game.title}` });
   moveButton.addEventListener('click', () => {
-    commitGames(games.map(item => item.id === game.id ? { ...item, status: advance.next } : item), `${game.title} moved to ${STATUS_LABELS[advance.next]}.`);
+    commitGames(games.map(item => item.id === game.id ? { ...item, status: advance.next } : item), `${game.title} moved to ${STATUS_LABELS[advance.next]}.`, { undoable: true });
   });
   footer.append(moveButton);
 
@@ -579,12 +699,13 @@ function makeCard(game) {
 }
 
 function renderGenres() {
-  const previous = elements.genreFilter.value;
+  const previous = pendingGenre || elements.genreFilter.value;
   const genres = [...new Set(games.map(game => getGenreCategory(game.genre)).filter(Boolean))]
     .sort((first, second) => first.localeCompare(second));
   elements.genreFilter.replaceChildren(new Option('All genres', ''));
   for (const genre of genres) elements.genreFilter.add(new Option(genre, genre));
   if (genres.includes(previous)) elements.genreFilter.value = previous;
+  if (genres.length) pendingGenre = '';
 }
 
 function renderActiveFilters() {
@@ -610,7 +731,8 @@ function renderActiveFilters() {
     chip.append(makeIcon('close'));
     chip.addEventListener('click', () => {
       filter.clear();
-      render();
+      animatedRender();
+      elements.search.focus();
     });
   }
 }
@@ -620,12 +742,18 @@ function clearFilters() {
   elements.genreFilter.value = '';
   elements.playersFilter.value = '';
   elements.priorityFilter.checked = false;
-  render();
+  pendingGenre = '';
+  animatedRender();
 }
 
 function renderBackupTip() {
   const tip = document.querySelector('#backup-tip');
-  const dismissed = localStorage.getItem('library-backup-tip-dismissed') === 'true';
+  let dismissed = false;
+  try {
+    dismissed = localStorage.getItem('library-backup-tip-dismissed') === 'true';
+  } catch {
+    dismissed = false;
+  }
   if (tip) tip.hidden = dismissed;
 }
 
@@ -642,7 +770,10 @@ function render() {
     document.querySelector(`#count-${status}`).textContent = games.filter(game => game.status === status).length;
   }
   document.querySelector('#count-all').textContent = games.length;
-  document.querySelector('#library-count').textContent = `${games.length} ${games.length === 1 ? 'game' : 'games'} in your library`;
+  const inProgress = games.filter(game => game.status === 'in-progress').length;
+  document.querySelector('#library-count').textContent = isLoadingLibrary
+    ? 'Loading the shared library…'
+    : `${games.length} ${games.length === 1 ? 'game' : 'games'} · ${inProgress} in progress`;
   document.querySelector('#view-heading').textContent = activeView === 'all' ? 'All Games' : STATUS_LABELS[activeView];
   const visible = getVisibleGames();
   document.querySelector('#results-count').textContent = isLoadingLibrary
@@ -650,8 +781,9 @@ function render() {
     : `${visible.length} ${visible.length === 1 ? 'game' : 'games'}`;
   elements.grid.dataset.view = activeView;
   elements.grid.setAttribute('aria-busy', String(isLoadingLibrary));
-  elements.grid.replaceChildren(...visible.map(makeCard));
+  elements.grid.replaceChildren(...(isLoadingLibrary ? Array.from({ length: 8 }, makeSkeletonCard) : visible.map(makeCard)));
   elements.empty.hidden = isLoadingLibrary || visible.length !== 0;
+  if (!isLoadingLibrary && !pendingGenre) syncUrl();
   document.querySelector('#empty-state-clear').disabled = !elements.search.value && !elements.genreFilter.value && !elements.playersFilter.value && !elements.priorityFilter.checked;
 }
 
@@ -706,7 +838,7 @@ function showRandomSuggestion(previousId = null) {
 function startSuggestedGame() {
   const picked = games.find(game => game.id === suggestedGameId);
   if (!picked || picked.status === 'in-progress') return;
-  if (commitGames(games.map(game => game.id === picked.id ? { ...game, status: 'in-progress' } : game), `${picked.title} moved to In Progress.`)) {
+  if (commitGames(games.map(game => game.id === picked.id ? { ...game, status: 'in-progress' } : game), `${picked.title} moved to In Progress.`, { undoable: true })) {
     document.querySelector('#suggestion-dialog').close();
   }
 }
@@ -840,9 +972,9 @@ function readFormGame() {
   };
 }
 
+// Deleting is instant and reversible with Undo, instead of asking first.
 function deleteGame(game) {
-  if (!confirm(`Delete "${game.title}" from your library? This cannot be undone.`)) return;
-  commitGames(games.filter(item => item.id !== game.id), `${game.title} deleted.`);
+  commitGames(games.filter(item => item.id !== game.id), `${game.title} deleted.`, { undoable: true });
 }
 
 async function fetchSteamInfo() {
@@ -893,7 +1025,7 @@ async function fetchSteamInfo() {
     };
     const wouldReplace = Object.keys(current).some(key => current[key] && fetched[key] && current[key] !== fetched[key])
       || (steamCategories.length > 0 && fetched.categories.length > 0);
-    if (wouldReplace && !confirm('Steam has information for fields you have already filled in. Replace those fields with Steam data?')) return;
+    if (wouldReplace && !(await confirmAction({ title: 'Replace what you typed?', message: 'Steam has information for fields you have already filled in. Replace those fields with Steam data?', confirmLabel: 'Use Steam data' }))) return;
     for (const key of Object.keys(current)) {
       if (fetched[key] && (!current[key] || wouldReplace)) {
         const fieldId = { title: 'game-title', description: 'game-description', coverUrl: 'game-cover-url', genre: 'game-genre' }[key];
@@ -1043,9 +1175,9 @@ async function getSharedUpdate(prefetched = null) {
       changes.removed.length ? `Games that will be removed: ${changes.removed.slice(0, 8).join(', ')}${changes.removed.length > 8 ? ', …' : ''}` : '',
       `This will replace your current library of ${games.length} games, including local additions and changes. Export a backup first if you want to keep them.`
     ].filter(Boolean).join('\n\n');
-    if (!confirm(confirmation)) return;
+    if (!(await confirmAction({ title: 'Load the shared library?', message: confirmation, confirmLabel: 'Replace my library', danger: true }))) return;
 
-    if (commitGames(replacement, `Shared library updated with ${replacement.length} games.`)) {
+    if (commitGames(replacement, `Shared library updated with ${replacement.length} games.`, { undoable: true })) {
       savePreferences({ sharedVersion: snapshot.exportedAt });
       hideUpdateBanner();
     }
@@ -1288,14 +1420,14 @@ async function importLibrary(file) {
       }
       if (steamAppId) importedSteamAppIds.add(steamAppId);
     }
-    if (!confirm(`Import ${imported.length} games? This will replace your current library of ${games.length} games. Export a backup first if you want to keep it.`)) return;
+    if (!(await confirmAction({ title: `Import ${imported.length} games?`, message: `This replaces your current library of ${games.length} games. You can undo it right after, but export a backup first if you want to keep a copy.`, confirmLabel: 'Import and replace', danger: true }))) return;
     const normalized = imported.map(normalizeGame);
     const ids = new Set();
     for (const game of normalized) {
       if (ids.has(game.id)) game.id = makeId();
       ids.add(game.id);
     }
-    commitGames(normalized, `Imported ${normalized.length} games. The previous library was replaced.`);
+    commitGames(normalized, `Imported ${normalized.length} games. The previous library was replaced.`, { undoable: true });
   } catch (error) {
     showToast(error instanceof SyntaxError ? 'Could not read that JSON file. No data was changed.' : error.message, true);
   } finally {
@@ -1303,34 +1435,57 @@ async function importLibrary(file) {
   }
 }
 
-// Views can be deep-linked, e.g. /games/#in-progress from the homepage.
-const VIEWS = [...VALID_STATUSES, 'all'];
-function applyViewFromHash() {
-  const view = decodeURIComponent(location.hash.slice(1));
-  if (!VIEWS.includes(view) || view === activeView) return false;
-  activeView = view;
-  return true;
+// Shareable links: the view lives in the hash and filters in the query string (validated in url-state.js),
+// e.g. /games/?q=portal&players=2#in-progress. Tab changes add history entries, so Back and Forward work.
+function readUrlState() {
+  const state = GameUrlState.parse(location.href);
+  activeView = state.view;
+  elements.search.value = state.q;
+  elements.playersFilter.value = state.players;
+  elements.priorityFilter.checked = state.priority;
+  pendingGenre = state.genre;
 }
+
+function currentUrlState() {
+  return {
+    view: activeView,
+    q: elements.search.value.trim(),
+    genre: pendingGenre || elements.genreFilter.value,
+    players: elements.playersFilter.value,
+    priority: elements.priorityFilter.checked
+  };
+}
+
+function syncUrl(push = false) {
+  const href = GameUrlState.build(location.href, currentUrlState());
+  if (href === location.pathname + location.search + location.hash) return;
+  history[push ? 'pushState' : 'replaceState'](null, '', href);
+}
+
 document.querySelectorAll('.view-tab').forEach(tab => tab.addEventListener('click', () => {
+  if (tab.dataset.view === activeView) return;
   activeView = tab.dataset.view;
-  history.replaceState(null, '', `#${activeView}`);
-  render();
+  syncUrl(true);
+  animatedRender();
 }));
-window.addEventListener('hashchange', () => { if (applyViewFromHash()) render(); });
-applyViewFromHash();
+window.addEventListener('popstate', () => {
+  readUrlState();
+  animatedRender();
+});
+readUrlState();
 elements.search.addEventListener('input', render);
-elements.genreFilter.addEventListener('change', render);
-elements.playersFilter.addEventListener('change', render);
-elements.priorityFilter.addEventListener('change', render);
+elements.genreFilter.addEventListener('change', () => { pendingGenre = ''; animatedRender(); });
+elements.playersFilter.addEventListener('change', animatedRender);
+elements.priorityFilter.addEventListener('change', animatedRender);
 document.querySelector('#sort-select').addEventListener('change', () => {
   const sort = document.querySelector('#sort-select').value;
   if (sort === 'random') {
     randomOrder = new Map(games.map(game => [game.id, Math.random()]));
   }
   saveSort(sort);
-  render();
+  animatedRender();
 });
-document.querySelector('#theme-select').addEventListener('change', event => saveTheme(event.target.value));
+document.querySelector('#theme-select').addEventListener('change', event => SiteTheme.set(event.target.value));
 document.querySelector('#pick-game-button').addEventListener('click', () => {
   showRandomSuggestion();
   document.querySelector('#suggestion-dialog').showModal();
@@ -1417,13 +1572,22 @@ elements.importInput.addEventListener('change', event => {
   const [file] = event.target.files;
   if (file) importLibrary(file);
 });
-document.querySelector('#reset-button').addEventListener('click', () => {
-  if (!confirm(`Delete all ${games.length} games and reset to the original starter library? This cannot be undone. Export a backup first if you want to keep your data.`)) return;
-  commitGames(makeInitialGames(), 'Library reset to the original starter games.');
+document.querySelector('#reset-button').addEventListener('click', async () => {
+  const confirmed = await confirmAction({
+    title: 'Reset the library?',
+    message: `This deletes all ${games.length} games and restores the original starter list. You can undo it right after, but export a backup first if you want to keep a copy.`,
+    confirmLabel: 'Reset library',
+    danger: true
+  });
+  if (confirmed) commitGames(makeInitialGames(), 'Library reset to the original starter games.', { undoable: true });
 });
 document.querySelector('#backup-tip-close').addEventListener('click', () => {
-  localStorage.setItem('library-backup-tip-dismissed', 'true');
-  renderBackupTip();
+  try {
+    localStorage.setItem('library-backup-tip-dismissed', 'true');
+  } catch {
+    // Storage blocked: hide the tip for this visit only.
+  }
+  document.querySelector('#backup-tip').hidden = true;
 });
 document.querySelector('#empty-state-clear').addEventListener('click', clearFilters);
 // Dropdown menus (<details class="menu">): close on outside click, and on Escape with focus returned to the toggle.
@@ -1447,6 +1611,38 @@ document.addEventListener('toggle', event => {
   }
 }, true);
 
+// The sitewide terminal (Ctrl+K) also finds games: picking one shows it in All Games.
+globalThis.SiteShell?.registerSearch(query => {
+  const needle = query.toLocaleLowerCase();
+  return games.filter(game => game.title.toLocaleLowerCase().includes(needle)).slice(0, 5).map(game => ({
+    label: game.title,
+    group: 'Game',
+    description: STATUS_LABELS[game.status],
+    run: () => showGame(game.id)
+  }));
+});
+
+function showGame(id) {
+  const game = games.find(item => item.id === id);
+  if (!game) return;
+  SiteShell.closeTerminal();
+  activeView = 'all';
+  elements.genreFilter.value = '';
+  elements.playersFilter.value = '';
+  elements.priorityFilter.checked = false;
+  pendingGenre = '';
+  elements.search.value = game.title;
+  syncUrl(true);
+  render();
+  const card = [...elements.grid.querySelectorAll('.game-card')].find(item => item.dataset.gameId === id);
+  if (!card) return;
+  card.scrollIntoView({ block: 'center', behavior: prefersReducedMotion.matches ? 'auto' : 'smooth' });
+  card.focus({ preventScroll: true });
+  card.classList.add('is-highlighted');
+  setTimeout(() => card.classList.remove('is-highlighted'), 1600);
+}
+
+syncThemeSelect();
 if (initializeLibrary()) {
   render();
   checkForSharedUpdate();

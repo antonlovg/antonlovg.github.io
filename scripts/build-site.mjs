@@ -11,7 +11,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const out = path.resolve(root, process.argv[2] || '_site');
 const REPO = process.env.GITHUB_REPOSITORY || 'antonlovg/antonlovg.github.io';
 const SERVER = process.env.GITHUB_SERVER_URL || 'https://github.com';
-const NOT_DEPLOYED = [/^\.github\//, /^scripts\//, /(^|\/)README\.md$/, /(^|\/)\.gitignore$/, /^games\/tests\//, /^games\/steam-worker\//];
+const NOT_DEPLOYED = [/^\.github\//, /^scripts\//, /(^|\/)README\.md$/, /(^|\/)\.gitignore$/, /^tests\//, /^games\/tests\//, /^games\/steam-worker\//];
 const MAX_NOW_PLAYING = 8;
 
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();

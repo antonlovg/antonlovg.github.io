@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' https: data:; media-src 'self' https: blob:; connect-src 'self' https://curly-dawn-c08f.karlanton-lovgren.workers.dev https://api.github.com https://*.steamstatic.com; frame-src https://www.youtube-nocookie.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'inline-speculation-rules'; style-src 'self'; font-src 'self'; img-src 'self' https: data:; media-src 'self' https: blob:; connect-src 'self' https://curly-dawn-c08f.karlanton-lovgren.workers.dev https://api.github.com https://*.steamstatic.com; frame-src https://www.youtube-nocookie.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Game Library · lovgren.dev</title>
   <meta name="description" content="A shared backlog of co-op and puzzle games, with Steam info, trailers, filters and a random game picker.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235458e0'/%3E%3Cpath d='M20 24h24a10 10 0 0 1 9.6 12.8l-2 6.8a5 5 0 0 1-8.6 1.8L39 40H25l-4 5.4a5 5 0 0 1-8.6-1.8l-2-6.8A10 10 0 0 1 20 24z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <script src="/assets/theme.js"></script>
   <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/site.css">
   <link rel="stylesheet" href="styles.css">
-  <script src="theme-init.js"></script>
+  <script src="/assets/site.js" defer></script>
+  <script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/secret/*"}}]},"eagerness":"moderate"}]}</script>
   <script src="shared-library.js" defer></script>
+  <script src="url-state.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -42,37 +46,33 @@
 
   <a class="skip-link" href="#game-grid">Skip to games</a>
 
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <a class="brand-home" href="/" title="Back to the homepage">
-          <span class="brand-mark" aria-hidden="true">AL</span>
-          <span class="brand-site">lovgren.dev</span>
-          <span class="sr-only">, homepage</span>
-        </a>
-        <span class="brand-sep" aria-hidden="true">/</span>
-        <span class="brand-text">
-          <h1>Game Library</h1>
-          <span id="library-count" class="brand-sub">Your personal backlog</span>
-        </span>
-      </div>
-      <div class="topbar-actions">
-        <button class="button button-ghost help-button" id="howto-button" type="button">
-          <svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="label-collapse">Help</span>
+  <header class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-logo" href="/"><span class="monogram" aria-hidden="true">AL</span><span class="site-logo-text">lovgren.dev</span><span class="sr-only">, home</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a></li>
+          <li><a href="/games/" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 7.5h10a5 5 0 0 1 4.8 6.4l-1 3.3a2.4 2.4 0 0 1-4.2.9L14.7 15.5H9.3l-1.9 2.6a2.4 2.4 0 0 1-4.2-.9l-1-3.3A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/></svg>Games</a></li>
+          <li><a href="/wc2026/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>World Cup</a></li>
+        </ul>
+      </nav>
+      <div class="site-actions">
+        <button class="shell-button help-button" id="howto-button" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="label-optional">Help</span>
         </button>
         <details class="library-tools menu">
-          <summary class="button button-ghost">
-            <svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span class="label-collapse">Manage library</span>
+          <summary class="shell-button">
+            <svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span class="label-optional">Manage library</span>
           </summary>
           <div class="tools-panel menu-panel">
             <label class="tools-appearance" for="theme-select">
               <span class="menu-label">Appearance</span>
               <select id="theme-select" aria-label="Color theme">
                 <option value="system">System (match device)</option>
-                <option value="midnight">Midnight (dark)</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
                 <option value="ocean">Ocean (dark)</option>
                 <option value="ember">Ember (dark)</option>
-                <option value="light">Daylight (light)</option>
               </select>
             </label>
             <p class="menu-label">Share</p>
@@ -87,9 +87,18 @@
           </div>
         </details>
       </div>
-    </header>
+    </div>
+  </header>
+
+  <div class="app-shell">
 
     <main id="main">
+      <div class="page-head">
+        <p class="page-eyebrow">~/games</p>
+        <h1>Game Library</h1>
+        <p id="library-count" class="page-sub">Your personal backlog</p>
+      </div>
+
       <nav class="view-tabs" aria-label="Library views">
         <button class="view-tab is-active" data-view="to-play" type="button" aria-pressed="true"><span class="view-tab-label">To Play</span> <span class="view-count" id="count-to-play">0</span></button>
         <button class="view-tab" data-view="in-progress" type="button" aria-pressed="false"><span class="view-tab-label">In Progress</span> <span class="view-count" id="count-in-progress">0</span></button>
@@ -101,7 +110,7 @@
         <label class="search-field">
           <span class="sr-only">Search games</span>
           <svg class="icon search-icon" aria-hidden="true"><use href="#i-search"/></svg>
-          <input id="search-input" type="search" placeholder="Search titles, genres, tags or notes" autocomplete="off">
+          <input id="search-input" data-page-search type="search" placeholder="Search titles, genres, tags or notes" autocomplete="off">
         </label>
         <div class="toolbar-controls">
           <label class="sort-field">
@@ -449,6 +458,24 @@
     </form>
   </dialog>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <dialog id="confirm-dialog" class="dialog confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <form class="dialog-frame" method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Please confirm</p>
+          <h2 id="confirm-title">Are you sure?</h2>
+        </div>
+      </div>
+      <div class="dialog-scroll">
+        <p id="confirm-message" class="confirm-message"></p>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-ghost" id="confirm-cancel" value="cancel">Cancel</button>
+        <button class="button button-primary" id="confirm-accept" value="confirm">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"><span id="toast-text"></span><button id="toast-action" class="toast-action" type="button" hidden>Undo</button></div>
 </body>
 </html>

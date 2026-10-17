@@ -69,6 +69,13 @@ The snapshot is public, including personal notes, so don't put anything private 
 - Select **Help** in the header for in-app steps covering game details, Steam links, cover images, status changes, and backups.
 - Use the sort menu to order games by title, priority, or random order. **Pick a game** suggests a random game from the current view and filters; start it to move it to In Progress. The appearance menu offers Midnight, Ocean and Ember (dark) and Daylight (light) themes; all meet WCAG AA contrast. Theme and sort choices are saved in browser preferences separately from the game list.
 - A Steam Store URL can be saved manually. **Fetch Steam info** uses the optional Worker described above. Steam genres and store categories are kept separate from community tags, and a warning appears before filled-in details are replaced.
+## Links and shortcuts
+
+- The view and filters are kept in the address, so links can be shared and Back/Forward work: `/games/?q=portal&genre=Adventure&players=2&priority=1#in-progress`. Values from the address are validated in `url-state.js` (tested in `tests/url-state.test.mjs`) and only ever written into form controls.
+- <kbd>/</kbd> focuses the search. <kbd>Ctrl</kbd>+<kbd>K</kbd> opens the sitewide terminal, which also finds games by title.
+- Starting, finishing, deleting, importing and resetting can be undone from the notification. Bulk replacements ask first in a styled dialog instead of the browser's `confirm()`.
+- If the browser blocks site storage, the library still loads and works for the visit, and says that changes won't be kept.
+
 ## Design
 
 Plain CSS with design tokens per theme in `styles.css`; icons are an inline SVG sprite at the top of `index.html` (used from `app.js` via `makeIcon`). The UI font, Manrope, is self-hosted from `/assets/fonts/`. If you change a theme colour, keep text at 4.5:1 and control borders at 3:1 against their backgrounds.

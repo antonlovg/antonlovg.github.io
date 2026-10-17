@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://*.steamstatic.com; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://*.steamstatic.com; script-src 'self' 'inline-speculation-rules'; style-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Anton Lövgren · DevOps engineer</title>
   <meta name="description" content="Anton Lövgren, DevOps engineer. A personal site that tests, audits and deploys itself, with projects, a game library and ways to get in touch.">
@@ -20,33 +20,33 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Anton Lövgren, DevOps engineer. A personal site that tests, audits and deploys itself.">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f46e5'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='27' font-weight='800' text-anchor='middle' fill='%23ffffff'%3EAL%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <script src="/assets/theme.js"></script>
   <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/site.css">
   <link rel="stylesheet" href="/style.css">
+  <script src="/assets/site.js" defer></script>
+  <script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/secret/*"}}]},"eagerness":"moderate"}]}</script>
   <script src="/home.js" defer></script>
 </head>
 <body class="home">
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <div class="wrap">
-    <header class="site-header">
-      <a class="logo" href="/" aria-label="lovgren.dev, home">
-        <span class="monogram" aria-hidden="true">AL</span>
-        <span class="logo-text" aria-hidden="true">lovgren.dev</span>
-      </a>
+  <header class="site-bar">
+    <div class="site-bar-inner">
+      <a class="site-logo" href="/"><span class="monogram" aria-hidden="true">AL</span><span class="site-logo-text">lovgren.dev</span><span class="sr-only">, home</span></a>
       <nav class="site-nav" aria-label="Main">
         <ul>
-          <li><a href="/" aria-current="page">Home</a></li>
-          <li><a href="/games/">Games</a></li>
-          <li><a href="/wc2026/">World Cup</a></li>
+          <li><a href="/" aria-current="page"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a></li>
+          <li><a href="/games/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 7.5h10a5 5 0 0 1 4.8 6.4l-1 3.3a2.4 2.4 0 0 1-4.2.9L14.7 15.5H9.3l-1.9 2.6a2.4 2.4 0 0 1-4.2-.9l-1-3.3A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/></svg>Games</a></li>
+          <li><a href="/wc2026/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>World Cup</a></li>
         </ul>
       </nav>
-      <button class="terminal-trigger" id="terminal-open" type="button" aria-keyshortcuts="Control+K /" hidden>
-        <span class="terminal-trigger-icon" aria-hidden="true">&gt;_</span>
-        <span class="terminal-trigger-label">Terminal</span>
-        <kbd aria-hidden="true">Ctrl K</kbd>
-      </button>
-    </header>
+      <div class="site-actions"></div>
+    </div>
+  </header>
+
+  <div class="wrap">
 
     <main id="main">
       <section class="hero" aria-labelledby="hero-title">
@@ -157,23 +157,6 @@
       </nav>
     </footer>
   </div>
-
-  <dialog class="terminal" id="terminal" aria-labelledby="terminal-title">
-    <div class="term-bar">
-      <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-      <h2 id="terminal-title">anton@lovgren.dev: ~</h2>
-      <button class="term-close" id="terminal-close" type="button" aria-label="Close terminal">×</button>
-    </div>
-    <div class="term-body">
-      <div class="term-log" id="term-log" role="log" aria-live="polite" aria-label="Terminal output"></div>
-      <form class="term-input-row" id="term-form">
-        <label class="term-prompt" for="term-input"><span aria-hidden="true">~ $</span><span class="sr-only">Command</span></label>
-        <input class="term-input" id="term-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="term-suggestions" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
-      </form>
-      <ul class="term-suggestions" id="term-suggestions" role="listbox" aria-label="Matching commands" hidden></ul>
-    </div>
-    <p class="term-hint"><kbd>Tab</kbd> complete · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>Enter</kbd> run · <kbd>Esc</kbd> close</p>
-  </dialog>
 
   <dialog class="win98" id="win98" aria-labelledby="w98-welcome-title">
     <div class="w98-desktop">

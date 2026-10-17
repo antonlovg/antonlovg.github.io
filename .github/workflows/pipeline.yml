@@ -23,12 +23,13 @@ jobs:
         with:
           node-version: 22
 
-      # Also validates games/shared-library.json, including commits made by "Publish to GitHub".
+      # Unit tests, page-consistency and security checks; also validates games/shared-library.json,
+      # including commits made by "Publish to GitHub".
       - name: Unit tests
-        run: node --test --test-reporter=tap games/tests/*.test.mjs | tee test-report.tap
+        run: node --test --test-reporter=tap tests/*.test.mjs games/tests/*.test.mjs | tee test-report.tap
 
       - name: JavaScript syntax
-        run: for file in home.js games/app.js games/shared-library.js games/theme-init.js scripts/*.mjs; do node --check "$file"; done
+        run: for file in home.js assets/*.js games/app.js games/shared-library.js games/url-state.js scripts/*.mjs; do node --check "$file"; done
 
       - name: Build site
         run: node scripts/build-site.mjs _site
