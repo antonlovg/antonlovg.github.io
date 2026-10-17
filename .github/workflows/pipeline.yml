@@ -56,6 +56,10 @@ jobs:
       - name: Fetch Steam prices
         run: node scripts/fetch-prices.mjs _site
 
+      # Stockholm's current weather sets the site's mood. The hourly uptime run keeps it fresh.
+      - name: Fetch Stockholm weather
+        run: node scripts/fetch-weather.mjs _site
+
       # Fail early and clearly if the runner image ever stops shipping Chrome.
       - name: Find Chrome
         run: |

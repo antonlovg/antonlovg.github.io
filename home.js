@@ -1,4 +1,4 @@
-// Homepage: live pipeline panel, local time, "now playing" and the Windows 98 easter egg.
+// Homepage: live pipeline panel, local time and weather, "now playing" and the Windows 98 easter egg.
 // The terminal, theme menu and shortcuts come from /assets/site.js (SiteShell), which also loads the shared data.
 // Everything is same-origin except cover images from Steam's CDN; nothing is stored in the browser.
 (() => {
@@ -122,6 +122,7 @@
   // "14:32 in Sweden · 1 hour ahead of you". Sweden has one time zone, so this is exact.
 
   const ZONE = 'Europe/Stockholm';
+  let weatherData = null;
 
   // Minutes the zone is ahead of UTC at the given moment.
   function zoneOffset(date) {
@@ -147,6 +148,9 @@
     const night = hour >= 23 || hour < 6;
     const text = el('span', {}, el('strong', { text: time }), ` ${t('in Sweden')} · ${relation(now)}`);
     if (night) text.append(` · ${t('probably asleep')}`);
+    // "· 5 °C, light rain", credited to Open-Meteo as its licence asks.
+    const forecast = weatherData ? SiteWeather.describe(weatherData, now, { t, locale: SiteI18n.locale }) : '';
+    if (forecast) text.append(' · ', el('a', { className: 'local-weather', text: forecast, attrs: { href: 'https://open-meteo.com/', title: t('Weather data: Open-Meteo.com') } }));
     $('#local-time-text').replaceChildren(text);
     $('#local-time').classList.toggle('is-night', hour >= 19 || hour < 7);
     $('#local-time').hidden = false;
@@ -154,6 +158,7 @@
 
   function startClock() {
     renderLocalTime();
+    SiteShell.data.weather().then(({ data }) => { if (data) { weatherData = data; renderLocalTime(); } });
     // Tick on the minute.
     setTimeout(() => { renderLocalTime(); setInterval(renderLocalTime, 60000); }, 60000 - (Date.now() % 60000) + 50);
   }

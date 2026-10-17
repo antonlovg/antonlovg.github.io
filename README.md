@@ -4,14 +4,14 @@ Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions p
 
 | Path | What it is |
 | --- | --- |
-| `/` | Homepage: live pipeline panel, local time, now playing, projects, terminal (`index.html`, `style.css`, `home.js`) |
+| `/` | Homepage: live pipeline panel, local time and weather, now playing, projects, terminal (`index.html`, `style.css`, `home.js`) |
 | `/sv/…`, `/no/…` | Swedish and Norwegian versions of every page above except the World Cup archive, generated at build time |
 | `/privacy/`, `/cookies/` | Privacy and cookie policies (share `style.css`) |
 | `/games/` | Shared game library, see [`games/README.md`](games/README.md) |
 | `/ops/`, `/status/`, `/changelog/` | DORA metrics, deploys, last-run replay, architecture; hourly uptime; changelog + RSS. Templates filled at build time |
 | `/wc2026/` | World Cup 2026 group-stage schedule in CEST (archive) |
 | `/secret/` | Redirect to `/games/` (old address) |
-| `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`, `i18n.js`), favicon and self-hosted fonts (Manrope, JetBrains Mono) |
+| `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`, `i18n.js`, `weather.js`), favicon and self-hosted fonts (Manrope, JetBrains Mono) |
 | `404.html` | Not-found page for every language: guesses the page you meant (`assets/not-found.js`) |
 | `i18n/` | Swedish and Norwegian translations (not deployed), see [Languages](#languages) |
 | `scripts/` | Build, audit, uptime and price scripts used by the workflows (not deployed) |
@@ -25,6 +25,7 @@ Every page uses the same header, navigation and behaviour from `/assets/`:
 - **`site.css`** styles the header, the mobile tab bar, the terminal and theme menu, and the page transitions (cross-document View Transitions; unsupported browsers just navigate normally).
 - **`site.js`** builds the JavaScript-only controls (terminal button, theme menu), the terminal on <kbd>Ctrl</kbd>+<kbd>K</kbd>, the <kbd>/</kbd> shortcut (focuses the page's `[data-page-search]`, otherwise opens the terminal) and the Konami code. Pages can add terminal results with `SiteShell.registerSearch()`; the game library adds game titles.
 - **`i18n.js`** knows the languages and gives scripts `SiteI18n.t()` for their text, plus the language menu's links. `site.js` also offers a visitor whose browser prefers Swedish, Norwegian or English the matching version once, without redirecting; the answer is stored as `lovgren-lang`.
+- **`weather.js`** gives every page Stockholm's current weather as a mood: a tint and a canvas behind the page with rain, snow, clouds, fog or stars (twilight around sunrise and sunset, dimmer in the dark winter weeks, glowing midsummer nights). It's decorative only: still for reduced motion, paused in hidden tabs, off in the game library (`data-weather="off"`), and visitors can turn it off with **Weather effects** in the theme menu (stored as `lovgren-weather`). The homepage also shows the temperature next to the local time. Try any weather with `?weather=rain|snow|sleet|thunder|fog|clouds|clear`, optionally with `&phase=day|twilight|night`.
 - Typography uses a fluid type scale (`--step--1` … `--step-5` in `site.css`), balanced headings and self-hosted JetBrains Mono for everything monospaced. Sections rise into place with CSS scroll-driven animations (transforms only, never opacity, and off for reduced motion).
 - Each page has a `<script type="speculationrules">` block so same-site links are prerendered on hover. It's the only inline script, allowed by the CSP keyword `'inline-speculation-rules'`.
 
@@ -34,12 +35,13 @@ The header markup is repeated in each page. `tests/site-pages.test.mjs` checks t
 
 `.github/workflows/pipeline.yml` runs on every push and pull request:
 
-1. **Test**: unit tests (shared library, URL state, wheel, shell, games, Minesweeper, DORA/uptime/changelog maths, HTML escaping, translations, 404 guesses, page consistency and security rules; also validates `games/shared-library.json`) and a syntax check of all scripts.
+1. **Test**: unit tests (shared library, URL state, wheel, shell, games, Minesweeper, weather, DORA/uptime/changelog maths, HTML escaping, translations, 404 guesses, page consistency and security rules; also validates `games/shared-library.json`) and a syntax check of all scripts.
 2. **Build**: `scripts/build-site.mjs` copies only git-tracked files into `_site/`, so ignored local files can never be deployed. It also writes `now-playing.json` (the in-progress games, with cover URLs on Steam's image CDN) and a provisional `status.json`.
 3. **Prices**: `scripts/fetch-prices.mjs` fetches Steam prices for the game library: euro from the Swedish store into `games/prices.json` (English and Swedish pages) and Norwegian kroner from the Norwegian store into `games/prices-nok.json` (Norwegian pages). Visitors never contact Steam for prices; if Steam is unreachable the build continues without them.
-4. **Social previews**: `scripts/make-og.mjs` renders a 1200×630 preview card for every page in every language in headless Chrome, with live numbers (games on sale, DORA level, uptime, commits), into `og/<lang>/<page>.png`.
-5. **Audit**: `scripts/audit-site.mjs` serves `_site/`, runs axe-core (WCAG 2.1 AA) on every page in every language, checks that every page's preview image exists, counts cookies and third-party requests, and runs Lighthouse on the homepage. Results go into `status.json`, which the homepage's pipeline panel shows. **Any accessibility violation, cookie, or third-party request on the homepage, policy, 404 or World Cup pages fails the run and blocks the deploy.** The only allowed exception is images from `*.steamstatic.com` on the homepage (the “Now playing” covers), which the homepage's CSP also limits to.
-6. **Deploy**: pushes to `main` publish `_site/` with GitHub Pages. Pull requests stop after the audit.
+4. **Weather**: `scripts/fetch-weather.mjs` fetches the current weather in Stockholm from [Open-Meteo](https://open-meteo.com/) (no key; data CC BY 4.0) into `weather.json`. The hourly uptime run keeps it fresh; data older than six hours is ignored, and if Open-Meteo is down the site just shows no weather.
+5. **Social previews**: `scripts/make-og.mjs` renders a 1200×630 preview card for every page in every language in headless Chrome, with live numbers (games on sale, DORA level, uptime, commits), into `og/<lang>/<page>.png`.
+6. **Audit**: `scripts/audit-site.mjs` serves `_site/`, runs axe-core (WCAG 2.1 AA) on every page in every language, checks that every page's preview image exists, counts cookies and third-party requests, and runs Lighthouse on the homepage. Results go into `status.json`, which the homepage's pipeline panel shows. **Any accessibility violation, cookie, or third-party request on the homepage, policy, 404 or World Cup pages fails the run and blocks the deploy.** The only allowed exception is images from `*.steamstatic.com` on the homepage (the “Now playing” covers), which the homepage's CSP also limits to.
+7. **Deploy**: pushes to `main` publish `_site/` with GitHub Pages. Pull requests stop after the audit.
 
 The build step also writes the Swedish and Norwegian pages, canonical/hreflang/Open Graph tags, `sitemap.xml` and `robots.txt`, and runs `scripts/build-ops.mjs`, which fills the `/ops`, `/status` and `/changelog` templates (between `<!-- build:name -->` markers) from the git history, this workflow's run history (via the GitHub API) and the uptime data. All of it is HTML-escaped, and every source may be missing without breaking the build.
 
@@ -68,6 +70,7 @@ One-time setup: in the repository on GitHub, open **Settings → Pages** and set
 node --test --test-reporter=tap tests/*.test.mjs games/tests/*.test.mjs > test-report.tap
 TEST_REPORT=test-report.tap node scripts/build-site.mjs _site
 node scripts/fetch-prices.mjs _site
+node scripts/fetch-weather.mjs _site
 node scripts/make-og.mjs _site
 npm install --no-save --no-package-lock --prefix .audit axe-core@4.10.2
 node scripts/audit-site.mjs _site --axe .audit/node_modules/axe-core/axe.min.js --lighthouse --gate

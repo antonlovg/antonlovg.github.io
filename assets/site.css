@@ -267,6 +267,41 @@ html { font-kerning: normal; font-optical-sizing: auto; font-synthesis: none; te
 .theme-option svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .theme-option[aria-checked="true"] { background: var(--shell-accent-soft); color: var(--shell-accent-text); }
 .theme-option[aria-checked="true"]::after { margin-left: auto; content: '✓'; font-weight: 800; }
+.theme-menu hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--shell-line); }
+/* A switch, not a choice of theme: only the tick shows it's on. */
+.weather-option[aria-checked="true"] { background: transparent; color: var(--shell-text); }
+.weather-option[aria-checked="true"]:hover { background: color-mix(in srgb, var(--shell-line) 60%, transparent); }
+
+/* ---------- Weather (assets/weather.js) ----------
+   Stockholm's weather behind the page: a tint from data-weather-* on <html>, and a canvas with the
+   rain, snow, clouds, fog or stars. Purely decorative and faded out towards the bottom of the screen. */
+
+:root { --weather-tint: transparent; }
+:root[data-weather-kind="clear"][data-weather-phase="day"] { --weather-tint: rgb(245 181 68 / 15%); }
+:root[data-weather-phase="twilight"] { --weather-tint: rgb(255 128 96 / 14%); }
+:root[data-weather-kind="clear"][data-weather-phase="night"] { --weather-tint: rgb(84 88 224 / 14%); }
+:root[data-weather-kind="clouds"] { --weather-tint: rgb(140 150 172 / 14%); }
+:root[data-weather-kind="fog"] { --weather-tint: rgb(165 170 182 / 20%); }
+:root[data-weather-kind="rain"],
+:root[data-weather-kind="sleet"] { --weather-tint: rgb(70 125 200 / 15%); }
+:root[data-weather-kind="snow"] { --weather-tint: rgb(190 215 255 / 20%); }
+:root[data-weather-kind="thunder"] { --weather-tint: rgb(120 88 220 / 18%); }
+/* The dark weeks of winter are dimmer; midsummer nights glow. */
+:root[data-weather-season="dark"] { --weather-dim: 0.7; }
+:root[data-weather-season="bright"][data-weather-phase="twilight"] { --weather-tint: rgb(255 170 120 / 16%); }
+
+.weather-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(70rem 32rem at 60% -10%, var(--weather-tint), transparent 70%);
+  opacity: var(--weather-dim, 1);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 85%);
+  pointer-events: none;
+}
 
 /* ---------- Language menu and suggestion ---------- */
 
@@ -517,6 +552,7 @@ html:active-view-transition-type(page)::view-transition-new(root) { animation: s
 
 @media print {
   .site-bar,
-  .site-nav { display: none !important; }
+  .site-nav,
+  .weather-layer { display: none !important; }
   body { padding-bottom: 0; }
 }

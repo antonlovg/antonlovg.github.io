@@ -1,5 +1,5 @@
 // lovgren.dev shell behaviour, shared by every page:
-// theme and language menus, the terminal button (lovsh loads on first use), keyboard shortcuts,
+// theme and language menus, the Stockholm weather mood, the terminal button (lovsh loads on first use), keyboard shortcuts,
 // the Konami code, and shared data loaders. Text goes through SiteI18n (assets/i18n.js).
 // Builds its own controls so visitors without JavaScript never see dead buttons.
 // Everything is same-origin; all text is inserted with textContent.
@@ -11,7 +11,8 @@
     system: ['M4 5h16v11H4z', 'M9 20h6M12 16v4'],
     light: ['M12 4V2M12 22v-2M4.9 4.9 3.5 3.5M20.5 20.5l-1.4-1.4M4 12H2M22 12h-2M4.9 19.1l-1.4 1.4M20.5 3.5l-1.4 1.4', 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'],
     dark: ['M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z'],
-    language: ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'M3.5 9h17M3.5 15h17', 'M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z']
+    language: ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'M3.5 9h17M3.5 15h17', 'M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z'],
+    weather: ['M7 15a4 4 0 0 1 .5-7.97A5 5 0 0 1 17 8a3.5 3.5 0 0 1 0 7z', 'M9 18l-1 2M13 18l-1 2M17 18l-1 2']
   };
   const i18n = globalThis.SiteI18n;
   const { t } = i18n;
@@ -90,6 +91,41 @@
     return t('just now');
   }
 
+  // ---------- Weather (assets/weather.js, loaded when there's weather to show) ----------
+  // Stockholm's current weather tints the page and adds rain, snow, stars and so on behind it.
+  // Pages can opt out with <html data-weather="off">; visitors with "Weather effects" in the theme menu.
+
+  const WEATHER_KEY = 'lovgren-weather';
+  const weatherAllowed = !document.documentElement.dataset.forceScheme && document.documentElement.dataset.weather !== 'off';
+  const weatherEffectsOn = () => { try { return localStorage.getItem(WEATHER_KEY) !== 'off'; } catch { return true; } };
+  let weatherReady = null;
+
+  function weather() {
+    weatherReady ||= (async () => {
+      const data = await getJson('/weather.json').catch(() => null);
+      if (!data && !/[?&]weather=/.test(location.search)) return { data: null, mood: null };
+      await loadScript('/assets/weather.js');
+      const mood = SiteWeather.mount(data, { effects: weatherAllowed && weatherEffectsOn() });
+      return { data, mood };
+    })().catch(() => ({ data: null, mood: null }));
+    return weatherReady;
+  }
+
+  function setWeatherEffects(on) {
+    try {
+      if (on) localStorage.removeItem(WEATHER_KEY);
+      else localStorage.setItem(WEATHER_KEY, 'off');
+    } catch {
+      // Storage blocked: the choice still applies to this page.
+    }
+    weather().then(({ data }) => {
+      if (!globalThis.SiteWeather) return;
+      if (on) SiteWeather.mount(data);
+      else globalThis.SiteWeather?.stop();
+      document.dispatchEvent(new CustomEvent('site:weatherchange', { detail: { on } }));
+    });
+  }
+
   // ---------- Theme menu ----------
 
   const actions = $('.site-actions');
@@ -102,6 +138,15 @@
       const option = el('button', { className: 'theme-option', attrs: { type: 'button', 'data-theme-option': preference, 'aria-checked': 'false', role: 'menuitemradio' } }, icon(preference), THEME_LABELS[preference]);
       option.addEventListener('click', () => { SiteTheme.set(preference); menu.hidePopover(); button.focus(); });
       menu.append(option);
+    }
+    if (weatherAllowed) {
+      const effects = el('button', { className: 'theme-option weather-option', attrs: { type: 'button', role: 'menuitemcheckbox', 'aria-checked': String(weatherEffectsOn()) } }, icon('weather'), t('Weather effects'));
+      effects.addEventListener('click', () => {
+        const on = effects.getAttribute('aria-checked') !== 'true';
+        effects.setAttribute('aria-checked', String(on));
+        setWeatherEffects(on);
+      });
+      menu.append(el('hr', { attrs: { role: 'separator' } }), effects);
     }
     menu.setAttribute('role', 'menu');
     menu.addEventListener('keydown', event => {
@@ -123,7 +168,7 @@
       const label = t('Theme: {name}', { name: THEME_LABELS[preference] });
       button.replaceChildren(icon(shown), el('span', { className: 'sr-only', text: label }));
       button.title = label;
-      for (const option of menu.querySelectorAll('.theme-option')) option.setAttribute('aria-checked', String(option.dataset.themeOption === preference));
+      for (const option of menu.querySelectorAll('[data-theme-option]')) option.setAttribute('aria-checked', String(option.dataset.themeOption === preference));
     }
     sync();
     document.addEventListener('site:themechange', sync);
@@ -275,6 +320,8 @@
     }
   }
   suggestLanguage();
+  // The weather is decoration, so it waits until the page itself has settled.
+  (globalThis.requestIdleCallback || (callback => setTimeout(callback, 300)))(() => { weather(); }, { timeout: 2000 });
 
   // ---------- Keyboard shortcuts ----------
 
@@ -313,6 +360,6 @@
     openTerminal,
     closeTerminal,
     registerSearch: provider => { if (typeof provider === 'function') searchProviders.push(provider); },
-    data: Object.freeze({ status, nowPlaying, timeAgo, steamCover })
+    data: Object.freeze({ status, nowPlaying, timeAgo, steamCover, weather })
   });
 })();
