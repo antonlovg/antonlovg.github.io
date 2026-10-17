@@ -1,0 +1,13 @@
+# Keeps the pinned GitHub Actions (and their SHAs) up to date with weekly pull requests.
+# Each pull request runs the full pipeline before anything is merged.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

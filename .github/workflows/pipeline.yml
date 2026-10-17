@@ -2,6 +2,8 @@
 # The audit step gates the deploy: any accessibility violation, cookie or third-party request on
 # the homepage and info pages fails the run. Its results are published as /status.json, which the
 # homepage shows as the live pipeline panel. Requires Settings → Pages → Source: "GitHub Actions".
+# Actions are pinned to full commit SHAs (supply-chain safety); Dependabot keeps them current.
+# The runner image is pinned too, so an OS migration can't silently change the audit browser.
 name: Pipeline
 
 on:
@@ -15,11 +17,13 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
 
@@ -39,21 +43,27 @@ jobs:
       - name: Install audit tools
         run: npm install --no-save --no-package-lock --prefix .audit axe-core@4.10.2
 
+      # Fail early and clearly if the runner image ever stops shipping Chrome.
+      - name: Find Chrome
+        run: |
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$chrome" ]; then echo "::error::Chrome not found on this runner; the audit needs it."; exit 1; fi
+          "$chrome" --version
+          echo "CHROME_PATH=$chrome" >> "$GITHUB_ENV"
+
       - name: Audit accessibility, privacy and performance
         run: node scripts/audit-site.mjs _site --axe .audit/node_modules/axe-core/axe.min.js --lighthouse --gate
-        env:
-          CHROME_PATH: /usr/bin/google-chrome
 
       - name: Upload site
         if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
 
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write
@@ -65,4 +75,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
