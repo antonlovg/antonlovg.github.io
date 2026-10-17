@@ -10,9 +10,25 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/assets/fonts/jetbrains-mono-latin-wght.woff2') format('woff2');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --shell-font: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --shell-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+  --shell-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+  /* Fluid type scale (1.2 on phones → 1.25 on desktops), shared by every page. */
+  --step--1: clamp(0.83rem, 0.81rem + 0.1vw, 0.89rem);
+  --step-0: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --step-1: clamp(1.2rem, 1.14rem + 0.3vw, 1.33rem);
+  --step-2: clamp(1.44rem, 1.33rem + 0.55vw, 1.66rem);
+  --step-3: clamp(1.73rem, 1.54rem + 0.95vw, 2.07rem);
+  --step-4: clamp(2.07rem, 1.76rem + 1.55vw, 2.59rem);
+  --step-5: clamp(2.49rem, 1.98rem + 2.55vw, 4.4rem);
   --shell-max: 1480px;
   --shell-gutter: clamp(16px, 3.5vw, 40px);
   --shell-height: 64px;
@@ -93,6 +109,17 @@
   text-decoration: none;
 }
 .skip-link:focus { top: 12px; }
+
+/* ---------- Typography defaults ---------- */
+
+html { font-kerning: normal; font-optical-sizing: auto; font-synthesis: none; text-rendering: optimizeLegibility; }
+/* Headings wrap into even lines; paragraphs avoid a lonely last word. */
+:where(h1, h2, h3, h4, figcaption) { text-wrap: balance; }
+/* Short titles in narrow cards read better unbalanced ("Co-Op" stays on one line). */
+:where(.np-title, .card-title) { text-wrap: wrap; }
+:where(p, li, dd, td, blockquote, summary) { text-wrap: pretty; }
+:where(table, time, kbd, .metric-value, .view-count, .score-ring) { font-variant-numeric: tabular-nums; }
+:where(abbr[title]) { text-decoration: underline dotted; text-underline-offset: 0.2em; }
 
 /* ---------- Header ---------- */
 
@@ -241,6 +268,45 @@
 .theme-option[aria-checked="true"] { background: var(--shell-accent-soft); color: var(--shell-accent-text); }
 .theme-option[aria-checked="true"]::after { margin-left: auto; content: '✓'; font-weight: 800; }
 
+/* ---------- Language menu and suggestion ---------- */
+
+.language-button { gap: 6px; }
+.language-button .language-code { font: 700 12.5px/1 var(--shell-mono); letter-spacing: 0.02em; }
+.language-menu ul { margin: 0; padding: 0; list-style: none; }
+.language-menu a { text-decoration: none; }
+.language-menu a[aria-current] { background: var(--shell-accent-soft); color: var(--shell-accent-text); }
+.language-menu a[aria-current]::after { margin-left: auto; content: '✓'; font-weight: 800; }
+
+.lang-suggest {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + var(--shell-tabbar));
+  z-index: 45;
+  max-width: min(22rem, calc(100% - 32px));
+  padding: 14px 16px;
+  border: 1px solid var(--shell-line);
+  border-radius: 14px;
+  background: var(--shell-surface);
+  color: var(--shell-text);
+  box-shadow: var(--shell-shadow);
+  font: 600 14.5px/1.45 var(--shell-font);
+  animation: shell-pop .2s var(--ease-out);
+}
+.lang-suggest p { margin: 0 0 10px; }
+.lang-suggest-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.lang-suggest-go,
+.lang-suggest-close {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font: 750 14px var(--shell-font);
+}
+.lang-suggest-go { background: var(--shell-accent); color: var(--shell-accent-ink); text-decoration: none; }
+.lang-suggest-close { border: 1px solid var(--shell-line-strong); background: transparent; color: var(--shell-text); cursor: pointer; }
+.lang-suggest :focus-visible { outline: 2px solid var(--shell-accent); outline-offset: 2px; }
+
 /* ---------- Page transitions (cross-document View Transitions) ---------- */
 
 @view-transition {
@@ -257,6 +323,39 @@ html:active-view-transition-type(page)::view-transition-new(root) { animation: s
 @keyframes shell-fade-out { to { opacity: 0; } }
 @keyframes shell-rise-in { from { opacity: 0; transform: translateY(10px); } }
 @keyframes shell-pop { from { opacity: 0; transform: translateY(-4px); } }
+
+/* ---------- Scroll-driven motion (CSS only, compositor-run) ----------
+   Content rises into place as it scrolls into view. Only transforms are animated, never opacity,
+   so text keeps full contrast at every moment. Off for reduced motion and in older browsers. */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    :where(.home .section-head, .now-playing, .link-list > li, .contact-list, .ops-section > .section-head, .metric, .chart, .replay, .arch, .component, .incidents, .changelog-day) {
+      animation: shell-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+  }
+  /* The header lifts off the page once you scroll, and article pages show reading progress. */
+  .site-bar { animation: shell-bar-lift linear both; animation-timeline: scroll(root); animation-range: 0 140px; }
+  body:has(.article) .site-bar::after {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    background: var(--shell-accent);
+    content: '';
+    transform-origin: 0 50%;
+    /* Hidden by default: a page too short to scroll has an inactive timeline and shows no bar. */
+    scale: 0 1;
+    animation: shell-progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+@keyframes shell-reveal { from { translate: 0 2.25rem; scale: 0.97; } }
+@keyframes shell-bar-lift { to { border-bottom-color: var(--shell-line-strong); box-shadow: 0 12px 32px -22px rgb(10 12 24 / 55%); } }
+@keyframes shell-progress { from { scale: 0 1; } to { scale: 1 1; } }
 
 /* ---------- Terminal ---------- */
 
@@ -412,6 +511,7 @@ html:active-view-transition-type(page)::view-transition-new(root) { animation: s
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
   .theme-menu:popover-open,
+  .lang-suggest,
   .terminal[open] { animation: none; }
 }
 

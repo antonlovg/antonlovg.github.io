@@ -4,14 +4,16 @@ Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions p
 
 | Path | What it is |
 | --- | --- |
-| `/` | Homepage: live pipeline panel, now playing, projects, terminal (`index.html`, `style.css`, `home.js`) |
+| `/` | Homepage: live pipeline panel, local time, now playing, projects, terminal (`index.html`, `style.css`, `home.js`) |
+| `/sv/…`, `/no/…` | Swedish and Norwegian versions of every page above except the World Cup archive, generated at build time |
 | `/privacy/`, `/cookies/` | Privacy and cookie policies (share `style.css`) |
 | `/games/` | Shared game library, see [`games/README.md`](games/README.md) |
 | `/ops/`, `/status/`, `/changelog/` | DORA metrics, deploys, last-run replay, architecture; hourly uptime; changelog + RSS. Templates filled at build time |
 | `/wc2026/` | World Cup 2026 group-stage schedule in CEST (archive) |
 | `/secret/` | Redirect to `/games/` (old address) |
-| `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`), favicon, self-hosted fonts and the social preview image |
-| `404.html` | Not-found page |
+| `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`, `i18n.js`), favicon and self-hosted fonts (Manrope, JetBrains Mono) |
+| `404.html` | Not-found page for every language: guesses the page you meant (`assets/not-found.js`) |
+| `i18n/` | Swedish and Norwegian translations (not deployed), see [Languages](#languages) |
 | `scripts/` | Build, audit, uptime and price scripts used by the workflows (not deployed) |
 | `status/incidents/` | Optional incident notes for the status page (not deployed) |
 
@@ -22,6 +24,8 @@ Every page uses the same header, navigation and behaviour from `/assets/`:
 - **`theme.js`** runs in `<head>` (not deferred) and applies the sitewide theme before the first paint. The choice (System, Light, Dark, plus Ocean and Ember in the game library) is stored as `lovgren-theme`, and only when it isn't System. Pages read `data-scheme` (light/dark) and the game library also reads `data-theme`.
 - **`site.css`** styles the header, the mobile tab bar, the terminal and theme menu, and the page transitions (cross-document View Transitions; unsupported browsers just navigate normally).
 - **`site.js`** builds the JavaScript-only controls (terminal button, theme menu), the terminal on <kbd>Ctrl</kbd>+<kbd>K</kbd>, the <kbd>/</kbd> shortcut (focuses the page's `[data-page-search]`, otherwise opens the terminal) and the Konami code. Pages can add terminal results with `SiteShell.registerSearch()`; the game library adds game titles.
+- **`i18n.js`** knows the languages and gives scripts `SiteI18n.t()` for their text, plus the language menu's links. `site.js` also offers a visitor whose browser prefers Swedish, Norwegian or English the matching version once, without redirecting; the answer is stored as `lovgren-lang`.
+- Typography uses a fluid type scale (`--step--1` … `--step-5` in `site.css`), balanced headings and self-hosted JetBrains Mono for everything monospaced. Sections rise into place with CSS scroll-driven animations (transforms only, never opacity, and off for reduced motion).
 - Each page has a `<script type="speculationrules">` block so same-site links are prerendered on hover. It's the only inline script, allowed by the CSP keyword `'inline-speculation-rules'`.
 
 The header markup is repeated in each page. `tests/site-pages.test.mjs` checks that it's identical everywhere, that the current page is marked, and that every page keeps a strict CSP with no inline scripts or event handlers.
@@ -30,13 +34,23 @@ The header markup is repeated in each page. `tests/site-pages.test.mjs` checks t
 
 `.github/workflows/pipeline.yml` runs on every push and pull request:
 
-1. **Test**: unit tests (shared library, URL state, wheel, shell, games, Minesweeper, DORA/uptime/changelog maths, HTML escaping, page consistency and security rules; also validates `games/shared-library.json`) and a syntax check of all scripts.
+1. **Test**: unit tests (shared library, URL state, wheel, shell, games, Minesweeper, DORA/uptime/changelog maths, HTML escaping, translations, 404 guesses, page consistency and security rules; also validates `games/shared-library.json`) and a syntax check of all scripts.
 2. **Build**: `scripts/build-site.mjs` copies only git-tracked files into `_site/`, so ignored local files can never be deployed. It also writes `now-playing.json` (the in-progress games, with cover URLs on Steam's image CDN) and a provisional `status.json`.
-3. **Prices**: `scripts/fetch-prices.mjs` fetches Steam prices in euro for the game library into `games/prices.json`. Visitors never contact Steam for prices; if Steam is unreachable the build continues without them.
-4. **Audit**: `scripts/audit-site.mjs` serves `_site/`, runs axe-core (WCAG 2.1 AA) on every page, counts cookies and third-party requests, and runs Lighthouse on the homepage. Results go into `status.json`, which the homepage's pipeline panel shows. **Any accessibility violation, cookie, or third-party request on the homepage, policy, 404 or World Cup pages fails the run and blocks the deploy.** The only allowed exception is images from `*.steamstatic.com` on the homepage (the “Now playing” covers), which the homepage's CSP also limits to.
-5. **Deploy**: pushes to `main` publish `_site/` with GitHub Pages. Pull requests stop after the audit.
+3. **Prices**: `scripts/fetch-prices.mjs` fetches Steam prices for the game library: euro from the Swedish store into `games/prices.json` (English and Swedish pages) and Norwegian kroner from the Norwegian store into `games/prices-nok.json` (Norwegian pages). Visitors never contact Steam for prices; if Steam is unreachable the build continues without them.
+4. **Social previews**: `scripts/make-og.mjs` renders a 1200×630 preview card for every page in every language in headless Chrome, with live numbers (games on sale, DORA level, uptime, commits), into `og/<lang>/<page>.png`.
+5. **Audit**: `scripts/audit-site.mjs` serves `_site/`, runs axe-core (WCAG 2.1 AA) on every page in every language, checks that every page's preview image exists, counts cookies and third-party requests, and runs Lighthouse on the homepage. Results go into `status.json`, which the homepage's pipeline panel shows. **Any accessibility violation, cookie, or third-party request on the homepage, policy, 404 or World Cup pages fails the run and blocks the deploy.** The only allowed exception is images from `*.steamstatic.com` on the homepage (the “Now playing” covers), which the homepage's CSP also limits to.
+6. **Deploy**: pushes to `main` publish `_site/` with GitHub Pages. Pull requests stop after the audit.
 
-The build step also runs `scripts/build-ops.mjs`, which fills the `/ops`, `/status` and `/changelog` templates (between `<!-- build:name -->` markers) from the git history, this workflow's run history (via the GitHub API) and the uptime data. All of it is HTML-escaped, and every source may be missing without breaking the build.
+The build step also writes the Swedish and Norwegian pages, canonical/hreflang/Open Graph tags, `sitemap.xml` and `robots.txt`, and runs `scripts/build-ops.mjs`, which fills the `/ops`, `/status` and `/changelog` templates (between `<!-- build:name -->` markers) from the git history, this workflow's run history (via the GitHub API) and the uptime data. All of it is HTML-escaped, and every source may be missing without breaking the build.
+
+## Languages
+
+The English pages are the source. `scripts/build-site.mjs` builds each page again in Swedish (`/sv/`) and Norwegian Bokmål (`/no/`, `lang="nb"`) with `scripts/lib/i18n.mjs`, which looks up every piece of text in the tables in `i18n/` (each row is `[English, Swedish, Norwegian]`):
+
+- `i18n/pages.mjs` and `i18n/legal.mjs`: text in the HTML. An element with only text and inline tags is translated as a whole, keyed by its HTML, so the translation can move a link; other text is translated piece by piece. Links to pages are pointed at the same language.
+- `i18n/ui.mjs`: text made by scripts with `SiteI18n.t('…')` (or marked with `N_('…')` where it's defined). It ships to the browser as `/assets/i18n/<code>.js`.
+
+**When you change English text, add or update its row.** The build stops and lists anything without a translation, and `tests/i18n.test.mjs` checks every page and script string, placeholders such as `{n}`, links and markup. Wrap a block in `data-i18n="off"` to keep it English (it's marked `lang="en"`), as the Windows 98 easter egg and the terminal are. Commit messages, game data from Steam and the World Cup archive stay English.
 
 ## Uptime monitor
 
@@ -53,12 +67,18 @@ One-time setup: in the repository on GitHub, open **Settings → Pages** and set
 ```bash
 node --test --test-reporter=tap tests/*.test.mjs games/tests/*.test.mjs > test-report.tap
 TEST_REPORT=test-report.tap node scripts/build-site.mjs _site
+node scripts/fetch-prices.mjs _site
+node scripts/make-og.mjs _site
 npm install --no-save --no-package-lock --prefix .audit axe-core@4.10.2
 node scripts/audit-site.mjs _site --axe .audit/node_modules/axe-core/axe.min.js --lighthouse --gate
 python -m http.server 8000 --directory _site
 ```
 
 Then open <http://localhost:8000/>. For a quick look without the pipeline, serve the repository root instead; the homepage falls back to reading the game library directly, without covers. The audit needs Chrome (set `CHROME_PATH` if it isn't found) and `--lighthouse` downloads Lighthouse with `npx`.
+
+## Not-found page
+
+GitHub Pages serves one `404.html` for every address, so the page takes its language from the address (`/sv/…`, `/no/…`) and loads both dictionaries. `assets/not-found.js` compares the address with every page and common words for it (in all three languages, allowing a typo or two swapped letters), turns `/games/<title>` into a library search, and offers the terminal. The address is only ever shown as text.
 
 ## Terminal and games
 

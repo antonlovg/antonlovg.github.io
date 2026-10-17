@@ -1,4 +1,4 @@
-// Homepage: live pipeline panel, "now playing" and the Windows 98 easter egg.
+// Homepage: live pipeline panel, local time, "now playing" and the Windows 98 easter egg.
 // The terminal, theme menu and shortcuts come from /assets/site.js (SiteShell), which also loads the shared data.
 // Everything is same-origin except cover images from Steam's CDN; nothing is stored in the browser.
 (() => {
@@ -7,6 +7,10 @@
   const $ = selector => document.querySelector(selector);
   const WORKFLOW_URL = 'https://github.com/antonlovg/antonlovg.github.io/actions/workflows/pipeline.yml';
   const { status: loadStatus, nowPlaying: loadNowPlaying, timeAgo, steamCover } = SiteShell.data;
+  const { t } = SiteI18n;
+  const N_ = text => text;
+  // Steam's genre names, shown translated on the cards (unknown ones stay as Steam wrote them).
+  N_('Indie'); N_('Casual'); N_('Strategy'); N_('Racing'); N_('Sports'); N_('Massively Multiplayer'); N_('Early Access'); N_('Free to Play');
 
   function el(tag, { className = '', text = '', attrs = {} } = {}, ...children) {
     const node = document.createElement(tag);
@@ -42,49 +46,49 @@
       item.classList.toggle('is-fail', ok === false);
       let state = item.querySelector('.sr-only');
       if (!state) item.append(state = el('span', { className: 'sr-only' }));
-      state.textContent = `: ${ok === true ? 'passed' : ok === false ? 'failed' : 'no data'}`;
+      state.textContent = `: ${ok === true ? t('passed') : ok === false ? t('failed') : t('no data')}`;
     }
     const values = Object.values(stages);
     const state = values.includes(false) ? 'fail' : values.every(value => value === true) ? 'ok' : 'unknown';
     panel.dataset.state = state;
-    $('#status-badge').textContent = state === 'ok' ? 'All checks passing' : state === 'fail' ? 'Issues found' : 'Partial results';
+    $('#status-badge').textContent = state === 'ok' ? t('All checks passing') : state === 'fail' ? t('Issues found') : t('Partial results');
 
     setValue('#status-deploy', el('span', {}, el('a', { text: status.commit.short, attrs: { href: status.commit.url, rel: 'noopener', title: status.commit.message } }), ` · ${timeAgo(status.generatedAt)}`));
 
-    if (status.tests) setValue('#status-tests', status.tests.failed ? `${status.tests.failed} failed` : `${status.tests.passed} passed`, status.tests.failed ? 'fail' : 'ok');
-    else setValue('#status-tests', 'No data', 'dim');
+    if (status.tests) setValue('#status-tests', status.tests.failed ? t('{n} failed', { n: status.tests.failed }) : t('{n} passed', { n: status.tests.passed }), status.tests.failed ? 'fail' : 'ok');
+    else setValue('#status-tests', t('No data'), 'dim');
 
     if (status.accessibility) {
       const issues = status.accessibility.violations;
-      setValue('#status-a11y', `${issues} ${issues === 1 ? 'issue' : 'issues'} · ${status.accessibility.pages} pages`, issues ? 'fail' : 'ok');
-    } else setValue('#status-a11y', 'No data', 'dim');
+      setValue('#status-a11y', t(issues === 1 ? '{n} issue · {pages} pages' : '{n} issues · {pages} pages', { n: issues, pages: status.accessibility.pages }), issues ? 'fail' : 'ok');
+    } else setValue('#status-a11y', t('No data'), 'dim');
 
     if (status.privacy) {
       const { cookies, thirdPartyRequests } = status.privacy;
-      setValue('#status-privacy', `${cookies} cookies · ${thirdPartyRequests} trackers`, cookies || thirdPartyRequests ? 'fail' : 'ok');
-    } else setValue('#status-privacy', 'No data', 'dim');
+      setValue('#status-privacy', t('{cookies} cookies · {trackers} trackers', { cookies, trackers: thirdPartyRequests }), cookies || thirdPartyRequests ? 'fail' : 'ok');
+    } else setValue('#status-privacy', t('No data'), 'dim');
 
     const lighthouse = status.lighthouse;
     $('#status-lighthouse').hidden = !lighthouse;
     if (lighthouse) {
-      const scores = [['Performance', lighthouse.performance], ['Accessibility', lighthouse.accessibility], ['Best practices', lighthouse.bestPractices], ['SEO', lighthouse.seo]];
+      const scores = [[t('Performance'), lighthouse.performance], [t('Accessibility'), lighthouse.accessibility], [t('Best practices'), lighthouse.bestPractices], [t('SEO'), lighthouse.seo]];
       $('#lighthouse-scores').replaceChildren(...scores.map(([label, value]) => {
         const ring = el('span', { className: `score-ring${value < 90 ? ' is-low' : ''}`, text: String(value), attrs: { 'aria-hidden': 'true' } });
         ring.style.setProperty('--score', value);
-        return el('li', { className: 'score' }, ring, el('span', { text: label }), el('span', { className: 'sr-only', text: `: ${value} out of 100` }));
+        return el('li', { className: 'score' }, ring, el('span', { text: label }), el('span', { className: 'sr-only', text: t(': {n} out of 100', { n: value }) }));
       }));
     }
 
-    const link = el('a', { text: status.run ? `See run #${status.run.number} ↗` : 'View pipeline ↗', attrs: { href: status.run?.url || status.workflowUrl || WORKFLOW_URL, rel: 'noopener' } });
-    $('#status-foot').replaceChildren('Checked automatically on every push. ', link);
+    const link = el('a', { text: status.run ? t('See run #{n} ↗', { n: status.run.number }) : t('View pipeline ↗'), attrs: { href: status.run?.url || status.workflowUrl || WORKFLOW_URL, rel: 'noopener' } });
+    $('#status-foot').replaceChildren(`${t('Checked automatically on every push.')} `, link);
     $('#w98-pipeline').textContent = state === 'ok' ? 'All checks passing' : 'See the homepage';
   }
 
   function renderStatusUnavailable() {
     $('#status-panel').dataset.state = 'unknown';
-    $('#status-badge').textContent = 'Awaiting first run';
-    for (const id of ['#status-deploy', '#status-tests', '#status-a11y', '#status-privacy']) setValue(id, 'Pending', 'dim');
-    $('#status-foot').replaceChildren('Live results appear here after the pipeline’s first deploy. ', el('a', { text: 'View pipeline ↗', attrs: { href: WORKFLOW_URL, rel: 'noopener' } }));
+    $('#status-badge').textContent = t('Awaiting first run');
+    for (const id of ['#status-deploy', '#status-tests', '#status-a11y', '#status-privacy']) setValue(id, t('Pending'), 'dim');
+    $('#status-foot').replaceChildren(`${t('Live results appear here after the pipeline’s first deploy.')} `, el('a', { text: t('View pipeline ↗'), attrs: { href: WORKFLOW_URL, rel: 'noopener' } }));
   }
 
   // ---------- Now playing ----------
@@ -105,13 +109,53 @@
       } else {
         cover.append(fallback());
       }
-      cover.append(el('span', { className: 'np-live', text: 'Playing', attrs: { 'aria-hidden': 'true' } }));
-      const meta = [game.genre, game.players ? `${game.players} ${game.players === '1' ? 'player' : 'players'}` : ''].filter(Boolean).join(' · ');
+      cover.append(el('span', { className: 'np-live', text: t('Playing'), attrs: { 'aria-hidden': 'true' } }));
+      const meta = [game.genre && t(game.genre), game.players ? t(game.players === '1' ? '{n} player' : '{n} players', { n: game.players }) : ''].filter(Boolean).join(' · ');
       const body = el('div', { className: 'np-body' }, el('h3', { className: 'np-title', text: game.title }));
       if (meta) body.append(el('p', { className: 'np-meta', text: meta }));
-      return el('li', {}, el('a', { className: 'np-card', attrs: { href: '/games/#in-progress' } }, cover, body));
+      return el('li', {}, el('a', { className: 'np-card', attrs: { href: SiteI18n.path('/games/#in-progress') } }, cover, body));
     }));
     $('#now-playing-note').hidden = games.length > 0;
+  }
+
+  // ---------- Local time ----------
+  // "14:32 in Sweden · 1 hour ahead of you". Sweden has one time zone, so this is exact.
+
+  const ZONE = 'Europe/Stockholm';
+
+  // Minutes the zone is ahead of UTC at the given moment.
+  function zoneOffset(date) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: ZONE, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' })
+      .formatToParts(date).map(part => [part.type, part.value]));
+    const asUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute));
+    return Math.round((asUtc - Math.floor(date.getTime() / 60000) * 60000) / 60000);
+  }
+
+  function relation(date) {
+    const minutes = zoneOffset(date) + date.getTimezoneOffset();
+    if (!minutes) return t('same time as you');
+    const hours = new Intl.NumberFormat(SiteI18n.locale, { maximumFractionDigits: 2 }).format(Math.abs(minutes) / 60);
+    const one = Math.abs(minutes) === 60;
+    if (minutes > 0) return t(one ? '{n} hour ahead of you' : '{n} hours ahead of you', { n: hours });
+    return t(one ? '{n} hour behind you' : '{n} hours behind you', { n: hours });
+  }
+
+  function renderLocalTime() {
+    const now = new Date();
+    const time = new Intl.DateTimeFormat(SiteI18n.locale, { timeZone: ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now);
+    const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: ZONE, hour: 'numeric', hourCycle: 'h23' }).format(now));
+    const night = hour >= 23 || hour < 6;
+    const text = el('span', {}, el('strong', { text: time }), ` ${t('in Sweden')} · ${relation(now)}`);
+    if (night) text.append(` · ${t('probably asleep')}`);
+    $('#local-time-text').replaceChildren(text);
+    $('#local-time').classList.toggle('is-night', hour >= 19 || hour < 7);
+    $('#local-time').hidden = false;
+  }
+
+  function startClock() {
+    renderLocalTime();
+    // Tick on the minute.
+    setTimeout(() => { renderLocalTime(); setInterval(renderLocalTime, 60000); }, 60000 - (Date.now() % 60000) + 50);
   }
 
   // ---------- Windows 98 easter egg ----------
@@ -225,6 +269,7 @@
   hint.hidden = matchMedia('(pointer: coarse)').matches;
   if (/Mac|iPhone|iPad/.test(navigator.platform)) hint.querySelectorAll('kbd').forEach(kbd => { kbd.textContent = kbd.textContent.replace('Ctrl', '⌘'); });
 
+  startClock();
   loadStatus().then(renderStatus).catch(renderStatusUnavailable);
   loadNowPlaying().then(games => { if (games.length) renderNowPlaying(games); }).catch(() => {});
 })();

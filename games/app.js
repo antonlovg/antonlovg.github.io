@@ -3,17 +3,23 @@ const PREFERENCES_KEY = 'personal-game-library-preferences-v1';
 const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
 const VALID_SORTS = ['title', 'title-desc', 'priority', 'recently-added', 'price', 'random'];
 const STEAM_PROXY_URL = 'https://curly-dawn-c08f.karlanton-lovgren.workers.dev';
-const SHARED_LIBRARY_URL = 'shared-library.json';
+// Absolute paths: the page also runs as /sv/games/ and /no/games/.
+const SHARED_LIBRARY_URL = '/games/shared-library.json';
 const GITHUB_REPO = 'antonlovg/antonlovg.github.io';
 const GITHUB_BRANCH = 'main';
 const GITHUB_LIBRARY_PATH = 'games/shared-library.json';
 const GITHUB_TOKEN_KEY = 'personal-game-library-github-token';
-const HLS_SCRIPT_URL = 'vendor/hls-1.6.13.min.js';
+const HLS_SCRIPT_URL = '/games/vendor/hls-1.6.13.min.js';
+const { t } = SiteI18n;
+// Marks text for translation where it is defined; t() translates it where it is shown.
+const N_ = text => text;
 const STATUS_LABELS = {
-  'to-play': 'To Play',
-  'in-progress': 'In Progress',
-  played: 'Played Games'
+  'to-play': N_('To Play'),
+  'in-progress': N_('In Progress'),
+  played: N_('Played Games')
 };
+// Genre groups are stored and filtered in English and translated for display.
+N_('Adventure'); N_('Action'); N_('RPG'); N_('Multiplayer'); N_('Puzzle'); N_('Simulation'); N_('Survival'); N_('Horror'); N_('Other');
 
 const initialGames = [
   ['ARK Survival Evolved', 'Open world', 'Dino', 'to-play'],
@@ -279,12 +285,12 @@ function initializeLibrary() {
       hasSavedLibrary = false;
     } else {
       const parsed = JSON.parse(saved);
-      if (!validateGameList(parsed)) throw new Error('Saved library data is invalid. It was left untouched.');
+      if (!validateGameList(parsed)) throw new Error(t('Saved library data is invalid. It was left untouched.'));
       games = parsed.map(normalizeGame);
     }
   } catch (error) {
     games = [];
-    showToast(error instanceof SyntaxError ? 'Saved library could not be read. Its stored data was left untouched.' : error.message, true);
+    showToast(error instanceof SyntaxError ? t('Saved library could not be read. Its stored data was left untouched.') : error.message, true);
   }
   loadPreferences();
   return hasSavedLibrary;
@@ -302,7 +308,7 @@ async function seedLibrary() {
     isLoadingLibrary = false;
     commitGames(makeInitialGames());
   }
-  if (storageBlocked) showToast('This browser blocks site storage, so your changes only last until you close the tab.', true);
+  if (storageBlocked) showToast(t('This browser blocks site storage, so your changes only last until you close the tab.'), true);
 }
 
 function readPreferences() {
@@ -342,7 +348,7 @@ document.addEventListener('site:themechange', syncThemeSelect);
 
 function saveSort(sort) {
   if (!VALID_SORTS.includes(sort)) return;
-  if (!savePreferences({ sort })) showToast('Sort changed, but this browser could not save the preference.', true);
+  if (!savePreferences({ sort })) showToast(t('Sort changed, but this browser could not save the preference.'), true);
 }
 
 // Saves and re-renders. With { undoable: true } the toast offers Undo, which restores the previous library.
@@ -352,7 +358,7 @@ function commitGames(nextGames, message, { undoable = false, animate = true } = 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextGames));
     } catch {
-      showToast('Could not save to this browser. Check available site storage.', true);
+      showToast(t('Could not save to this browser. Check available site storage.'), true);
       return false;
     }
   }
@@ -360,7 +366,7 @@ function commitGames(nextGames, message, { undoable = false, animate = true } = 
   if (animate) animatedRender();
   else render();
   if (message) {
-    showToast(message, false, undoable ? { label: 'Undo', run: () => commitGames(previous, 'Change undone.') } : null);
+    showToast(message, false, undoable ? { label: t('Undo'), run: () => commitGames(previous, t('Change undone.')) } : null);
   }
   return true;
 }
@@ -404,7 +410,7 @@ elements.toast.addEventListener('focusout', () => { if (toastAction) scheduleToa
 
 // ---------- Styled confirmation (replaces the browser's confirm()) ----------
 
-function confirmAction({ title, message, confirmLabel = 'Confirm', danger = false }) {
+function confirmAction({ title, message, confirmLabel = t('Confirm'), danger = false }) {
   const dialog = document.querySelector('#confirm-dialog');
   document.querySelector('#confirm-title').textContent = title;
   document.querySelector('#confirm-message').textContent = message;
@@ -448,9 +454,11 @@ function animatedRender() {
   } catch {
     transition = document.startViewTransition(render);
   }
-  // A newer transition skips this one; that's expected, so the rejection is handled here.
+  // A newer transition, or leaving the page, can skip or abort this one; that's expected, so the
+  // rejections are handled here.
   transition.ready.catch(() => {});
-  transition.finished.finally(() => {
+  transition.updateCallbackDone.catch(() => {});
+  transition.finished.catch(() => {}).finally(() => {
     transitionIds = new Set();
     for (const card of elements.grid.querySelectorAll('.game-card')) {
       card.style.viewTransitionName = '';
@@ -476,12 +484,16 @@ function makeSkeletonCard() {
   return card;
 }
 
-// ---------- Steam prices (EUR), fetched by the pipeline into prices.json ----------
+// ---------- Steam prices, fetched by the pipeline ----------
+// Euro from the Swedish store (prices.json) on the English and Swedish pages; Norwegian kroner from
+// the Norwegian store (prices-nok.json) on the Norwegian pages.
 
 let prices = new Map();
 let pricesFetchedAt = null;
-const euro = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
-const formatEuro = cents => euro.format(cents / 100);
+const PRICE_FILES = { EUR: '/games/prices.json', NOK: '/games/prices-nok.json' };
+const CURRENCY = SiteI18n.currency in PRICE_FILES ? SiteI18n.currency : 'EUR';
+const money = new Intl.NumberFormat(SiteI18n.locale, { style: 'currency', currency: CURRENCY });
+const formatPrice = cents => money.format(cents / 100);
 
 function priceFor(game) {
   const id = getSteamAppId(game.steamUrl);
@@ -490,10 +502,10 @@ function priceFor(game) {
 
 async function loadPrices() {
   try {
-    const response = await fetch('prices.json', { cache: 'no-cache', credentials: 'same-origin' });
+    const response = await fetch(PRICE_FILES[CURRENCY], { cache: 'no-cache', credentials: 'same-origin' });
     if (!response.ok) return;
     const data = await response.json();
-    if (data?.currency !== 'EUR' || !data.prices || typeof data.prices !== 'object') return;
+    if (data?.currency !== CURRENCY || !data.prices || typeof data.prices !== 'object') return;
     prices = new Map(Object.entries(data.prices).filter(([id, price]) => /^\d{1,10}$/.test(id)
       && Number.isInteger(price?.final) && Number.isInteger(price?.initial) && price.final >= 0
       && Number.isInteger(price.discount) && price.discount >= 0 && price.discount < 100));
@@ -511,13 +523,13 @@ function makePriceTag(price) {
   visual.setAttribute('aria-hidden', 'true');
   if (price.discount > 0) {
     addText(visual, 'span', 'sale-badge', `−${price.discount}%`);
-    addText(visual, 's', 'price-was', formatEuro(price.initial));
+    addText(visual, 's', 'price-was', formatPrice(price.initial));
   }
-  addText(visual, 'span', 'price-now', price.final === 0 ? 'Free' : formatEuro(price.final));
+  addText(visual, 'span', 'price-now', price.final === 0 ? t('Free') : formatPrice(price.final));
   tag.append(visual);
   addText(tag, 'span', 'sr-only', price.discount > 0
-    ? `On sale: ${formatEuro(price.final)}, ${price.discount}% off (was ${formatEuro(price.initial)})`
-    : `Price: ${price.final === 0 ? 'free' : formatEuro(price.final)}`);
+    ? t('On sale: {price}, {discount}% off (was {was})', { price: formatPrice(price.final), discount: price.discount, was: formatPrice(price.initial) })
+    : price.final === 0 ? t('Price: free') : t('Price: {price}', { price: formatPrice(price.final) }));
   return tag;
 }
 
@@ -575,9 +587,9 @@ function addText(parent, tagName, className, text) {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ADVANCE_ACTIONS = {
-  'to-play': { label: 'Start', icon: 'play', next: 'in-progress' },
-  'in-progress': { label: 'Mark played', icon: 'check', next: 'played' },
-  played: { label: 'Replay', icon: 'replay', next: 'to-play' }
+  'to-play': { label: N_('Start'), name: N_('Start {title}'), icon: 'play', next: 'in-progress' },
+  'in-progress': { label: N_('Mark played'), name: N_('Mark {title} as played'), icon: 'check', next: 'played' },
+  played: { label: N_('Replay'), name: N_('Replay {title}'), icon: 'replay', next: 'to-play' }
 };
 
 // Icons come from the SVG sprite at the top of index.html.
@@ -605,7 +617,7 @@ function makeButton(className, { label = '', icon = '', name = '' } = {}) {
 }
 
 function playersLabel(players) {
-  return players ? `${players} ${players === '1' ? 'player' : 'players'}` : '';
+  return players ? t(players === '1' ? '{n} player' : '{n} players', { n: players }) : '';
 }
 
 function makeCoverPlaceholder(game) {
@@ -614,7 +626,7 @@ function makeCoverPlaceholder(game) {
   const monogram = game.title.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
   placeholder.className = `cover-placeholder cover-tone-${tone}`;
   placeholder.setAttribute('role', 'img');
-  placeholder.setAttribute('aria-label', `${game.title}, no cover picture added`);
+  placeholder.setAttribute('aria-label', t('{title}, no cover picture added', { title: game.title }));
   addText(placeholder, 'span', 'cover-placeholder-mark', monogram || 'GL');
   addText(placeholder, 'span', 'cover-placeholder-title', game.title);
   return placeholder;
@@ -635,7 +647,7 @@ function makeCard(game) {
   if (coverUrl) {
     const image = document.createElement('img');
     image.src = coverUrl;
-    image.alt = `${game.title} cover`;
+    image.alt = t('{title} cover', { title: game.title });
     image.loading = 'lazy';
     image.decoding = 'async';
     image.referrerPolicy = 'no-referrer';
@@ -646,15 +658,15 @@ function makeCard(game) {
   }
   const badges = document.createElement('div');
   badges.className = 'cover-badges';
-  addText(badges, 'span', `card-status status-${game.status}`, STATUS_LABELS[game.status]);
+  addText(badges, 'span', `card-status status-${game.status}`, t(STATUS_LABELS[game.status]));
   if (game.priority) {
-    const priority = addText(badges, 'span', 'priority-mark', 'Priority');
+    const priority = addText(badges, 'span', 'priority-mark', t('Priority'));
     priority.prepend(makeIcon('star'));
   }
   cover.append(badges);
   const price = priceFor(game);
   if (price) cover.append(makePriceTag(price));
-  const trailerButton = makeButton('cover-play trailer-button', { icon: 'play', name: `Watch ${game.title} trailer` });
+  const trailerButton = makeButton('cover-play trailer-button', { icon: 'play', name: t('Watch {title} trailer', { title: game.title }) });
   trailerButton.addEventListener('click', () => openTrailer(game));
   cover.append(trailerButton);
   card.append(cover);
@@ -664,7 +676,8 @@ function makeCard(game) {
   const title = addText(content, 'h3', 'card-title', game.title);
   title.id = titleId;
 
-  const metaParts = [getGenreCategory(game.genre), playersLabel(game.players)].filter(Boolean);
+  const genreGroup = getGenreCategory(game.genre);
+  const metaParts = [genreGroup && t(genreGroup), playersLabel(game.players)].filter(Boolean);
   if (metaParts.length) {
     const meta = document.createElement('p');
     meta.className = 'card-meta-line';
@@ -680,7 +693,7 @@ function makeCard(game) {
   if (tags.length) {
     const tagList = document.createElement('ul');
     tagList.className = 'card-tags';
-    tagList.setAttribute('aria-label', 'Tags');
+    tagList.setAttribute('aria-label', t('Tags'));
     for (const tag of tags) addText(tagList, 'li', 'meta-chip', tag);
     content.append(tagList);
   }
@@ -690,13 +703,13 @@ function makeCard(game) {
   if (hasExtras || game.description.length > 140) {
     const details = document.createElement('details');
     details.className = 'card-details';
-    addText(details, 'summary', '', hasExtras ? 'More details' : 'Read more');
+    addText(details, 'summary', '', hasExtras ? t('More details') : t('Read more'));
     if (game.notes) {
-      addText(details, 'h4', '', 'Personal notes');
+      addText(details, 'h4', '', t('Personal notes'));
       addText(details, 'p', 'card-notes', game.notes);
     }
     if (game.steamCategories.length) {
-      addText(details, 'h4', '', `Steam categories (${game.steamCategories.length})`);
+      addText(details, 'h4', '', t('Steam categories ({n})', { n: game.steamCategories.length }));
       addText(details, 'p', 'steam-categories', game.steamCategories.join(', '));
     }
     content.append(details);
@@ -708,9 +721,9 @@ function makeCard(game) {
   const footer = document.createElement('div');
   footer.className = 'card-footer';
   const advance = ADVANCE_ACTIONS[game.status];
-  const moveButton = makeButton('small-button card-advance', { label: advance.label, icon: advance.icon, name: `${advance.label} ${game.title}` });
+  const moveButton = makeButton('small-button card-advance', { label: t(advance.label), icon: advance.icon, name: t(advance.name, { title: game.title }) });
   moveButton.addEventListener('click', () => {
-    commitGames(games.map(item => item.id === game.id ? { ...item, status: advance.next } : item), `${game.title} moved to ${STATUS_LABELS[advance.next]}.`, { undoable: true });
+    commitGames(games.map(item => item.id === game.id ? { ...item, status: advance.next } : item), t('{title} moved to {status}.', { title: game.title, status: t(STATUS_LABELS[advance.next]) }), { undoable: true });
   });
   footer.append(moveButton);
 
@@ -723,12 +736,12 @@ function makeCard(game) {
     link.href = steamUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.title = 'Open on Steam';
-    link.setAttribute('aria-label', `Open ${game.title} on Steam (new tab)`);
+    link.title = t('Open on Steam');
+    link.setAttribute('aria-label', t('Open {title} on Steam (new tab)', { title: game.title }));
     link.append(makeIcon('external'));
     actions.append(link);
   }
-  const editButton = makeButton('icon-button card-edit', { icon: 'edit', name: `Edit ${game.title}` });
+  const editButton = makeButton('icon-button card-edit', { icon: 'edit', name: t('Edit {title}', { title: game.title }) });
   editButton.addEventListener('click', () => openEditor(game));
   actions.append(editButton);
 
@@ -736,13 +749,13 @@ function makeCard(game) {
   moreActions.className = 'card-more-actions menu';
   const moreSummary = document.createElement('summary');
   moreSummary.className = 'icon-button';
-  moreSummary.title = 'More actions';
-  moreSummary.setAttribute('aria-label', `More actions for ${game.title}`);
+  moreSummary.title = t('More actions');
+  moreSummary.setAttribute('aria-label', t('More actions for {title}', { title: game.title }));
   moreSummary.append(makeIcon('more'));
   moreActions.append(moreSummary);
   const menu = document.createElement('div');
   menu.className = 'menu-panel card-menu';
-  const deleteButton = makeButton('tool-action tool-danger delete-button', { label: 'Delete game', icon: 'trash', name: `Delete ${game.title}` });
+  const deleteButton = makeButton('tool-action tool-danger delete-button', { label: t('Delete game'), icon: 'trash', name: t('Delete {title}', { title: game.title }) });
   deleteButton.addEventListener('click', () => {
     moreActions.open = false;
     deleteGame(game);
@@ -759,22 +772,22 @@ function makeCard(game) {
 function renderGenres() {
   const previous = pendingGenre || elements.genreFilter.value;
   const genres = [...new Set(games.map(game => getGenreCategory(game.genre)).filter(Boolean))]
-    .sort((first, second) => first.localeCompare(second));
-  elements.genreFilter.replaceChildren(new Option('All genres', ''));
-  for (const genre of genres) elements.genreFilter.add(new Option(genre, genre));
+    .sort((first, second) => t(first).localeCompare(t(second), SiteI18n.locale));
+  elements.genreFilter.replaceChildren(new Option(t('All genres'), ''));
+  for (const genre of genres) elements.genreFilter.add(new Option(t(genre), genre));
   if (genres.includes(previous)) elements.genreFilter.value = previous;
   if (genres.length) pendingGenre = '';
 }
 
 function renderActiveFilters() {
   const query = elements.search.value.trim();
-  const playerLabels = { '1': '1 player', '2': '2 players', '3': '3 players', '4': '4 players', '5+': '5+ players', unknown: 'Players not specified' };
+  const players = elements.playersFilter.value;
   const filters = [];
-  if (query) filters.push({ label: `Search: ${query}`, clear: () => { elements.search.value = ''; } });
-  if (elements.genreFilter.value) filters.push({ label: `Genre: ${elements.genreFilter.value}`, clear: () => { elements.genreFilter.value = ''; } });
-  if (elements.playersFilter.value) filters.push({ label: playerLabels[elements.playersFilter.value], clear: () => { elements.playersFilter.value = ''; } });
-  if (elements.priorityFilter.checked) filters.push({ label: 'Priority only', clear: () => { elements.priorityFilter.checked = false; } });
-  if (elements.saleFilter.checked) filters.push({ label: 'On sale', clear: () => { elements.saleFilter.checked = false; } });
+  if (query) filters.push({ label: t('Search: {query}', { query }), clear: () => { elements.search.value = ''; } });
+  if (elements.genreFilter.value) filters.push({ label: t('Genre: {genre}', { genre: t(elements.genreFilter.value) }), clear: () => { elements.genreFilter.value = ''; } });
+  if (players) filters.push({ label: players === 'unknown' ? t('Players not specified') : playersLabel(players), clear: () => { elements.playersFilter.value = ''; } });
+  if (elements.priorityFilter.checked) filters.push({ label: t('Priority only'), clear: () => { elements.priorityFilter.checked = false; } });
+  if (elements.saleFilter.checked) filters.push({ label: t('On sale'), clear: () => { elements.saleFilter.checked = false; } });
 
   elements.activeFilters.replaceChildren();
   elements.activeFilters.hidden = filters.length === 0;
@@ -785,8 +798,8 @@ function renderActiveFilters() {
   for (const filter of filters) {
     const chip = addText(elements.activeFilters, 'button', 'filter-chip', filter.label);
     chip.type = 'button';
-    chip.title = `Remove ${filter.label}`;
-    chip.setAttribute('aria-label', `Remove ${filter.label} filter`);
+    chip.title = t('Remove {filter}', { filter: filter.label });
+    chip.setAttribute('aria-label', t('Remove {filter} filter', { filter: filter.label }));
     chip.append(makeIcon('close'));
     chip.addEventListener('click', () => {
       filter.clear();
@@ -831,14 +844,13 @@ function render() {
   }
   document.querySelector('#count-all').textContent = games.length;
   const inProgress = games.filter(game => game.status === 'in-progress').length;
+  const countText = n => t(n === 1 ? '{n} game' : '{n} games', { n });
   document.querySelector('#library-count').textContent = isLoadingLibrary
-    ? 'Loading the shared library…'
-    : `${games.length} ${games.length === 1 ? 'game' : 'games'} · ${inProgress} in progress${prices.size ? ` · ${games.filter(game => priceFor(game)?.discount > 0).length} on sale` : ''}`;
-  document.querySelector('#view-heading').textContent = activeView === 'all' ? 'All Games' : STATUS_LABELS[activeView];
+    ? t('Loading the shared library…')
+    : [countText(games.length), t('{n} in progress', { n: inProgress }), ...(prices.size ? [t('{n} on sale', { n: games.filter(game => priceFor(game)?.discount > 0).length })] : [])].join(' · ');
+  document.querySelector('#view-heading').textContent = activeView === 'all' ? t('All Games') : t(STATUS_LABELS[activeView]);
   const visible = getVisibleGames();
-  document.querySelector('#results-count').textContent = isLoadingLibrary
-    ? 'Loading the shared library…'
-    : `${visible.length} ${visible.length === 1 ? 'game' : 'games'}`;
+  document.querySelector('#results-count').textContent = isLoadingLibrary ? t('Loading the shared library…') : countText(visible.length);
   elements.grid.dataset.view = activeView;
   elements.grid.setAttribute('aria-busy', String(isLoadingLibrary));
   elements.grid.replaceChildren(...(isLoadingLibrary ? Array.from({ length: 8 }, makeSkeletonCard) : visible.map(makeCard)));
@@ -852,9 +864,10 @@ function renderPriceNote() {
   const note = document.querySelector('#prices-note');
   if (!pricesFetchedAt || !prices.size) { note.hidden = true; return; }
   const seconds = (Date.parse(pricesFetchedAt) - Date.now()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(SiteI18n.locale, { numeric: 'auto' });
   const [unit, size] = [['day', 86400], ['hour', 3600], ['minute', 60]].find(([, value]) => Math.abs(seconds) >= value) || ['second', 1];
-  note.textContent = `Prices in euro from the Steam store, updated ${size === 1 ? 'just now' : rtf.format(Math.round(seconds / size), unit)}.`;
+  const when = size === 1 ? t('just now') : rtf.format(Math.round(seconds / size), unit);
+  note.textContent = CURRENCY === 'NOK' ? t('Prices in Norwegian kroner from the Steam store, updated {when}.', { when }) : t('Prices in euro from the Steam store, updated {when}.', { when });
   note.hidden = false;
 }
 
@@ -870,8 +883,8 @@ async function showRandomSuggestion(previousId = null) {
   if (!candidates.length) {
     wheelArea.hidden = true;
     suggestedGameId = null;
-    document.querySelector('#suggestion-title').textContent = 'No games to choose from';
-    addText(result, 'p', 'suggestion-description', 'Adjust the current view or filters, then try again.');
+    document.querySelector('#suggestion-title').textContent = t('No games to choose from');
+    addText(result, 'p', 'suggestion-description', t('Adjust the current view or filters, then try again.'));
     document.querySelector('#start-suggested-game').disabled = true;
     document.querySelector('#suggest-another').disabled = true;
     return;
@@ -887,8 +900,8 @@ async function showRandomSuggestion(previousId = null) {
     spinning = true;
     startButton.disabled = true;
     anotherButton.disabled = true;
-    document.querySelector('#suggestion-title').textContent = 'Spinning the wheel…';
-    addText(result, 'p', 'sr-only', 'Spinning the wheel…');
+    document.querySelector('#suggestion-title').textContent = t('Spinning the wheel…');
+    addText(result, 'p', 'sr-only', t('Spinning the wheel…'));
     wheelArea.hidden = false;
     wheel ||= GameWheel.create(wheelArea);
     const { items, winner } = GameWheel.sample(candidates, candidates.indexOf(picked));
@@ -901,7 +914,7 @@ async function showRandomSuggestion(previousId = null) {
     result.replaceChildren();
   }
   wheelArea.hidden = true;
-  document.querySelector('#suggestion-title').textContent = 'What should you play?';
+  document.querySelector('#suggestion-title').textContent = t('What should you play?');
   const art = document.createElement('div');
   art.className = 'suggestion-art';
   const coverUrl = safeWebUrl(picked.coverUrl);
@@ -920,10 +933,10 @@ async function showRandomSuggestion(previousId = null) {
   text.className = 'suggestion-text';
   const heading = addText(text, 'h3', 'suggestion-game-title', picked.title);
   if (picked.priority) {
-    const star = addText(heading, 'span', 'priority-mark', 'Priority');
+    const star = addText(heading, 'span', 'priority-mark', t('Priority'));
     star.prepend(makeIcon('star'));
   }
-  const details = [picked.genre, playersLabel(picked.players), STATUS_LABELS[picked.status]].filter(Boolean).join(' · ');
+  const details = [picked.genre, playersLabel(picked.players), t(STATUS_LABELS[picked.status])].filter(Boolean).join(' · ');
   if (details) addText(text, 'p', 'suggestion-meta', details);
   const pickedPrice = priceFor(picked);
   if (pickedPrice) text.append(makePriceTag(pickedPrice));
@@ -931,14 +944,14 @@ async function showRandomSuggestion(previousId = null) {
   else if (picked.notes) addText(text, 'p', 'suggestion-description', picked.notes);
   result.append(text);
   startButton.disabled = picked.status === 'in-progress';
-  startButton.textContent = picked.status === 'in-progress' ? 'Already in progress' : 'Start this game';
+  startButton.textContent = picked.status === 'in-progress' ? t('Already in progress') : t('Start this game');
   anotherButton.disabled = candidates.length < 2;
 }
 
 function startSuggestedGame() {
   const picked = games.find(game => game.id === suggestedGameId);
   if (!picked || picked.status === 'in-progress') return;
-  if (commitGames(games.map(game => game.id === picked.id ? { ...game, status: 'in-progress' } : game), `${picked.title} moved to In Progress.`, { undoable: true })) {
+  if (commitGames(games.map(game => game.id === picked.id ? { ...game, status: 'in-progress' } : game), t('{title} moved to {status}.', { title: picked.title, status: t(STATUS_LABELS['in-progress']) }), { undoable: true })) {
     document.querySelector('#suggestion-dialog').close();
   }
 }
@@ -946,7 +959,7 @@ function startSuggestedGame() {
 function openEditor(game = null) {
   elements.form.reset();
   document.querySelector('#game-id').value = game?.id || '';
-  document.querySelector('#dialog-title').textContent = game ? 'Edit game' : 'Add a game';
+  document.querySelector('#dialog-title').textContent = game ? t('Edit game') : t('Add a game');
   document.querySelector('#game-title').value = game?.title || '';
   document.querySelector('#game-description').value = game?.description || '';
   document.querySelector('#game-genre').value = game?.genre || '';
@@ -955,7 +968,7 @@ function openEditor(game = null) {
   document.querySelector('#game-steam-url').value = game?.steamUrl || '';
   document.querySelector('#game-trailer-url').value = game?.trailerUrl || '';
   document.querySelector('#steam-trailer-picker-wrap').hidden = true;
-  document.querySelector('#steam-trailer-picker').replaceChildren(new Option('Choose a trailer', ''));
+  document.querySelector('#steam-trailer-picker').replaceChildren(new Option(t('Choose a trailer'), ''));
   document.querySelector('#game-cover-url').value = game?.coverUrl || '';
   document.querySelector('#game-notes').value = game?.notes || '';
   document.querySelector('#game-status').value = game?.status || (activeView === 'all' ? 'to-play' : activeView);
@@ -975,7 +988,7 @@ function loadHls() {
     script.addEventListener('error', () => {
       hlsLoader = null;
       script.remove();
-      reject(new Error('Could not load the video player.'));
+      reject(new Error(t('Could not load the video player.')));
     }, { once: true });
     document.head.append(script);
   });
@@ -997,13 +1010,13 @@ function openTrailer(game) {
       // Click-to-load: nothing is requested from YouTube until the viewer agrees.
       const consent = document.createElement('div');
       consent.className = 'trailer-consent';
-      addText(consent, 'p', '', 'This trailer is hosted on YouTube. Loading it connects to YouTube (privacy-enhanced mode), which may store data in your browser while it plays.');
-      const loadButton = addText(consent, 'button', 'button button-primary', 'Load YouTube video');
+      addText(consent, 'p', '', t('This trailer is hosted on YouTube. Loading it connects to YouTube (privacy-enhanced mode), which may store data in your browser while it plays.'));
+      const loadButton = addText(consent, 'button', 'button button-primary', t('Load YouTube video'));
       loadButton.type = 'button';
       loadButton.addEventListener('click', () => {
         const frame = document.createElement('iframe');
         frame.src = trailer.player;
-        frame.title = `${game.title} trailer`;
+        frame.title = t('{title} trailer', { title: game.title });
         frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
         frame.allowFullscreen = true;
         frame.referrerPolicy = 'strict-origin-when-cross-origin';
@@ -1042,7 +1055,7 @@ function openTrailer(game) {
       }
     }
   } else {
-    addText(player, 'p', 'trailer-empty', 'No trailer added yet. Fetch trailers from Steam or add a YouTube/direct video URL in Edit.');
+    addText(player, 'p', 'trailer-empty', t('No trailer added yet. Fetch trailers from Steam or add a YouTube/direct video URL in Edit.'));
     sourceLink.hidden = true;
   }
   if (trailer?.type === 'steam-hls') {
@@ -1074,23 +1087,23 @@ function readFormGame() {
 
 // Deleting is instant and reversible with Undo, instead of asking first.
 function deleteGame(game) {
-  commitGames(games.filter(item => item.id !== game.id), `${game.title} deleted.`, { undoable: true });
+  commitGames(games.filter(item => item.id !== game.id), t('{title} deleted.', { title: game.title }), { undoable: true });
 }
 
 async function fetchSteamInfo() {
   const steamUrl = document.querySelector('#game-steam-url').value.trim();
   const match = steamUrl.match(/store\.steampowered\.com\/app\/(\d+)/i);
   if (!match) {
-    showToast('Enter a Steam Store URL containing an app ID first.', true);
+    showToast(t('Enter a Steam Store URL containing an app ID first.'), true);
     return;
   }
   if (!STEAM_PROXY_URL) {
-    showToast('Steam lookup needs a deployed proxy. Set STEAM_PROXY_URL in app.js after deploying the Worker.', true);
+    showToast(t('Steam lookup needs a deployed proxy. Set STEAM_PROXY_URL in app.js after deploying the Worker.'), true);
     return;
   }
   const button = document.querySelector('#fetch-steam');
   button.disabled = true;
-  button.textContent = 'Fetching…';
+  button.textContent = t('Fetching…');
   try {
     let response;
     try {
@@ -1098,17 +1111,17 @@ async function fetchSteamInfo() {
       proxyUrl.searchParams.set('appids', match[1]);
       response = await fetch(proxyUrl);
     } catch {
-      throw new Error('Could not reach the Steam lookup proxy. Check the proxy URL and your connection.');
+      throw new Error(t('Could not reach the Steam lookup proxy. Check the proxy URL and your connection.'));
     }
-    if (!response.ok) throw new Error(`Steam returned HTTP ${response.status}. Try again later.`);
+    if (!response.ok) throw new Error(t('Steam returned HTTP {status}. Try again later.', { status: response.status }));
     let result;
     try {
       result = await response.json();
     } catch {
-      throw new Error('Steam returned an unreadable response. Try again later.');
+      throw new Error(t('Steam returned an unreadable response. Try again later.'));
     }
     const details = result[match[1]];
-    if (!details?.success || !details.data) throw new Error('Steam returned no public details for this app. Check that the URL points to a public game page.');
+    if (!details?.success || !details.data) throw new Error(t('Steam returned no public details for this app. Check that the URL points to a public game page.'));
     const data = details.data;
     const fetched = {
       title: typeof data.name === 'string' ? data.name : '',
@@ -1125,7 +1138,7 @@ async function fetchSteamInfo() {
     };
     const wouldReplace = Object.keys(current).some(key => current[key] && fetched[key] && current[key] !== fetched[key])
       || (steamCategories.length > 0 && fetched.categories.length > 0);
-    if (wouldReplace && !(await confirmAction({ title: 'Replace what you typed?', message: 'Steam has information for fields you have already filled in. Replace those fields with Steam data?', confirmLabel: 'Use Steam data' }))) return;
+    if (wouldReplace && !(await confirmAction({ title: t('Replace what you typed?'), message: t('Steam has information for fields you have already filled in. Replace those fields with Steam data?'), confirmLabel: t('Use Steam data') }))) return;
     for (const key of Object.keys(current)) {
       if (fetched[key] && (!current[key] || wouldReplace)) {
         const fieldId = { title: 'game-title', description: 'game-description', coverUrl: 'game-cover-url', genre: 'game-genre' }[key];
@@ -1133,55 +1146,55 @@ async function fetchSteamInfo() {
       }
     }
     if (fetched.categories.length && (steamCategories.length === 0 || wouldReplace)) steamCategories = fetched.categories;
-    showToast('Steam info added to the form. Save the game to keep it.');
+    showToast(t('Steam info added to the form. Save the game to keep it.'));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Steam lookup failed. Your entered information is unchanged.';
-    showToast(`${message} Your entered information is unchanged.`, true);
+    const message = error instanceof Error ? error.message : t('Steam lookup failed.');
+    showToast(t('{message} Your entered information is unchanged.', { message }), true);
   } finally {
     button.disabled = false;
-    button.textContent = 'Fetch Steam info';
+    button.textContent = t('Fetch Steam info');
   }
 }
 
 async function fetchSteamTrailers() {
   const appId = getSteamAppId(document.querySelector('#game-steam-url').value.trim());
   if (!appId) {
-    showToast('Enter a valid Steam Store game URL first.', true);
+    showToast(t('Enter a valid Steam Store game URL first.'), true);
     return;
   }
   if (!STEAM_PROXY_URL) {
-    showToast('Steam lookup needs a deployed proxy. Set STEAM_PROXY_URL in app.js after deploying the Worker.', true);
+    showToast(t('Steam lookup needs a deployed proxy. Set STEAM_PROXY_URL in app.js after deploying the Worker.'), true);
     return;
   }
 
   const button = document.querySelector('#fetch-steam-trailers');
   button.disabled = true;
-  button.textContent = 'Fetching…';
+  button.textContent = t('Fetching…');
   try {
     const proxyUrl = new URL('/appdetails', STEAM_PROXY_URL);
     proxyUrl.searchParams.set('appids', appId);
     const response = await fetch(proxyUrl, { credentials: 'omit', redirect: 'error' });
-    if (!response.ok) throw new Error(`Steam returned HTTP ${response.status}. Try again later.`);
+    if (!response.ok) throw new Error(t('Steam returned HTTP {status}. Try again later.', { status: response.status }));
     const result = await response.json();
     const details = result[appId];
-    if (!details?.success || !details.data) throw new Error('Steam returned no public details for this game.');
+    if (!details?.success || !details.data) throw new Error(t('Steam returned no public details for this game.'));
     const movies = Array.isArray(details.data.movies) ? details.data.movies : [];
     const options = movies.map(movie => ({
       title: typeof movie.name === 'string' ? movie.name.trim() : '',
       url: typeof movie.hls_h264 === 'string' ? movie.hls_h264 : ''
     })).filter(movie => movie.title && parseTrailerUrl(movie.url)?.type === 'steam-hls');
     const picker = document.querySelector('#steam-trailer-picker');
-    picker.replaceChildren(new Option('Choose a trailer', ''));
+    picker.replaceChildren(new Option(t('Choose a trailer'), ''));
     for (const movie of options) picker.add(new Option(movie.title, movie.url));
     document.querySelector('#steam-trailer-picker-wrap').hidden = options.length === 0;
-    if (!options.length) throw new Error('Steam has no compatible trailers for this game.');
-    showToast(`Found ${options.length} Steam ${options.length === 1 ? 'trailer' : 'trailers'}. Choose one from the list.`);
+    if (!options.length) throw new Error(t('Steam has no compatible trailers for this game.'));
+    showToast(t(options.length === 1 ? 'Found {n} Steam trailer. Choose one from the list.' : 'Found {n} Steam trailers. Choose one from the list.', { n: options.length }));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Steam trailer lookup failed.';
-    showToast(`${message} Your entered information is unchanged.`, true);
+    const message = error instanceof Error ? error.message : t('Steam trailer lookup failed.');
+    showToast(t('{message} Your entered information is unchanged.', { message }), true);
   } finally {
     button.disabled = false;
-    button.textContent = 'Fetch trailers';
+    button.textContent = t('Fetch trailers');
   }
 }
 
@@ -1194,9 +1207,9 @@ function exportLibrary() {
     link.download = `game-library-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    showToast('Library export downloaded.');
+    showToast(t('Library export downloaded.'));
   } catch {
-    showToast('Could not export the library.', true);
+    showToast(t('Could not export the library.'), true);
   }
 }
 
@@ -1206,31 +1219,31 @@ async function fetchSharedSnapshot() {
     credentials: 'same-origin',
     redirect: 'error'
   });
-  if (!response.ok) throw new Error(`Shared library returned HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(t('Shared library returned HTTP {status}.', { status: response.status }));
 
   let snapshot;
   try {
     snapshot = await response.json();
   } catch {
-    throw new Error('The shared library is not valid JSON.');
+    throw new Error(t('The shared library is not valid JSON.'));
   }
 
   const sharedGames = SharedLibrary.prepareSharedLibraryReplacement(snapshot).map(normalizeGame);
-  if (!validateGameList(sharedGames)) throw new Error('The shared library contains invalid game data.');
+  if (!validateGameList(sharedGames)) throw new Error(t('The shared library contains invalid game data.'));
   return { snapshot, games: sharedGames };
 }
 
 function describeChanges({ added, changed, removed }) {
   const parts = [];
-  if (added.length) parts.push(`${added.length} new`);
-  if (changed.length) parts.push(`${changed.length} changed`);
-  if (removed.length) parts.push(`${removed.length} removed`);
-  return parts.length ? parts.join(', ') : 'no differences';
+  if (added.length) parts.push(t('{n} new', { n: added.length }));
+  if (changed.length) parts.push(t('{n} changed', { n: changed.length }));
+  if (removed.length) parts.push(t('{n} removed', { n: removed.length }));
+  return parts.length ? parts.join(', ') : t('no differences');
 }
 
 function formatPublishedDate(exportedAt) {
   const publishedAt = new Date(exportedAt);
-  return Number.isNaN(publishedAt.getTime()) ? 'an unknown date' : publishedAt.toLocaleString();
+  return Number.isNaN(publishedAt.getTime()) ? t('an unknown date') : publishedAt.toLocaleString(SiteI18n.locale);
 }
 
 function hideUpdateBanner() {
@@ -1258,35 +1271,35 @@ async function checkForSharedUpdate() {
   }
   pendingSharedSnapshot = shared;
   document.querySelector('#update-banner-text').textContent =
-    `A shared library update from ${formatPublishedDate(exportedAt)} is available: ${describeChanges(changes)} compared with your library.`;
+    t('A shared library update from {date} is available: {changes} compared with your library.', { date: formatPublishedDate(exportedAt), changes: describeChanges(changes) });
   document.querySelector('#update-banner').hidden = false;
 }
 
 async function getSharedUpdate(prefetched = null) {
   const button = document.querySelector('#shared-update-button');
   button.disabled = true;
-  button.textContent = 'Loading shared library…';
+  button.textContent = t('Loading shared library…');
   try {
     const { snapshot, games: replacement } = prefetched || await fetchSharedSnapshot();
     const changes = SharedLibrary.summarizeChanges(games, replacement);
     const confirmation = [
-      `Shared library published: ${formatPublishedDate(snapshot.exportedAt)}`,
-      `Games in shared library: ${replacement.length} (${describeChanges(changes)} compared with yours)`,
-      changes.removed.length ? `Games that will be removed: ${changes.removed.slice(0, 8).join(', ')}${changes.removed.length > 8 ? ', …' : ''}` : '',
-      `This will replace your current library of ${games.length} games, including local additions and changes. Export a backup first if you want to keep them.`
+      t('Shared library published: {date}', { date: formatPublishedDate(snapshot.exportedAt) }),
+      t('Games in shared library: {n} ({changes} compared with yours)', { n: replacement.length, changes: describeChanges(changes) }),
+      changes.removed.length ? t('Games that will be removed: {titles}', { titles: `${changes.removed.slice(0, 8).join(', ')}${changes.removed.length > 8 ? ', …' : ''}` }) : '',
+      t('This will replace your current library of {n} games, including local additions and changes. Export a backup first if you want to keep them.', { n: games.length })
     ].filter(Boolean).join('\n\n');
-    if (!(await confirmAction({ title: 'Load the shared library?', message: confirmation, confirmLabel: 'Replace my library', danger: true }))) return;
+    if (!(await confirmAction({ title: t('Load the shared library?'), message: confirmation, confirmLabel: t('Replace my library'), danger: true }))) return;
 
-    if (commitGames(replacement, `Shared library updated with ${replacement.length} games.`, { undoable: true })) {
+    if (commitGames(replacement, t('Shared library updated with {n} games.', { n: replacement.length }), { undoable: true })) {
       savePreferences({ sharedVersion: snapshot.exportedAt });
       hideUpdateBanner();
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not fetch the shared library.';
-    showToast(`${message} Your current library is unchanged.`, true);
+    const message = error instanceof Error ? error.message : t('Could not fetch the shared library.');
+    showToast(t('{message} Your current library is unchanged.', { message }), true);
   } finally {
     button.disabled = false;
-    button.textContent = 'Get shared update';
+    button.textContent = t('Get shared update');
   }
 }
 
@@ -1306,9 +1319,9 @@ async function openPublishDialog() {
   document.querySelector('#publish-remember').checked = Boolean(savedToken);
   document.querySelector('#forget-token').hidden = !savedToken;
   confirmButton.disabled = true;
-  confirmButton.textContent = `Publish ${games.length} ${games.length === 1 ? 'game' : 'games'}`;
+  confirmButton.textContent = t(games.length === 1 ? 'Publish {n} game' : 'Publish {n} games', { n: games.length });
   summary.replaceChildren();
-  addText(summary, 'p', '', 'Comparing with the current shared library…');
+  addText(summary, 'p', '', t('Comparing with the current shared library…'));
   document.querySelector('#publish-dialog').showModal();
 
   let changes = null;
@@ -1320,17 +1333,17 @@ async function openPublishDialog() {
   }
   summary.replaceChildren();
   if (!changes) {
-    addText(summary, 'p', '', `The current shared library couldn't be read. Publishing will replace it with your ${games.length} games.`);
+    addText(summary, 'p', '', t('The current shared library couldn’t be read. Publishing will replace it with your {n} games.', { n: games.length }));
   } else if (!changes.added.length && !changes.changed.length && !changes.removed.length) {
-    addText(summary, 'p', '', 'Your library already matches the shared library. There is nothing new to publish.');
+    addText(summary, 'p', '', t('Your library already matches the shared library. There is nothing new to publish.'));
     return;
   } else {
-    addText(summary, 'p', '', `Compared with the shared library: ${describeChanges(changes)}.`);
+    addText(summary, 'p', '', t('Compared with the shared library: {changes}.', { changes: describeChanges(changes) }));
     const list = document.createElement('ul');
-    for (const [label, titles] of [['New', changes.added], ['Changed', changes.changed], ['Removed', changes.removed]]) {
+    for (const [kind, label, titles] of [['added', t('New'), changes.added], ['changed', t('Changed'), changes.changed], ['removed', t('Removed'), changes.removed]]) {
       if (!titles.length) continue;
-      const more = titles.length > 6 ? `, and ${titles.length - 6} more` : '';
-      const item = addText(list, 'li', label === 'Removed' ? 'is-removed' : '', `${label}: ${titles.slice(0, 6).join(', ')}${more}`);
+      const more = titles.length > 6 ? t(', and {n} more', { n: titles.length - 6 }) : '';
+      const item = addText(list, 'li', kind === 'removed' ? 'is-removed' : '', `${label}: ${titles.slice(0, 6).join(', ')}${more}`);
       item.title = titles.join(', ');
     }
     summary.append(list);
@@ -1339,10 +1352,10 @@ async function openPublishDialog() {
 }
 
 function githubErrorMessage(status) {
-  if (status === 401) return 'GitHub rejected the token. Check that it is correct and has not expired.';
-  if (status === 403 || status === 404) return `The token can't write to ${GITHUB_REPO}. Give it Contents: Read and write access to that repository.`;
-  if (status === 409 || status === 422) return 'The shared library changed on GitHub while publishing. Try again.';
-  return `GitHub returned HTTP ${status}. Try again later.`;
+  if (status === 401) return t('GitHub rejected the token. Check that it is correct and has not expired.');
+  if (status === 403 || status === 404) return t('The token can’t write to {repo}. Give it Contents: Read and write access to that repository.', { repo: GITHUB_REPO });
+  if (status === 409 || status === 422) return t('The shared library changed on GitHub while publishing. Try again.');
+  return t('GitHub returned HTTP {status}. Try again later.', { status });
 }
 
 async function githubRequest(token, url, options = {}) {
@@ -1358,7 +1371,7 @@ async function githubRequest(token, url, options = {}) {
       }
     });
   } catch {
-    throw new Error('Could not reach GitHub. Check your connection.');
+    throw new Error(t('Could not reach GitHub. Check your connection.'));
   }
 }
 
@@ -1381,7 +1394,7 @@ async function publishLibrary(event) {
   const button = document.querySelector('#confirm-publish');
   const originalLabel = button.textContent;
   button.disabled = true;
-  button.textContent = 'Publishing…';
+  button.textContent = t('Publishing…');
   try {
     const snapshot = SharedLibrary.buildSnapshot(games);
     const contents = SharedLibrary.serializeSnapshot(snapshot);
@@ -1406,9 +1419,9 @@ async function publishLibrary(event) {
     savePreferences({ sharedVersion: snapshot.exportedAt });
     hideUpdateBanner();
     document.querySelector('#publish-dialog').close();
-    showToast(`Published ${games.length} games. The site updates in a minute or two.`);
+    showToast(t('Published {n} games. The site updates in a minute or two.', { n: games.length }));
   } catch (error) {
-    showToast(error instanceof Error ? error.message : 'Publishing failed.', true);
+    showToast(error instanceof Error ? error.message : t('Publishing failed.'), true);
   } finally {
     button.disabled = false;
     button.textContent = originalLabel;
@@ -1425,7 +1438,7 @@ function forgetGithubToken() {
   document.querySelector('#publish-token').value = '';
   document.querySelector('#publish-remember').checked = false;
   document.querySelector('#forget-token').hidden = true;
-  showToast('The saved GitHub token was removed from this device.');
+  showToast(t('The saved GitHub token was removed from this device.'));
 }
 
 function escapeMarkdown(value) {
@@ -1435,13 +1448,13 @@ function escapeMarkdown(value) {
 function buildMarkdownExport() {
   const selectedStatuses = [...document.querySelectorAll('[data-markdown-status]:checked')].map(input => input.dataset.markdownStatus);
   const selectedFields = new Set([...document.querySelectorAll('[data-markdown-field]:checked')].map(input => input.dataset.markdownField));
-  if (!selectedStatuses.length) return 'Select at least one game group to export.';
+  if (!selectedStatuses.length) return t('Select at least one game group to export.');
 
   return selectedStatuses.map(status => {
     const group = games.filter(game => game.status === status).sort((first, second) => first.title.localeCompare(second.title));
-    const lines = [`## ${STATUS_LABELS[status]}`];
+    const lines = [`## ${t(STATUS_LABELS[status])}`];
     if (!group.length) {
-      lines.push('_No games._');
+      lines.push(`_${t('No games.')}_`);
       return lines.join('\n');
     }
     for (const game of group) {
@@ -1449,17 +1462,17 @@ function buildMarkdownExport() {
       lines.push(`- **${game.priority ? '! ' : ''}${title}**`);
       const details = [];
       if (selectedFields.has('genre') && game.genre) details.push(escapeMarkdown(game.genre));
-      if (selectedFields.has('players') && game.players) details.push(`${escapeMarkdown(game.players)} ${game.players === '1' ? 'player' : 'players'}`);
+      if (selectedFields.has('players') && game.players) details.push(escapeMarkdown(playersLabel(game.players)));
       if (details.length) lines.push(`  ${details.join(' | ')}`);
       if (selectedFields.has('description') && game.description) lines.push(`  ${escapeMarkdown(game.description)}`);
-      if (selectedFields.has('tags') && game.tags) lines.push(`  Tags: ${escapeMarkdown(game.tags)}`);
-      if (selectedFields.has('notes') && game.notes) lines.push(`  Notes: ${escapeMarkdown(game.notes)}`);
+      if (selectedFields.has('tags') && game.tags) lines.push(`  ${t('Tags')}: ${escapeMarkdown(game.tags)}`);
+      if (selectedFields.has('notes') && game.notes) lines.push(`  ${t('Notes')}: ${escapeMarkdown(game.notes)}`);
       const steamUrl = selectedFields.has('steamUrl') ? safeWebUrl(game.steamUrl) : '';
       if (steamUrl) lines.push(`  Steam: ${steamUrl}`);
       const coverUrl = selectedFields.has('coverUrl') ? safeWebUrl(game.coverUrl) : '';
-      if (coverUrl) lines.push(`  Cover: ${coverUrl}`);
+      if (coverUrl) lines.push(`  ${t('Cover')}: ${coverUrl}`);
       if (selectedFields.has('steamCategories') && game.steamCategories.length) {
-        lines.push(`  Steam store categories: ${escapeMarkdown(game.steamCategories.join(', '))}`);
+        lines.push(`  ${t('Steam store categories')}: ${escapeMarkdown(game.steamCategories.join(', '))}`);
       }
     }
     return lines.join('\n');
@@ -1470,9 +1483,10 @@ function updateMarkdownPreview() {
   const markdown = buildMarkdownExport();
   document.querySelector('#markdown-preview').value = markdown;
   const length = document.querySelector('#markdown-length');
+  const characters = new Intl.NumberFormat(SiteI18n.locale).format(markdown.length);
   length.textContent = markdown.length > 2000
-    ? `${markdown.length} characters. Discord's message limit is 2,000 characters; select fewer groups or details to shorten it.`
-    : `${markdown.length} characters. Discord's message limit is 2,000 characters.`;
+    ? t('{n} characters. Discord’s message limit is 2,000 characters; select fewer groups or details to shorten it.', { n: characters })
+    : t('{n} characters. Discord’s message limit is 2,000 characters.', { n: characters });
   length.classList.toggle('is-over-limit', markdown.length > 2000);
 }
 
@@ -1484,11 +1498,11 @@ async function copyMarkdown() {
     preview.focus();
     preview.select();
     if (!document.execCommand('copy')) {
-      showToast('Could not copy automatically. Select and copy the preview text.', true);
+      showToast(t('Could not copy automatically. Select and copy the preview text.'), true);
       return;
     }
   }
-  showToast('Markdown copied to clipboard.');
+  showToast(t('Markdown copied to clipboard.'));
 }
 
 function downloadMarkdown() {
@@ -1498,38 +1512,38 @@ function downloadMarkdown() {
   link.download = `game-library-${new Date().toISOString().slice(0, 10)}.md`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  showToast('Markdown file downloaded.');
+  showToast(t('Markdown file downloaded.'));
 }
 
 async function importLibrary(file) {
   try {
     const parsed = JSON.parse(await file.text());
     const imported = Array.isArray(parsed) ? parsed : parsed?.games;
-    if (!validateGameList(imported)) throw new Error('This file is not a valid game library export. No data was changed.');
+    if (!validateGameList(imported)) throw new Error(t('This file is not a valid game library export. No data was changed.'));
     const importedTitles = new Set();
     const importedSteamAppIds = new Set();
     for (const game of imported) {
       const normalizedTitle = normalizeGameTitle(game.title);
       if (importedTitles.has(normalizedTitle)) {
-        throw new Error(`The import contains multiple entries named "${game.title.trim()}". No data was changed.`);
+        throw new Error(t('The import contains multiple entries named “{title}”. No data was changed.', { title: game.title.trim() }));
       }
       importedTitles.add(normalizedTitle);
       const steamAppId = getSteamAppId(game.steamUrl);
       if (steamAppId && importedSteamAppIds.has(steamAppId)) {
-        throw new Error(`The import contains multiple entries for the same Steam game (app ${steamAppId}). No data was changed.`);
+        throw new Error(t('The import contains multiple entries for the same Steam game (app {id}). No data was changed.', { id: steamAppId }));
       }
       if (steamAppId) importedSteamAppIds.add(steamAppId);
     }
-    if (!(await confirmAction({ title: `Import ${imported.length} games?`, message: `This replaces your current library of ${games.length} games. You can undo it right after, but export a backup first if you want to keep a copy.`, confirmLabel: 'Import and replace', danger: true }))) return;
+    if (!(await confirmAction({ title: t('Import {n} games?', { n: imported.length }), message: t('This replaces your current library of {n} games. You can undo it right after, but export a backup first if you want to keep a copy.', { n: games.length }), confirmLabel: t('Import and replace'), danger: true }))) return;
     const normalized = imported.map(normalizeGame);
     const ids = new Set();
     for (const game of normalized) {
       if (ids.has(game.id)) game.id = makeId();
       ids.add(game.id);
     }
-    commitGames(normalized, `Imported ${normalized.length} games. The previous library was replaced.`, { undoable: true });
+    commitGames(normalized, t('Imported {n} games. The previous library was replaced.', { n: normalized.length }), { undoable: true });
   } catch (error) {
-    showToast(error instanceof SyntaxError ? 'Could not read that JSON file. No data was changed.' : error.message, true);
+    showToast(error instanceof SyntaxError ? t('Could not read that JSON file. No data was changed.') : error.message, true);
   } finally {
     elements.importInput.value = '';
   }
@@ -1614,7 +1628,7 @@ document.querySelector('#fetch-steam').addEventListener('click', fetchSteamInfo)
 document.querySelector('#fetch-steam-trailers').addEventListener('click', fetchSteamTrailers);
 document.querySelector('#game-steam-url').addEventListener('input', () => {
   document.querySelector('#steam-trailer-picker-wrap').hidden = true;
-  document.querySelector('#steam-trailer-picker').replaceChildren(new Option('Choose a trailer', ''));
+  document.querySelector('#steam-trailer-picker').replaceChildren(new Option(t('Choose a trailer'), ''));
 });
 document.querySelector('#steam-trailer-picker').addEventListener('change', event => {
   if (event.target.value && parseTrailerUrl(event.target.value)?.type === 'steam-hls') {
@@ -1626,22 +1640,21 @@ elements.form.addEventListener('submit', event => {
   if (!elements.form.reportValidity()) return;
   const savedGame = readFormGame();
   if (savedGame.trailerUrl && !parseTrailerUrl(savedGame.trailerUrl)) {
-    showToast('Use a YouTube video link, direct HTTPS MP4/WebM, or a Steam trailer URL.', true);
+    showToast(t('Use a YouTube video link, direct HTTPS MP4/WebM, or a Steam trailer URL.'), true);
     document.querySelector('#game-trailer-url').focus();
     return;
   }
   const duplicate = findDuplicateGame(savedGame, savedGame.id);
   if (duplicate) {
-    const duplicateReason = normalizeGameTitle(duplicate.title) === normalizeGameTitle(savedGame.title)
-      ? `"${duplicate.title}" is already in your library`
-      : `The Steam game "${duplicate.title}" is already in your library`;
-    showToast(`${duplicateReason}. Edit that entry instead.`, true);
+    showToast(normalizeGameTitle(duplicate.title) === normalizeGameTitle(savedGame.title)
+      ? t('“{title}” is already in your library. Edit that entry instead.', { title: duplicate.title })
+      : t('The Steam game “{title}” is already in your library. Edit that entry instead.', { title: duplicate.title }), true);
     document.querySelector('#game-title').focus();
     return;
   }
   const exists = games.some(game => game.id === savedGame.id);
   const nextGames = exists ? games.map(game => game.id === savedGame.id ? savedGame : game) : [...games, savedGame];
-  if (commitGames(nextGames, exists ? 'Game updated.' : 'Game added.')) elements.dialog.close();
+  if (commitGames(nextGames, exists ? t('Game updated.') : t('Game added.'))) elements.dialog.close();
 });
 document.querySelector('#export-button').addEventListener('click', exportLibrary);
 document.querySelector('#shared-update-button').addEventListener('click', () => getSharedUpdate());
@@ -1678,12 +1691,12 @@ elements.importInput.addEventListener('change', event => {
 });
 document.querySelector('#reset-button').addEventListener('click', async () => {
   const confirmed = await confirmAction({
-    title: 'Reset the library?',
-    message: `This deletes all ${games.length} games and restores the original starter list. You can undo it right after, but export a backup first if you want to keep a copy.`,
-    confirmLabel: 'Reset library',
+    title: t('Reset the library?'),
+    message: t('This deletes all {n} games and restores the original starter list. You can undo it right after, but export a backup first if you want to keep a copy.', { n: games.length }),
+    confirmLabel: t('Reset library'),
     danger: true
   });
-  if (confirmed) commitGames(makeInitialGames(), 'Library reset to the original starter games.', { undoable: true });
+  if (confirmed) commitGames(makeInitialGames(), t('Library reset to the original starter games.'), { undoable: true });
 });
 document.querySelector('#backup-tip-close').addEventListener('click', () => {
   try {

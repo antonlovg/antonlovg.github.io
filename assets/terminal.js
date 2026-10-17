@@ -12,6 +12,8 @@
   const THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark', ocean: 'Ocean', ember: 'Ember' };
   // Pages "open" may navigate to (by name or path).
   const PAGES = { home: '/', games: '/games/', ops: '/ops/', status: '/status/', changelog: '/changelog/', worldcup: '/wc2026/', privacy: '/privacy/', cookies: '/cookies/' };
+  // Site links stay in the visitor's language (/sv/…, /no/…).
+  const localize = href => (globalThis.SiteI18n ? SiteI18n.path(href) : href);
 
   function init({ searchProviders, data, openWin98, openMinesweeper }) {
     // ---------- DOM ----------
@@ -25,7 +27,8 @@
       return node;
     };
 
-    const dialog = el('dialog', { className: 'terminal', attrs: { id: 'terminal', 'aria-labelledby': 'terminal-title' } });
+    // lovsh speaks English on every language version of the site, like a real shell.
+    const dialog = el('dialog', { className: 'terminal', attrs: { id: 'terminal', lang: 'en', 'aria-labelledby': 'terminal-title' } });
     const log = el('div', { className: 'term-log', attrs: { id: 'term-log', role: 'log', 'aria-live': 'polite', 'aria-label': 'Terminal output' } });
     const promptText = el('span', { text: '~ $', attrs: { 'aria-hidden': 'true' } });
     const input = el('input', { className: 'term-input', attrs: { id: 'term-input', type: 'text', role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': 'term-suggestions', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', enterkeyhint: 'go' } });
@@ -52,7 +55,7 @@
       const node = el('p', { className: `term-line ${entry.tone || ''}`.trim() });
       for (const part of entry.parts) {
         if (typeof part === 'string') node.append(part);
-        else if (part.href) node.append(el('a', { text: part.text, attrs: { href: part.href, ...(part.external ? { rel: 'noopener' } : {}) } }));
+        else if (part.href) node.append(el('a', { text: part.text, attrs: { href: part.external ? part.href : localize(part.href), ...(part.external ? { rel: 'noopener' } : {}) } }));
         // A real space after the label, so copied text and screen readers don't run words together.
         else if (part.key) node.append(el('span', { className: 'key', text: part.key }), ' ');
       }
@@ -123,7 +126,7 @@
 
     function go(url, label) {
       print(`Opening ${label}…`, 'dim');
-      setTimeout(() => { location.href = url; }, 200);
+      setTimeout(() => { location.href = localize(url); }, 200);
     }
 
     const COMMANDS = {

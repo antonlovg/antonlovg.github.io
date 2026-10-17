@@ -5,7 +5,8 @@
 # Actions are pinned to full commit SHAs (supply-chain safety); Dependabot keeps them current.
 # The runner image is pinned too, so an OS migration can't silently change the audit browser.
 # The build also generates /ops (DORA metrics from this workflow's own run history), /status
-# (from the hourly uptime monitor's data branch), /changelog (from git history) and Steam prices.
+# (from the hourly uptime monitor's data branch), /changelog (from git history), Steam prices,
+# the Swedish (/sv/) and Norwegian (/no/) pages and a social preview image for every page.
 name: Pipeline
 
 on:
@@ -44,7 +45,7 @@ jobs:
         run: node --test --test-reporter=tap tests/*.test.mjs games/tests/*.test.mjs | tee test-report.tap
 
       - name: JavaScript syntax
-        run: for file in home.js assets/*.js games/*.js ops/*.js scripts/*.mjs scripts/lib/*.mjs; do node --check "$file"; done
+        run: for file in home.js assets/*.js games/*.js ops/*.js scripts/*.mjs scripts/lib/*.mjs i18n/*.mjs; do node --check "$file"; done
 
       - name: Build site
         run: node scripts/build-site.mjs _site
@@ -55,9 +56,6 @@ jobs:
       - name: Fetch Steam prices
         run: node scripts/fetch-prices.mjs _site
 
-      - name: Install audit tools
-        run: npm install --no-save --no-package-lock --prefix .audit axe-core@4.10.2
-
       # Fail early and clearly if the runner image ever stops shipping Chrome.
       - name: Find Chrome
         run: |
@@ -65,6 +63,12 @@ jobs:
           if [ -z "$chrome" ]; then echo "::error::Chrome not found on this runner; the audit needs it."; exit 1; fi
           "$chrome" --version
           echo "CHROME_PATH=$chrome" >> "$GITHUB_ENV"
+
+      - name: Render social preview images
+        run: node scripts/make-og.mjs _site
+
+      - name: Install audit tools
+        run: npm install --no-save --no-package-lock --prefix .audit axe-core@4.10.2
 
       - name: Audit accessibility, privacy and performance
         run: node scripts/audit-site.mjs _site --axe .audit/node_modules/axe-core/axe.min.js --lighthouse --gate

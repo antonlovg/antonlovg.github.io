@@ -71,7 +71,8 @@ The snapshot is public, including personal notes, so don't put anything private 
 - A Steam Store URL can be saved manually. **Fetch Steam info** uses the optional Worker described above. Steam genres and store categories are kept separate from community tags, and a warning appears before filled-in details are replaced.
 ## Prices and picking a game
 
-- Cards show the current Steam price in euro (Swedish store) and a sale badge with the original price when discounted. Prices come from `prices.json`, which the pipeline fetches at build time; local previews simply show no prices.
+- Cards show the current Steam price and a sale badge with the original price when discounted: in euro (Swedish store, `prices.json`) on the English and Swedish pages, and in Norwegian kroner (Norwegian store, `prices-nok.json`) on `/no/games/`. The pipeline fetches both at build time; local previews simply show no prices.
+- The library also runs as `/sv/games/` and `/no/games/`. Interface text goes through `SiteI18n.t()` (translations in `i18n/ui.mjs`); all three share the same saved library, and game data from Steam stays English.
 - **On sale only** (in Filters) and **Price: low to high** (in Sort) use those prices. The subtitle counts how many games are on sale.
 - **Pick a game** spins a wheel of up to 12 games from the current view and filters (the pick is made first, uniformly at random; the wheel then lands on it). Reduced-motion settings skip the animation.
 

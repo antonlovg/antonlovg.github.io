@@ -6,16 +6,17 @@
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const { t } = SiteI18n;
 
   // ---------- Relative times ("3 hours ago"), with the exact time kept as a tooltip ----------
 
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(SiteI18n.locale, { numeric: 'auto' });
   function relative(iso) {
     const seconds = (Date.parse(iso) - Date.now()) / 1000;
     for (const [unit, size] of [['day', 86400], ['hour', 3600], ['minute', 60]]) {
       if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
     }
-    return 'just now';
+    return t('just now');
   }
   for (const node of document.querySelectorAll('time[data-relative]')) {
     if (Number.isNaN(Date.parse(node.dateTime))) continue;
@@ -56,10 +57,10 @@
         step.classList.add(failed ? 'is-failed' : 'is-done');
         line(`${failed ? '✗' : '✓'} ${name} (${time})`);
       }
-      line(steps.some(step => step.dataset.conclusion === 'failure') ? '✗ Deploy blocked.' : '✓ Deployed to lovgren.dev');
+      line(steps.some(step => step.dataset.conclusion === 'failure') ? `✗ ${t('Deploy blocked.')}` : `✓ ${t('Deployed to lovgren.dev')}`);
       playing = false;
       button.disabled = false;
-      button.textContent = '↻ Replay again';
+      button.textContent = `↻ ${t('Replay again')}`;
     });
   }
 

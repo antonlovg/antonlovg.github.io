@@ -59,6 +59,12 @@
   }
 
   apply();
+  // Page-to-page view transitions: this is the only script that runs before the first paint, so it
+  // also handles the incoming transition. A page script may start its own transition (the game
+  // library does on a first visit) and abort it; that's expected, so the rejection is handled here.
+  addEventListener('pagereveal', event => {
+    for (const promise of ['ready', 'finished', 'updateCallbackDone']) event.viewTransition?.[promise].catch(() => {});
+  });
   prefersLight.addEventListener('change', () => { if (current === 'system') set('system', { persist: false }); });
   // Keep other open tabs in sync.
   addEventListener('storage', event => { if (event.key === KEY) set(event.newValue || 'system', { persist: false }); });

@@ -32,25 +32,27 @@ export function fillSlot(template, name, html) {
   return template.slice(0, from + start.length) + html + template.slice(to);
 }
 
-export function formatDuration(ms) {
+// Durations and dates take a language context or locale; English is the default.
+export function formatDuration(ms, { t = (text, vars) => text.replace('{n}', vars.n), locale = 'en-GB' } = {}) {
   if (!Number.isFinite(ms) || ms < 0) return '–';
+  const number = (value, digits = 0) => new Intl.NumberFormat(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
   const seconds = ms / 1000;
-  if (seconds < 60) return `${Math.round(seconds)} s`;
+  if (seconds < 60) return `${number(Math.round(seconds))} s`;
   const minutes = seconds / 60;
-  if (minutes < 60) return `${Math.round(minutes)} min`;
+  if (minutes < 60) return `${number(Math.round(minutes))} min`;
   const hours = minutes / 60;
-  if (hours < 48) return `${hours < 10 ? hours.toFixed(1) : Math.round(hours)} h`;
-  return `${Math.round(hours / 24)} days`;
+  if (hours < 48) return `${hours < 10 ? number(Math.round(hours * 10) / 10, 1) : number(Math.round(hours))} h`;
+  return t('{n} days', { n: number(Math.round(hours / 24)) });
 }
 
-export function formatDate(iso) {
+export function formatDate(iso, locale = 'en-GB') {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Stockholm' });
+  return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Stockholm' });
 }
 
-export function formatDateTime(iso) {
+export function formatDateTime(iso, locale = 'en-GB') {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm', timeZoneName: 'short' });
+  return date.toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm', timeZoneName: 'short' });
 }

@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const PAGES = {
   'index.html': '/',
   'games/index.html': '/games/',
-  'wc2026/index.html': '/wc2026/',
+  'wc2026/index.html': null,
   'ops/index.html': '/ops/',
   'status/index.html': '/ops/',
   'changelog/index.html': '/ops/',
@@ -15,7 +15,8 @@ const PAGES = {
   '404.html': null
 };
 
-const read = file => readFile(new URL(`../${file}`, import.meta.url), 'utf8');
+// Line endings depend on the checkout (core.autocrlf), so they are normalized.
+const read = async file => (await readFile(new URL(`../${file}`, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
 const pages = Object.fromEntries(await Promise.all(Object.keys(PAGES).map(async file => [file, await read(file)])));
 
 function navBlock(html) {
@@ -97,5 +98,24 @@ test('every page has a skip link to an element that exists', () => {
     const target = html.match(/<a class="skip-link" href="#([\w-]+)">/)?.[1];
     assert.ok(target, `${file}: skip link`);
     assert.match(html, new RegExp(`id="${target}"`), `${file}: skip link target #${target}`);
+  }
+});
+
+test('every page loads the language helper before the shell script', () => {
+  for (const [file, html] of Object.entries(pages)) {
+    const i18n = html.indexOf('<script src="/assets/i18n.js" defer></script>');
+    assert.ok(i18n > 0 && i18n < html.indexOf('<script src="/assets/site.js" defer></script>'), `${file}: i18n.js must load before site.js`);
+  }
+  // One 404 page serves every language: it takes the language from the address and loads both dictionaries.
+  assert.match(pages['404.html'], /<html lang="en" data-lang-from-path>/);
+  assert.ok(pages['404.html'].indexOf('/assets/i18n/sv.js') < pages['404.html'].indexOf('/assets/i18n.js'));
+  assert.ok(pages['404.html'].indexOf('/assets/i18n/nb.js') < pages['404.html'].indexOf('/assets/i18n.js'));
+});
+
+test('the build owns canonical links and social tags', () => {
+  for (const [file, html] of Object.entries(pages)) {
+    if (file === '404.html') continue;
+    assert.doesNotMatch(html, /<meta property="og:|<link rel="canonical"|<link rel="alternate" hreflang/, `${file}: social tags are added by scripts/build-site.mjs`);
+    assert.match(html, /<meta name="description" content="[^"]+">/, `${file}: needs a description for its preview card`);
   }
 });

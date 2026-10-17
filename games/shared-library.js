@@ -6,6 +6,9 @@
     root.SharedLibrary = api;
   }
 })(globalThis, () => {
+  // Error messages are translated on the site (SiteI18n) and stay English in the unit tests.
+  const t = (text, vars = {}) => (globalThis.SiteI18n ? globalThis.SiteI18n.t(text, vars) : text.replace(/\{(\w+)\}/g, (whole, name) => (name in vars ? String(vars[name]) : whole)));
+
   function normalizeTitle(title) {
     return title.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
   }
@@ -22,10 +25,10 @@
 
   function prepareSharedLibraryReplacement(snapshot) {
     if (!snapshot || snapshot.schemaVersion !== 1) {
-      throw new Error('Unsupported shared library format. No data was changed.');
+      throw new Error(t('Unsupported shared library format. No data was changed.'));
     }
     if (!Array.isArray(snapshot.games)) {
-      throw new Error('The shared library does not contain a game list. No data was changed.');
+      throw new Error(t('The shared library does not contain a game list. No data was changed.'));
     }
 
     const ids = new Set();
@@ -35,12 +38,12 @@
       if (!game || typeof game !== 'object' || Array.isArray(game)
         || typeof game.id !== 'string' || !game.id
         || typeof game.title !== 'string' || !game.title.trim()) {
-        throw new Error('The shared library contains an invalid game entry. No data was changed.');
+        throw new Error(t('The shared library contains an invalid game entry. No data was changed.'));
       }
 
       const title = normalizeTitle(game.title);
       if (ids.has(game.id) || titles.has(title)) {
-        throw new Error(`The shared library contains duplicate games named "${game.title.trim()}". No data was changed.`);
+        throw new Error(t('The shared library contains duplicate games named “{title}”. No data was changed.', { title: game.title.trim() }));
       }
       ids.add(game.id);
       titles.add(title);
@@ -62,7 +65,7 @@
 
       const steamAppId = getSteamAppId(normalizedGame.steamUrl);
       if (steamAppId && steamAppIds.has(steamAppId)) {
-        throw new Error(`The shared library contains duplicate Steam app ${steamAppId}. No data was changed.`);
+        throw new Error(t('The shared library contains duplicate Steam app {id}. No data was changed.', { id: steamAppId }));
       }
       if (steamAppId) steamAppIds.add(steamAppId);
 

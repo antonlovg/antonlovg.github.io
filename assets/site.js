@@ -1,6 +1,6 @@
 // lovgren.dev shell behaviour, shared by every page:
-// theme menu, the terminal button (lovsh loads on first use), keyboard shortcuts, the Konami code,
-// and shared data loaders.
+// theme and language menus, the terminal button (lovsh loads on first use), keyboard shortcuts,
+// the Konami code, and shared data loaders. Text goes through SiteI18n (assets/i18n.js).
 // Builds its own controls so visitors without JavaScript never see dead buttons.
 // Everything is same-origin; all text is inserted with textContent.
 (() => {
@@ -10,9 +10,13 @@
   const ICONS = {
     system: ['M4 5h16v11H4z', 'M9 20h6M12 16v4'],
     light: ['M12 4V2M12 22v-2M4.9 4.9 3.5 3.5M20.5 20.5l-1.4-1.4M4 12H2M22 12h-2M4.9 19.1l-1.4 1.4M20.5 3.5l-1.4 1.4', 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'],
-    dark: ['M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z']
+    dark: ['M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z'],
+    language: ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'M3.5 9h17M3.5 15h17', 'M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z']
   };
-  const THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark', ocean: 'Ocean', ember: 'Ember' };
+  const i18n = globalThis.SiteI18n;
+  const { t } = i18n;
+  const THEME_LABELS = { system: t('System'), light: t('Light'), dark: t('Dark'), ocean: t('Ocean'), ember: t('Ember') };
+  const LANG_KEY = 'lovgren-lang';
 
   const $ = selector => document.querySelector(selector);
 
@@ -77,13 +81,13 @@
 
   function timeAgo(iso) {
     const seconds = (Date.parse(iso) - Date.now()) / 1000;
-    if (Number.isNaN(seconds)) return 'unknown time';
+    if (Number.isNaN(seconds)) return t('unknown time');
     const units = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
-    const format = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    const format = new Intl.RelativeTimeFormat(i18n.locale, { numeric: 'auto' });
     for (const [unit, size] of units) {
       if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
     }
-    return 'just now';
+    return t('just now');
   }
 
   // ---------- Theme menu ----------
@@ -93,7 +97,7 @@
 
   function buildThemeMenu() {
     const button = el('button', { className: 'shell-button theme-button', attrs: { type: 'button', id: 'theme-button', popovertarget: 'theme-menu', 'aria-haspopup': 'true' } });
-    const menu = el('div', { className: 'theme-menu', attrs: { id: 'theme-menu', popover: '', 'aria-label': 'Theme' } }, el('p', { text: 'Theme', attrs: { 'aria-hidden': 'true' } }));
+    const menu = el('div', { className: 'theme-menu', attrs: { id: 'theme-menu', popover: '', 'aria-label': t('Theme') } }, el('p', { text: t('Theme'), attrs: { 'aria-hidden': 'true' } }));
     for (const preference of ['system', 'light', 'dark']) {
       const option = el('button', { className: 'theme-option', attrs: { type: 'button', 'data-theme-option': preference, 'aria-checked': 'false', role: 'menuitemradio' } }, icon(preference), THEME_LABELS[preference]);
       option.addEventListener('click', () => { SiteTheme.set(preference); menu.hidePopover(); button.focus(); });
@@ -110,21 +114,95 @@
     });
     menu.addEventListener('toggle', event => {
       if (event.newState !== 'open') return;
-      const rect = button.getBoundingClientRect();
-      menu.style.top = `${Math.round(rect.bottom + 8)}px`;
-      menu.style.left = `${Math.round(Math.max(8, Math.min(rect.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 8)))}px`;
+      placeBelow(menu, button);
       (menu.querySelector('[aria-checked="true"]') || menu.querySelector('.theme-option')).focus();
     });
     function sync() {
       const preference = SiteTheme.preference;
       const shown = ICONS[preference] ? preference : 'dark';
-      button.replaceChildren(icon(shown), el('span', { className: 'sr-only', text: `Theme: ${THEME_LABELS[preference]}` }));
-      button.title = `Theme: ${THEME_LABELS[preference]}`;
+      const label = t('Theme: {name}', { name: THEME_LABELS[preference] });
+      button.replaceChildren(icon(shown), el('span', { className: 'sr-only', text: label }));
+      button.title = label;
       for (const option of menu.querySelectorAll('.theme-option')) option.setAttribute('aria-checked', String(option.dataset.themeOption === preference));
     }
     sync();
     document.addEventListener('site:themechange', sync);
     return [button, menu];
+  }
+
+  function placeBelow(menu, button) {
+    const rect = button.getBoundingClientRect();
+    menu.style.top = `${Math.round(rect.bottom + 8)}px`;
+    menu.style.left = `${Math.round(Math.max(8, Math.min(rect.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 8)))}px`;
+  }
+
+  // ---------- Language menu and suggestion ----------
+
+  const storedLanguage = () => { try { return localStorage.getItem(LANG_KEY); } catch { return null; } };
+  const rememberLanguage = code => { try { localStorage.setItem(LANG_KEY, code); } catch { /* storage blocked */ } };
+  // The same page in another language, keeping filters in the query and the #section.
+  const pageIn = code => i18n.localize(i18n.base + location.search + location.hash, code);
+  const translated = Boolean(i18n.pageOf(i18n.base));
+
+  function buildLanguageMenu() {
+    const current = i18n.info;
+    const label = t('Language: {name}', { name: current.label });
+    const button = el('button', { className: 'shell-button language-button', attrs: { type: 'button', id: 'language-button', popovertarget: 'language-menu', title: label } },
+      icon('language'), el('span', { className: 'language-code', text: current.short, attrs: { 'aria-hidden': 'true' } }), el('span', { className: 'sr-only', text: label }));
+    const list = el('ul');
+    for (const lang of i18n.LANGS) {
+      const link = el('a', { className: 'theme-option', text: lang.label, attrs: { href: pageIn(lang.code), hreflang: lang.code, lang: lang.code } });
+      if (lang.code === current.code) link.setAttribute('aria-current', 'true');
+      // Filters and #sections change while you use a page, so the address is taken at the last moment.
+      link.addEventListener('click', () => { link.href = pageIn(lang.code); rememberLanguage(lang.code); });
+      list.append(el('li', {}, link));
+    }
+    const menu = el('div', { className: 'theme-menu language-menu', attrs: { id: 'language-menu', popover: '', 'aria-label': t('Language') } },
+      el('p', { text: t('Language'), attrs: { 'aria-hidden': 'true' } }), list);
+    menu.addEventListener('toggle', event => {
+      if (event.newState !== 'open') return;
+      for (const link of menu.querySelectorAll('a')) link.href = pageIn(link.hreflang);
+      placeBelow(menu, button);
+      (menu.querySelector('[aria-current]') || menu.querySelector('a')).focus();
+    });
+    menu.addEventListener('keydown', event => {
+      const links = [...menu.querySelectorAll('a')];
+      const index = links.indexOf(document.activeElement);
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        links[(index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length].focus();
+      }
+    });
+    return [button, menu];
+  }
+
+  // Offered in the visitor's own language when the page exists in it. Never an automatic redirect.
+  const SUGGESTIONS = {
+    en: ['This page is also available in English.', 'Show in English', 'No thanks'],
+    sv: ['Den här sidan finns på svenska.', 'Visa på svenska', 'Nej tack'],
+    nb: ['Denne siden finnes på norsk.', 'Vis på norsk', 'Nei takk']
+  };
+
+  function browserLanguage() {
+    for (const tag of navigator.languages || [navigator.language]) {
+      const code = String(tag).toLowerCase().split('-')[0];
+      if (code === 'sv') return 'sv';
+      if (['nb', 'nn', 'no'].includes(code)) return 'nb';
+      if (code === 'en') return 'en';
+    }
+    return null;
+  }
+
+  function suggestLanguage() {
+    const wanted = storedLanguage() || browserLanguage();
+    if (!translated || !wanted || wanted === i18n.lang || !SUGGESTIONS[wanted]) return;
+    const [text, go, dismiss] = SUGGESTIONS[wanted];
+    const link = el('a', { className: 'lang-suggest-go', text: go, attrs: { href: pageIn(wanted), hreflang: wanted } });
+    link.addEventListener('click', () => { link.href = pageIn(wanted); rememberLanguage(wanted); });
+    const close = el('button', { className: 'lang-suggest-close', text: dismiss, attrs: { type: 'button' } });
+    const box = el('aside', { className: 'lang-suggest', attrs: { lang: wanted, 'aria-label': go } }, el('p', { text }), el('div', { className: 'lang-suggest-actions' }, link, close));
+    close.addEventListener('click', () => { rememberLanguage(i18n.lang); box.remove(); });
+    document.body.append(box);
   }
 
   // ---------- Terminal (lovsh, loaded on first use) ----------
@@ -183,18 +261,20 @@
     const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
     const terminalButton = el('button', { className: 'shell-button is-outlined terminal-button', attrs: { type: 'button', id: 'terminal-open', 'aria-keyshortcuts': 'Control+K Meta+K' } },
       el('span', { className: 'prompt', text: '>_', attrs: { 'aria-hidden': 'true' } }),
-      el('span', { className: 'label-optional', text: 'Terminal' }),
+      el('span', { className: 'label-optional', text: t('Terminal') }),
       el('kbd', { text: isMac ? '⌘ K' : 'Ctrl K', attrs: { 'aria-hidden': 'true' } }));
     terminalButton.addEventListener('click', openTerminal);
     // Start loading the terminal as soon as someone shows interest, so it opens instantly.
     for (const type of ['pointerenter', 'focus', 'touchstart']) terminalButton.addEventListener(type, () => { loadTerminal().catch(() => {}); }, { once: true, passive: true });
     actions.append(terminalButton);
+    if (translated) actions.append(...buildLanguageMenu());
     if (showThemeSwitch) {
       const [themeButton, themeMenu] = buildThemeMenu();
       // Kept inside the header landmark; as a popover it still renders in the top layer.
       actions.append(themeButton, themeMenu);
     }
   }
+  suggestLanguage();
 
   // ---------- Keyboard shortcuts ----------
 

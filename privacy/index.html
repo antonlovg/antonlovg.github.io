@@ -11,8 +11,10 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <script src="/assets/theme.js"></script>
   <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/jetbrains-mono-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/site.css">
   <link rel="stylesheet" href="/style.css">
+  <script src="/assets/i18n.js" defer></script>
   <script src="/assets/site.js" defer></script>
   <script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/secret/*"}}]},"eagerness":"moderate"}]}</script>
 </head>
@@ -27,7 +29,6 @@
           <li><a href="/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a></li>
           <li><a href="/games/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 7.5h10a5 5 0 0 1 4.8 6.4l-1 3.3a2.4 2.4 0 0 1-4.2.9L14.7 15.5H9.3l-1.9 2.6a2.4 2.4 0 0 1-4.2-.9l-1-3.3A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/></svg>Games</a></li>
           <li><a href="/ops/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Ops</a></li>
-          <li><a href="/wc2026/"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>World Cup</a></li>
         </ul>
       </nav>
       <div class="site-actions"></div>
@@ -56,10 +57,10 @@
       <p>The site is hosted on <a href="https://pages.github.com/" rel="noopener">GitHub Pages</a>. Like any web server, GitHub receives your IP address and browser details when you load a page, and may log them for security and to keep the service running. I don't have access to those logs. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub's privacy statement</a>.</p>
 
       <h2>Data stored in your browser</h2>
-      <p>The game library saves your games and settings in your browser's <em>local storage</em> so they're still there next time. This data never leaves your device unless you export it yourself, and you can delete it at any time by clearing this site's data in your browser. The <a href="/cookies/">cookie policy</a> lists every item that may be stored.</p>
+      <p>The game library saves your games and settings in your browser's <em>local storage</em> so they're still there next time, and if you pick a theme or a language, the site remembers that choice the same way. This data never leaves your device unless you export it yourself, and you can delete it at any time by clearing this site's data in your browser. The <a href="/cookies/">cookie policy</a> lists every item that may be stored.</p>
 
       <h2>Requests to other services</h2>
-      <p>This page, the cookie policy, the World Cup page and the ops, status and changelog pages load nothing from other servers, and fonts are hosted on this site. The homepage loads only the game cover pictures in “Now playing” from Steam's image servers. An automated check blocks any update that would make these pages contact any other server. A few features in the game library also contact other services. Each of the services below receives your IP address when it's used:</p>
+      <p>This page, the cookie policy, the World Cup page and the ops, status and changelog pages, in every language, load nothing from other servers, and fonts are hosted on this site. The homepage loads only the game cover pictures in “Now playing” from Steam's image servers. An automated check blocks any update that would make these pages contact any other server. A few features in the game library also contact other services. Each of the services below receives your IP address when it's used:</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -88,7 +89,7 @@
             </tr>
             <tr>
               <td>Steam store prices</td>
-              <td>Never from your browser: the site’s build fetches prices in euro once per deploy</td>
+              <td>Never from your browser: the site’s build fetches prices in euro and Norwegian kroner once per deploy</td>
               <td>Nothing about you</td>
             </tr>
             <tr>

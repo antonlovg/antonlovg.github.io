@@ -9,7 +9,7 @@ import { computeDora, summarizeJobs } from './lib/dora.mjs';
 import { parseData, summarizeUptime, emptyData } from './lib/uptime.mjs';
 import { parseGitLog, buildChangelog } from './lib/changelog.mjs';
 import { pipelineRuns, lastCompletedRun } from './lib/github.mjs';
-import { renderDora, renderDeploys, renderReplay, renderStatusBanner, renderComponents, renderIncidents, renderChangelog, renderFeed, parseIncidentNote } from './lib/render.mjs';
+import { renderDora, renderDeploys, renderReplay, renderStatusBanner, renderComponents, renderIncidents, renderChangelog, renderFeed, parseIncidentNote, ENGLISH } from './lib/render.mjs';
 
 const SITE_URL = 'https://lovgren.dev';
 
@@ -28,7 +28,8 @@ async function fillPage(file, slots) {
   await writeFile(file, html);
 }
 
-export async function buildOps({ root, out, repo }) {
+// languages: [{ dir, ctx }] where dir is the language folder in the built site ('' for English).
+export async function buildOps({ root, out, repo, languages = [{ dir: '', ctx: ENGLISH }] }) {
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   const repoUrl = `https://github.com/${repo}`;
 
@@ -54,17 +55,19 @@ export async function buildOps({ root, out, repo }) {
     return Promise.all(files.map(async file => parseIncidentNote(file, await readFile(path.join(dir, file), 'utf8'))));
   }, []);
 
-  await fillPage(path.join(out, 'ops', 'index.html'), {
-    dora: renderDora(dora),
-    deploys: renderDeploys(dora),
-    replay: renderReplay(lastRun)
-  });
-  await fillPage(path.join(out, 'status', 'index.html'), {
-    banner: renderStatusBanner(uptime),
-    components: renderComponents(uptime),
-    incidents: renderIncidents(uptime, notes.filter(Boolean))
-  });
-  await fillPage(path.join(out, 'changelog', 'index.html'), { changelog: renderChangelog(changelog, repoUrl) });
+  for (const { dir, ctx } of languages) {
+    await fillPage(path.join(out, dir, 'ops', 'index.html'), {
+      dora: renderDora(dora, ctx),
+      deploys: renderDeploys(dora, ctx),
+      replay: renderReplay(lastRun, ctx)
+    });
+    await fillPage(path.join(out, dir, 'status', 'index.html'), {
+      banner: renderStatusBanner(uptime, ctx),
+      components: renderComponents(uptime, ctx),
+      incidents: renderIncidents(uptime, notes.filter(Boolean), ctx)
+    });
+    await fillPage(path.join(out, dir, 'changelog', 'index.html'), { changelog: renderChangelog(changelog, repoUrl, ctx) });
+  }
   await writeFile(path.join(out, 'changelog', 'feed.xml'), renderFeed(changelog, { siteUrl: SITE_URL, repoUrl }));
 
   // Compact data for the terminal (replay, neofetch, status, log).

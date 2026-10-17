@@ -28,11 +28,15 @@ test('fillSlot replaces only the marked region', () => {
 });
 
 test('formatDuration is human friendly', () => {
-  assert.equal(formatDuration(42e3), '42 s');
-  assert.equal(formatDuration(5 * 60e3), '5 min');
-  assert.equal(formatDuration(3 * HOUR), '3.0 h');
+  assert.equal(formatDuration(42e3), '42 s');
+  assert.equal(formatDuration(5 * 60e3), '5 min');
+  assert.equal(formatDuration(3 * HOUR), '3.0 h');
   assert.equal(formatDuration(5 * 24 * HOUR), '5 days');
   assert.equal(formatDuration(NaN), '–');
+  // Localized: decimal comma and a translated unit.
+  const sv = { locale: 'sv-SE', t: (text, vars) => (text === '{n} days' ? `${vars.n} dagar` : text) };
+  assert.equal(formatDuration(3 * HOUR, sv), '3,0 h');
+  assert.equal(formatDuration(5 * 24 * HOUR, sv), '5 dagar');
 });
 
 function run(overrides) {
