@@ -1,243 +1,454 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Game Library</title>
-    <meta name="description" content="A personal game library with custom lists." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=7" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand-wrap">
-          <div class="brand-mark">🎮</div>
-          <div>
-            <p class="eyebrow">Shared library</p>
-            <h1>Game Library</h1>
-          </div>
-        </div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' https: data:; media-src 'self' https: blob:; connect-src 'self' https://curly-dawn-c08f.karlanton-lovgren.workers.dev https://api.github.com https://*.steamstatic.com; frame-src https://www.youtube-nocookie.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Game Library · lovgren.dev</title>
+  <meta name="description" content="A shared backlog of co-op and puzzle games, with Steam info, trailers, filters and a random game picker.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235458e0'/%3E%3Cpath d='M20 24h24a10 10 0 0 1 9.6 12.8l-2 6.8a5 5 0 0 1-8.6 1.8L39 40H25l-4 5.4a5 5 0 0 1-8.6-1.8l-2-6.8A10 10 0 0 1 20 24z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme-init.js"></script>
+  <script src="shared-library.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <!-- Icon sprite: referenced with <use href="#i-…">, also from app.js. -->
+  <svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-pad" viewBox="0 0 24 24"><path d="M7 7.5h10a5 5 0 0 1 4.8 6.4l-1 3.3a2.4 2.4 0 0 1-4.2.9L14.7 15.5H9.3l-1.9 2.6a2.4 2.4 0 0 1-4.2-.9l-1-3.3A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/><path fill="currentColor" stroke="none" d="M16 11.2a.9.9 0 1 0 0-.01zM18 13.2a.9.9 0 1 0 0-.01z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.5M12 17h.01"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6.2 7.6V18l-3.6 2v-7.4z"/></symbol>
+    <symbol id="i-dice" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path fill="currentColor" stroke="none" d="M8.5 7.3a1.2 1.2 0 1 0 0 .01zM15.5 7.3a1.2 1.2 0 1 0 0 .01zM12 10.8a1.2 1.2 0 1 0 0 .01zM8.5 14.3a1.2 1.2 0 1 0 0 .01zM15.5 14.3a1.2 1.2 0 1 0 0 .01z" transform="translate(0 1.2)"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M8 5.6v12.8a1 1 0 0 0 1.5.9l10-6.4a1 1 0 0 0 0-1.8l-10-6.4A1 1 0 0 0 8 5.6z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9M4.5 4.5V9H9"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M5 10.4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 10.4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM19 10.4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.5a1.5 1.5 0 0 0 1.5 1.5h7a1.5 1.5 0 0 0 1.5-1.5L18 7M9 7V4.5A.5.5 0 0 1 9.5 4h5a.5.5 0 0 1 .5.5V7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8h.01"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.5 12A7.5 7.5 0 0 1 6.2 16.8M4.5 12A7.5 7.5 0 0 1 17.8 7.2M18 3.5V7.5h-4M6 20.5v-4h4"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M3 19.5a6 6 0 0 1 12 0M16 5.3a3.5 3.5 0 0 1 0 6.4M18 14a6 6 0 0 1 3 5.5"/></symbol>
+  </svg>
 
-        <label class="search-field" aria-label="Search games">
-          <span class="search-icon">⌕</span>
-          <input id="searchInput" type="search" placeholder="Search your library..." />
-        </label>
+  <a class="skip-link" href="#game-grid">Skip to games</a>
 
-        <div class="topbar-actions">
-          <label class="user-picker" aria-label="Choose a game list">
-            <select id="collectionSelector"></select>
-          </label>
-          <button id="newCollectionButton" class="secondary-btn small-btn" type="button">+ New list</button>
-          <button id="deleteCollectionButton" class="secondary-btn small-btn danger-btn" type="button" aria-label="Delete current list" title="Delete current list">Delete list</button>
-          <div id="collectionCreate" class="collection-create hidden">
-            <input id="newCollectionInput" type="text" maxlength="32" placeholder="List name" aria-label="New list name" />
-            <button id="saveCollectionButton" class="secondary-btn small-btn" type="button">Save</button>
-          </div>
-          <button id="refreshButton" class="secondary-btn small-btn" type="button">↻ Refresh</button>
-          <button id="themeToggle" class="secondary-btn small-btn" type="button" aria-label="Switch to dark mode">☾ Dark</button>
-          <button id="addGameButton" class="primary-btn" type="button">+ Add Game</button>
-        </div>
-      </header>
-
-      <section class="stats-grid" id="statsGrid" aria-live="polite">
-        <article class="stat-card accent-purple">
-          <span class="stat-label">Games</span>
-          <strong id="statTotal">0</strong>
-        </article>
-        <article class="stat-card accent-green">
-          <span class="stat-label">Played</span>
-          <strong id="statPlayed">0</strong>
-        </article>
-        <article class="stat-card accent-yellow">
-          <span class="stat-label">Want to play</span>
-          <strong id="statWant">0</strong>
-        </article>
-        <article class="stat-card accent-blue">
-          <span class="stat-label">Co-op</span>
-          <strong id="statCoop">0</strong>
-        </article>
-      </section>
-
-      <section class="toolbar" aria-label="Filters and sorting">
-        <div class="filter-block">
-          <span class="filter-label">Status</span>
-          <div class="chip-group" id="statusFilters">
-            <button type="button" class="chip active" data-status="All">All</button>
-            <button type="button" class="chip" data-status="Want to play">Want to play</button>
-            <button type="button" class="chip" data-status="Playing">Playing</button>
-            <button type="button" class="chip" data-status="Played">Played</button>
-            <button type="button" class="chip" data-status="Abandoned">Abandoned</button>
-          </div>
-        </div>
-
-        <div class="filter-block">
-          <span class="filter-label">Type</span>
-          <div class="chip-group" id="typeFilters">
-            <button type="button" class="chip active" data-type="All">All</button>
-            <button type="button" class="chip" data-type="Singleplayer">Singleplayer</button>
-            <button type="button" class="chip" data-type="Multiplayer">Multiplayer</button>
-            <button type="button" class="chip" data-type="Co-op">Co-op</button>
-            <button type="button" class="chip" data-type="Singleplayer & Co-op">Singleplayer &amp; Co-op</button>
-          </div>
-        </div>
-
-        <div class="filter-block inline-select">
-          <label class="filter-label" for="genreFilter">Genre</label>
-          <select id="genreFilter">
-            <option value="All">All genres</option>
-          </select>
-        </div>
-
-        <div class="filter-block inline-select">
-          <label class="filter-label" for="sortSelect">Sort</label>
-          <select id="sortSelect">
-            <option value="recently-added">Recently added</option>
-            <option value="recently-updated">Recently updated</option>
-            <option value="az">A–Z</option>
-            <option value="za">Z–A</option>
-            <option value="release-year">Release year</option>
-            <option value="manual">Manual order</option>
-          </select>
-        </div>
-      </section>
-
-      <main class="content-grid">
-        <section class="library-panel">
-          <div class="panel-header">
-            <h2 id="libraryTitle">All Games</h2>
-            <div class="panel-tools">
-              <span id="resultsCount">0 games</span>
-              <div class="view-toggle" role="group" aria-label="Game list view">
-                <button id="gridViewButton" class="view-btn active" type="button" aria-label="Show game cards">▦</button>
-                <button id="listViewButton" class="view-btn" type="button" aria-label="Show compact list">☷</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="loadingState" class="state-panel" aria-live="polite">
-            <div class="spinner" aria-hidden="true"></div>
-            <p>Loading the game library...</p>
-          </div>
-
-          <div id="errorState" class="state-panel hidden" aria-live="assertive">
-            <p>Couldn't load the game library. Please try again.</p>
-          </div>
-
-          <div id="emptyState" class="state-panel hidden" aria-live="polite">
-            <p>No games match your filters.</p>
-          </div>
-
-          <div id="gamesGrid" class="games-grid" aria-live="polite"></div>
-        </section>
-
-        <aside class="sidebar">
-          <section class="side-panel">
-            <h3>🎮 You might like</h3>
-            <div id="recommendationsList" class="suggestion-list"></div>
-          </section>
-
-          <section class="side-panel">
-            <h3>👥 Play Together</h3>
-            <div id="playTogetherList" class="suggestion-list"></div>
-          </section>
-        </aside>
-      </main>
-    </div>
-
-    <div id="gameModal" class="modal hidden" aria-hidden="true">
-      <div class="modal-backdrop" data-close="true"></div>
-      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <div class="modal-header">
-          <h3 id="modalTitle">Add Game</h3>
-          <button id="closeModalButton" class="icon-btn" type="button" aria-label="Close form">×</button>
-        </div>
-
-        <form id="gameForm">
-          <input id="gameId" type="hidden" />
-
-          <div class="form-grid">
-            <label>
-              <span>Game title</span>
-              <input id="gameTitle" name="title" type="text" required />
-            </label>
-
-            <label class="full-width">
-              <span>Description</span>
-              <textarea id="gameDescription" name="description" rows="3"></textarea>
-            </label>
-
-            <div class="steam-search full-width">
-              <label for="steamSearchInput">
-                <span>Find a game on Steam</span>
-                <small>Steam does not allow browser API searches from GitHub Pages, so this opens Steam's search page.</small>
-              </label>
-              <div class="steam-search-row">
-                <input id="steamSearchInput" type="search" placeholder="Search Steam games..." />
-                <button id="steamSearchButton" type="button" class="secondary-btn">Search Steam</button>
-              </div>
-              <div id="steamSearchStatus" class="form-hint" aria-live="polite"></div>
-              <div id="steamSearchResults" class="steam-search-results" aria-live="polite"></div>
-            </div>
-
-            <label class="full-width">
-              <span>Cover image URL</span>
-              <input id="gameCoverUrl" name="cover_url" type="url" placeholder="https://..." />
-            </label>
-
-            <label class="full-width">
-              <span>Steam URL</span>
-              <input id="gameSteamUrl" name="steam_url" type="url" placeholder="https://store.steampowered.com/app/..." />
-            </label>
-
-            <label>
-              <span>Status</span>
-              <select id="gameStatus" name="status">
-                <option value="Want to play">Want to play</option>
-                <option value="Playing">Playing</option>
-                <option value="Played">Played</option>
-                <option value="Abandoned">Abandoned</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Game type</span>
-              <select id="gameType" name="game_type">
-                <option value="Singleplayer">Singleplayer</option>
-                <option value="Multiplayer">Multiplayer</option>
-                <option value="Co-op">Co-op</option>
-                <option value="Singleplayer & Co-op">Singleplayer &amp; Co-op</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Release year</span>
-              <input id="gameReleaseYear" name="release_year" type="number" min="1900" max="2100" />
-            </label>
-
-            <label>
-              <span>Genres</span>
-              <input id="gameGenres" name="genres" type="text" placeholder="Horror, Co-op, Survival" />
-            </label>
-
-            <label class="full-width">
-              <span>Notes</span>
-              <textarea id="gameNotes" name="notes" rows="3"></textarea>
-            </label>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" id="cancelGameButton" class="secondary-btn">Cancel</button>
-            <button type="submit" class="primary-btn">Save Game</button>
-          </div>
-        </form>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <a class="brand-home" href="/" title="Back to the homepage">
+          <span class="brand-mark" aria-hidden="true">AL</span>
+          <span class="brand-site">lovgren.dev</span>
+          <span class="sr-only">, homepage</span>
+        </a>
+        <span class="brand-sep" aria-hidden="true">/</span>
+        <span class="brand-text">
+          <h1>Game Library</h1>
+          <span id="library-count" class="brand-sub">Your personal backlog</span>
+        </span>
       </div>
-    </div>
+      <div class="topbar-actions">
+        <button class="button button-ghost help-button" id="howto-button" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="label-collapse">Help</span>
+        </button>
+        <details class="library-tools menu">
+          <summary class="button button-ghost">
+            <svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span class="label-collapse">Manage library</span>
+          </summary>
+          <div class="tools-panel menu-panel">
+            <label class="tools-appearance" for="theme-select">
+              <span class="menu-label">Appearance</span>
+              <select id="theme-select" aria-label="Color theme">
+                <option value="system">System (match device)</option>
+                <option value="midnight">Midnight (dark)</option>
+                <option value="ocean">Ocean (dark)</option>
+                <option value="ember">Ember (dark)</option>
+                <option value="light">Daylight (light)</option>
+              </select>
+            </label>
+            <p class="menu-label">Share</p>
+            <button class="tool-action" id="markdown-export-button" type="button">Markdown for Discord</button>
+            <button class="tool-action" id="shared-update-button" type="button">Get shared update</button>
+            <button class="tool-action" id="publish-button" type="button">Publish to GitHub</button>
+            <p class="menu-label">Backup</p>
+            <button class="tool-action" id="export-button" type="button">Export library</button>
+            <button class="tool-action" id="import-button" type="button">Import library</button>
+            <button class="tool-action tool-danger" id="reset-button" type="button">Reset library</button>
+            <input id="import-input" type="file" accept="application/json,.json" hidden>
+          </div>
+        </details>
+      </div>
+    </header>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <main id="main">
+      <nav class="view-tabs" aria-label="Library views">
+        <button class="view-tab is-active" data-view="to-play" type="button" aria-pressed="true"><span class="view-tab-label">To Play</span> <span class="view-count" id="count-to-play">0</span></button>
+        <button class="view-tab" data-view="in-progress" type="button" aria-pressed="false"><span class="view-tab-label">In Progress</span> <span class="view-count" id="count-in-progress">0</span></button>
+        <button class="view-tab" data-view="played" type="button" aria-pressed="false"><span class="view-tab-label">Played</span> <span class="view-count" id="count-played">0</span></button>
+        <button class="view-tab" data-view="all" type="button" aria-pressed="false"><span class="view-tab-label">All Games</span> <span class="view-count" id="count-all">0</span></button>
+      </nav>
 
-    <script src="script.js?v=7"></script>
-  </body>
+      <section class="toolbar" aria-label="Search and filters">
+        <label class="search-field">
+          <span class="sr-only">Search games</span>
+          <svg class="icon search-icon" aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="search-input" type="search" placeholder="Search titles, genres, tags or notes" autocomplete="off">
+        </label>
+        <div class="toolbar-controls">
+          <label class="sort-field">
+            <span class="sort-label">Sort</span>
+            <select id="sort-select">
+              <option value="title">Title A–Z</option>
+              <option value="title-desc">Title Z–A</option>
+              <option value="priority">Priority first</option>
+              <option value="recently-added">Recently added</option>
+              <option value="random">Random</option>
+            </select>
+          </label>
+          <details class="filter-menu menu" id="filter-menu">
+            <summary class="button button-secondary">
+              <svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg>Filters <span id="filter-count" class="filter-count" hidden>0</span>
+            </summary>
+            <div class="filter-panel menu-panel">
+              <label class="filter-field">
+                <span>Genre</span>
+                <select id="genre-filter"><option value="">All genres</option></select>
+              </label>
+              <label class="filter-field">
+                <span>Players</span>
+                <select id="players-filter">
+                  <option value="">Any players</option>
+                  <option value="1">1 player</option>
+                  <option value="2">2 players</option>
+                  <option value="3">3 players</option>
+                  <option value="4">4 players</option>
+                  <option value="5+">5+ players</option>
+                  <option value="unknown">Not specified</option>
+                </select>
+              </label>
+              <label class="priority-filter check-row">
+                <input id="priority-filter" type="checkbox">
+                <span>Priority only</span>
+              </label>
+              <button class="button button-ghost clear-filter-button" id="clear-filters" type="button">Clear filters</button>
+            </div>
+          </details>
+        </div>
+        <div class="toolbar-actions">
+          <button class="button button-secondary" id="pick-game-button" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-dice"/></svg>Pick a game
+          </button>
+          <button class="button button-primary add-button" id="add-button" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add game
+          </button>
+        </div>
+      </section>
+
+      <div id="active-filters" class="active-filters" aria-live="polite" hidden></div>
+      <div id="update-banner" class="callout callout-accent update-banner" role="status" hidden>
+        <svg class="icon callout-icon" aria-hidden="true"><use href="#i-sync"/></svg>
+        <p id="update-banner-text">A newer shared library is available.</p>
+        <div class="callout-actions">
+          <button id="update-banner-review" class="button button-primary" type="button">Review update</button>
+          <button id="update-banner-dismiss" class="button button-ghost" type="button">Not now</button>
+        </div>
+      </div>
+      <div id="backup-tip" class="callout backup-tip" role="status" aria-live="polite">
+        <svg class="icon callout-icon" aria-hidden="true"><use href="#i-info"/></svg>
+        <p>Your library lives in this browser. Export a backup now and then, especially before replacing it.</p>
+        <button id="backup-tip-close" class="icon-button" type="button" aria-label="Dismiss backup tip"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+
+      <div class="results-line">
+        <h2 id="view-heading">To Play</h2>
+        <span id="results-count" aria-live="polite"></span>
+      </div>
+      <section id="game-grid" class="game-grid" aria-label="Games" tabindex="-1"></section>
+      <div id="empty-state" class="empty-state" hidden>
+        <span class="empty-art" aria-hidden="true"><svg class="icon"><use href="#i-search"/></svg></span>
+        <h3>No games match</h3>
+        <p>Try a different search, or clear the filters to see everything in this view.</p>
+        <button id="empty-state-clear" class="button button-primary" type="button">Clear filters</button>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <a href="/">lovgren.dev</a>
+      <span>Your library is saved only in this browser.</span>
+      <a href="/privacy/">Privacy policy</a>
+      <a href="/cookies/">Cookie policy</a>
+    </footer>
+  </div>
+
+  <dialog id="game-dialog" class="dialog game-dialog" aria-labelledby="dialog-title">
+    <form id="game-form" class="dialog-frame" method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Library entry</p>
+          <h2 id="dialog-title">Add a game</h2>
+        </div>
+        <button class="icon-button" id="close-dialog" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="dialog-scroll">
+        <input id="game-id" type="hidden">
+        <div class="form-grid">
+          <label class="form-field full-width">
+            <span>Title <b class="required" aria-hidden="true">*</b></span>
+            <input id="game-title" name="title" required maxlength="160" autocomplete="off">
+          </label>
+          <label class="form-field">
+            <span>Status</span>
+            <select id="game-status" name="status">
+              <option value="to-play">To Play</option>
+              <option value="in-progress">In Progress</option>
+              <option value="played">Played Games</option>
+            </select>
+          </label>
+          <label class="priority-check check-row">
+            <input id="game-priority" name="priority" type="checkbox">
+            <span>High priority</span>
+          </label>
+
+          <div class="form-section full-width">
+            <h3>Steam</h3>
+            <p>Paste a Steam store link, then fetch to fill in the description, genre, cover and trailers.</p>
+          </div>
+          <div class="form-field full-width">
+            <label for="game-steam-url">Steam URL</label>
+            <div class="steam-input-row">
+              <input id="game-steam-url" name="steamUrl" type="url" maxlength="500" placeholder="https://store.steampowered.com/app/…">
+              <button class="button button-secondary fetch-button" id="fetch-steam" type="button">Fetch Steam info</button>
+              <button class="button button-secondary fetch-button" id="fetch-steam-trailers" type="button">Fetch trailers</button>
+            </div>
+          </div>
+          <label id="steam-trailer-picker-wrap" class="form-field full-width" hidden>
+            <span>Steam trailers</span>
+            <select id="steam-trailer-picker" aria-label="Choose a Steam trailer">
+              <option value="">Choose a trailer</option>
+            </select>
+          </label>
+
+          <div class="form-section full-width">
+            <h3>Details</h3>
+          </div>
+          <label class="form-field full-width">
+            <span>Short description</span>
+            <textarea id="game-description" name="description" rows="4" maxlength="500"></textarea>
+          </label>
+          <label class="form-field">
+            <span>Genre / category</span>
+            <input id="game-genre" name="genre" maxlength="100" placeholder="e.g. Puzzle, RPG">
+          </label>
+          <label class="form-field">
+            <span>Player count</span>
+            <select id="game-players" name="players">
+              <option value="">Not specified</option>
+              <option value="1">1 player</option>
+              <option value="2">2 players</option>
+              <option value="3">3 players</option>
+              <option value="4">4 players</option>
+              <option value="5+">5+ players</option>
+            </select>
+          </label>
+          <label class="form-field full-width">
+            <span>Tags <small>Separate with commas</small></span>
+            <input id="game-tags" name="tags" maxlength="300" placeholder="e.g. exploration, co-op">
+          </label>
+          <p class="field-note full-width">Steam genres and store categories are saved separately from your own tags.</p>
+          <label class="form-field full-width">
+            <span>Trailer URL <small>YouTube, direct MP4/WebM, or Steam HLS</small></span>
+            <input id="game-trailer-url" name="trailerUrl" type="url" maxlength="1000" placeholder="https://www.youtube.com/watch?v=…">
+          </label>
+          <label class="form-field full-width">
+            <span>Cover image URL</span>
+            <input id="game-cover-url" name="coverUrl" type="url" maxlength="1000" placeholder="https://…">
+          </label>
+
+          <div class="form-section full-width">
+            <h3>Notes</h3>
+          </div>
+          <label class="form-field full-width">
+            <span>Personal notes <small>Visible to everyone if the library is published</small></span>
+            <textarea id="game-notes" name="notes" rows="3" maxlength="1000"></textarea>
+          </label>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-ghost" id="cancel-dialog" type="button">Cancel</button>
+        <button class="button button-primary" type="submit">Save game</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="trailer-dialog" class="dialog trailer-dialog" aria-labelledby="trailer-title">
+    <section class="dialog-frame trailer-content">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Trailer</p>
+          <h2 id="trailer-title"></h2>
+        </div>
+        <button class="icon-button" id="close-trailer" type="button" aria-label="Close trailer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="dialog-scroll">
+        <div id="trailer-player" class="trailer-player"></div>
+        <p id="trailer-error" class="trailer-error" role="status" hidden>That video couldn't be played here. Try opening the source directly.</p>
+        <a id="trailer-source-link" class="trailer-source-link" target="_blank" rel="noopener noreferrer">Open trailer source <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog id="markdown-dialog" class="dialog utility-dialog" aria-labelledby="markdown-title">
+    <section class="dialog-frame utility-content">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Discord export</p>
+          <h2 id="markdown-title">Markdown for Discord</h2>
+        </div>
+        <button class="icon-button" id="close-markdown" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="dialog-scroll">
+        <div class="markdown-options">
+          <fieldset class="option-group">
+            <legend>Game groups</legend>
+            <label><input type="checkbox" data-markdown-status="to-play" checked> To Play</label>
+            <label><input type="checkbox" data-markdown-status="in-progress" checked> In Progress</label>
+            <label><input type="checkbox" data-markdown-status="played" checked> Played Games</label>
+          </fieldset>
+          <fieldset class="option-group">
+            <legend>Game details</legend>
+            <label><input type="checkbox" data-markdown-field="description"> Description</label>
+            <label><input type="checkbox" data-markdown-field="genre"> Genre / category</label>
+            <label><input type="checkbox" data-markdown-field="players"> Player count</label>
+            <label><input type="checkbox" data-markdown-field="tags"> Tags</label>
+            <label><input type="checkbox" data-markdown-field="notes"> Personal notes</label>
+            <label><input type="checkbox" data-markdown-field="steamUrl"> Steam link</label>
+            <label><input type="checkbox" data-markdown-field="coverUrl"> Cover image link</label>
+            <label><input type="checkbox" data-markdown-field="steamCategories"> Steam store categories</label>
+          </fieldset>
+        </div>
+        <label class="markdown-preview-label" for="markdown-preview">
+          <span>Preview</span>
+          <textarea id="markdown-preview" rows="12" readonly spellcheck="false"></textarea>
+        </label>
+        <p id="markdown-length" class="markdown-length" aria-live="polite"></p>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-ghost" id="close-markdown-bottom" type="button">Close</button>
+        <button class="button button-secondary" id="download-markdown" type="button">Download .md</button>
+        <button class="button button-primary" id="copy-markdown" type="button">Copy Markdown</button>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog id="suggestion-dialog" class="dialog utility-dialog suggestion-dialog" aria-labelledby="suggestion-title">
+    <section class="dialog-frame utility-content">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Random pick</p>
+          <h2 id="suggestion-title">What should you play?</h2>
+        </div>
+        <button class="icon-button" id="close-suggestion" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="dialog-scroll">
+        <div id="suggestion-result" class="suggestion-result" aria-live="polite"></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-secondary" id="suggest-another" type="button"><svg class="icon" aria-hidden="true"><use href="#i-dice"/></svg>Suggest another</button>
+        <button class="button button-primary" id="start-suggested-game" type="button">Start this game</button>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog id="howto-dialog" class="dialog utility-dialog howto-dialog" aria-labelledby="howto-title">
+    <section class="dialog-frame utility-content">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Quick guide</p>
+          <h2 id="howto-title">How to use your library</h2>
+        </div>
+        <button class="icon-button" id="close-howto" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="dialog-scroll howto-content" tabindex="0" role="region" aria-label="Help topics">
+        <section>
+          <h3>Get the shared library</h3>
+          <p>On your first visit the library starts as a copy of the shared library. When a newer shared library is published, a notice appears at the top of the page; choose <strong>Review update</strong> to see how many games are new, changed or removed. You can also choose <strong>Get shared update</strong> in <strong>Manage library</strong> at any time. Accepting replaces this browser's library, so export a backup first if you need to keep local additions or changes.</p>
+        </section>
+        <section>
+          <h3>Add or update a game</h3>
+          <p>Select <strong>Add game</strong>, enter a title, fill in any details you want, choose a status, then save. Duplicate titles and duplicate Steam app IDs are blocked; edit the existing entry instead. Select the pencil button on a card to edit it later. <strong>High priority</strong> marks a game with a star.</p>
+        </section>
+        <section>
+          <h3>Add a Steam link</h3>
+          <p>Paste a Steam Store page URL into <strong>Steam URL</strong>, for example <code>https://store.steampowered.com/app/123456/Example_Game/</code>. It will appear as a link on the card. <strong>Fetch Steam info</strong> fills in public details, and <strong>Fetch trailers</strong> loads the trailers Steam lists for that game. Choose a trailer to save it to the game. Steam lookup works on the published site through its proxy, not when this page is opened as <code>file://</code>.</p>
+        </section>
+        <section>
+          <h3>Watch a trailer</h3>
+          <p>The play button on a game's cover opens its trailer in an in-page player. Steam HLS trailers use HLS.js where needed; YouTube links and direct HTTPS MP4/WebM URLs are also supported. Click the backdrop or close button to stop playback.</p>
+        </section>
+        <section>
+          <h3>Add a cover picture</h3>
+          <p>Paste a direct image URL into <strong>Cover image URL</strong>, such as an image address ending in <code>.jpg</code> or <code>.png</code>. The browser needs access to that image host to show it.</p>
+        </section>
+        <section>
+          <h3>Organize and find games</h3>
+          <p>Enter tags separated by commas. Use <strong>Start</strong>, <strong>Mark played</strong>, or <strong>Replay</strong> to move a game between statuses. Search and filters can be combined with each library view. Active filters appear as removable chips below the toolbar. <strong>More details</strong> on a card shows the full description, Steam categories and personal notes.</p>
+        </section>
+        <section>
+          <h3>Choose what to play and how it looks</h3>
+          <p>Use the sort menu to order the current list by title, priority, or random order. <strong>Pick a game</strong> makes a random suggestion from the current view and filters; choose <strong>Suggest another</strong> or start it. Open <strong>Manage library</strong> to change appearance or access sharing and backup actions. The appearance choice is saved in this browser.</p>
+        </section>
+        <section>
+          <h3>Share or back up</h3>
+          <p><strong>Markdown for Discord</strong> lets you choose game groups and details, then copy or download the result. <strong>Export library</strong> downloads a JSON backup; importing one replaces the current library after confirmation. Browser site data is local to this browser and device, so keep regular backups.</p>
+          <p>The site owner can choose <strong>Publish to GitHub</strong> to make this browser's library the shared library for everyone. It needs a GitHub access token with write access to the site's repository.</p>
+        </section>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-primary" id="close-howto-bottom" type="button">Done</button>
+      </div>
+    </section>
+  </dialog>
+
+  <dialog id="publish-dialog" class="dialog utility-dialog publish-dialog" aria-labelledby="publish-title">
+    <form id="publish-form" class="dialog-frame utility-content" method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Share with everyone</p>
+          <h2 id="publish-title">Publish to GitHub</h2>
+        </div>
+        <button class="icon-button" id="close-publish" type="button" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="dialog-scroll">
+        <p class="publish-intro">Saves this browser's library as the shared library on GitHub. The site updates within a couple of minutes, and everyone else gets an <strong>update available</strong> notice.</p>
+        <div id="publish-summary" class="publish-summary" aria-live="polite"></div>
+        <label class="form-field" for="publish-token">
+          <span>GitHub access token</span>
+          <input id="publish-token" type="password" autocomplete="off" spellcheck="false" required>
+        </label>
+        <p class="field-note">Use a fine-grained token with access to only the <code>antonlovg.github.io</code> repository and <strong>Contents: Read and write</strong> permission. The token is sent only to GitHub.</p>
+        <label class="check-row publish-remember">
+          <input id="publish-remember" type="checkbox">
+          <span>Remember token on this device</span>
+        </label>
+        <p class="callout callout-danger publish-warning"><svg class="icon callout-icon" aria-hidden="true"><use href="#i-info"/></svg><span>Everything in the library, including personal notes, becomes public.</span></p>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-ghost" id="forget-token" type="button" hidden>Forget saved token</button>
+        <button class="button button-ghost" id="cancel-publish" type="button">Cancel</button>
+        <button class="button button-primary" id="confirm-publish" type="submit">Publish</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
 </html>

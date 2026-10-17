@@ -2,357 +2,244 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Portfolio</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://*.steamstatic.com; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Anton Lövgren · DevOps engineer</title>
+  <meta name="description" content="Anton Lövgren, DevOps engineer. A personal site that tests, audits and deploys itself, with projects, a game library and ways to get in touch.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f7fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+  <link rel="canonical" href="https://lovgren.dev/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lovgren.dev/">
+  <meta property="og:title" content="Anton Lövgren · DevOps engineer">
+  <meta property="og:description" content="A personal site that tests, audits and deploys itself. Projects, a game library and ways to get in touch.">
+  <meta property="og:image" content="https://lovgren.dev/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Anton Lövgren, DevOps engineer. A personal site that tests, audits and deploys itself.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234f46e5'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='27' font-weight='800' text-anchor='middle' fill='%23ffffff'%3EAL%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/home.js" defer></script>
 </head>
-<body>
-  <div class="desktop">
-    <!-- About Window -->
-    <div class="window" style="top: 60px; left: 60px; width: 350px;">
-      <div class="title-bar">
-        <div class="title-bar-text">📄 About Me</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
-        </div>
-      </div>
-      <div class="window-content">
-        <h2>Welcome!</h2>
-        <p>Hi, I'm Anton, newly started my DevOps Engineer journey and Im excited to share my projects with you.</p>
-        <p>I love retro aesthetics and combining them with modern functionality.</p>
-        <p><strong>Skills:</strong></p>
+<body class="home">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="wrap">
+    <header class="site-header">
+      <a class="logo" href="/" aria-label="lovgren.dev, home">
+        <span class="monogram" aria-hidden="true">AL</span>
+        <span class="logo-text" aria-hidden="true">lovgren.dev</span>
+      </a>
+      <nav class="site-nav" aria-label="Main">
         <ul>
-          <li>DevOps</li>
-          <li>CI/CD</li>
-          <li>Cloud Computing</li>
-          <li>Problem Solving</li>
+          <li><a href="/" aria-current="page">Home</a></li>
+          <li><a href="/games/">Games</a></li>
+          <li><a href="/wc2026/">World Cup</a></li>
         </ul>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
+      </nav>
+      <button class="terminal-trigger" id="terminal-open" type="button" aria-keyshortcuts="Control+K /" hidden>
+        <span class="terminal-trigger-icon" aria-hidden="true">&gt;_</span>
+        <span class="terminal-trigger-label">Terminal</span>
+        <kbd aria-hidden="true">Ctrl K</kbd>
+      </button>
+    </header>
 
-    <!-- Projects Window -->
-    <div class="window" style="top: 250px; left: 450px; width: 320px;">
-      <div class="title-bar">
-        <div class="title-bar-text">📁 Projects</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-text">
+          <p class="eyebrow">DevOps engineer</p>
+          <h1 id="hero-title">Anton Lövgren</h1>
+          <p class="lede">I build small, useful things for the web and automate everything around them. This site is one of them: every change is <strong>tested, audited and deployed by its own pipeline</strong>.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#projects-title">See my projects</a>
+            <a class="btn btn-secondary" href="mailto:anton@lovgren.dev">Email me</a>
+          </div>
         </div>
-      </div>
-      <div class="window-content">
-        <h2>Recent Work</h2>
-        <p id="projects-list"><strong>This Portfolio</strong><br>A Windows 98-themed personal site.</p>
-        <p><strong>Web Projects</strong><br>Building interactive web experiences.</p>
-        <p><strong>Pipelines</strong><br>Automating deployment and development workflows.</p>
-        <button class="btn-98" id="view-all-projects-btn">View All</button>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
 
-    <!-- Contact Window -->
-    <div class="window" style="top: 420px; left: 120px; width: 280px;">
-      <div class="title-bar">
-        <div class="title-bar-text">📧 Contact</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
+        <section class="status-panel" id="status-panel" aria-labelledby="status-title" data-state="unknown">
+          <div class="panel-bar">
+            <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <h2 id="status-title">Site pipeline</h2>
+            <span class="panel-badge" id="status-badge">Loading…</span>
+          </div>
+          <ol class="pipeline" aria-label="Pipeline stages">
+            <li class="stage" data-stage="test"><span class="stage-node" aria-hidden="true"></span><span class="stage-name">Test</span></li>
+            <li class="stage" data-stage="audit"><span class="stage-node" aria-hidden="true"></span><span class="stage-name">Audit</span></li>
+            <li class="stage" data-stage="deploy"><span class="stage-node" aria-hidden="true"></span><span class="stage-name">Deploy</span></li>
+          </ol>
+          <dl class="status-list">
+            <div><dt>Last deploy</dt><dd id="status-deploy">–</dd></div>
+            <div><dt>Unit tests</dt><dd id="status-tests">–</dd></div>
+            <div><dt>Accessibility</dt><dd id="status-a11y">–</dd></div>
+            <div><dt>Privacy</dt><dd id="status-privacy">–</dd></div>
+          </dl>
+          <div class="lighthouse" id="status-lighthouse" hidden>
+            <p class="lighthouse-label">Lighthouse</p>
+            <ul class="scores" id="lighthouse-scores"></ul>
+          </div>
+          <p class="panel-foot" id="status-foot">
+            Checked automatically on every push.
+            <noscript>Turn on JavaScript to see the latest results.</noscript>
+          </p>
+        </section>
+      </section>
+
+      <section class="section" id="now-playing-section" aria-labelledby="playing-title">
+        <div class="section-head">
+          <h2 class="section-title" id="playing-title"><span aria-hidden="true">~/</span>now-playing</h2>
+          <a class="section-link" href="/games/#in-progress">Full game library <span aria-hidden="true">→</span></a>
         </div>
-      </div>
-      <div class="window-content">
-        <h2>Where to find me</h2>
-        <p>💌 Email: <a href="mailto:anton@lovgren.dev" class="win98-link">anton@lovgren.dev</a></p>
-        <p>💻 GitHub: <a href="https://github.com/antonlovg" target="_blank" class="win98-link">github.com/antonlovg</a></p>
-        <p>🔗 LinkedIn: <a href="https://linkedin.com/in/anton" target="_blank" class="win98-link">linkedin.com/in/anton</a></p>
-        <button class="btn-98" id="send-email-btn">Send Email</button>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
+        <ul class="now-playing" id="now-playing"></ul>
+        <p class="now-playing-note" id="now-playing-note">See what I'm playing right now in the <a href="/games/#in-progress">game library</a>.</p>
+      </section>
 
-    <!-- My PC Window -->
-    <div class="window" style="top: 100px; left: 700px; width: 340px;">
-      <div class="title-bar">
-        <div class="title-bar-text">💻 My Computer</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
+      <section class="section" aria-labelledby="projects-title">
+        <div class="section-head">
+          <h2 class="section-title" id="projects-title"><span aria-hidden="true">~/</span>projects</h2>
         </div>
-      </div>
-      <div class="window-content">
-        <h2>System Information</h2>
-        <p><strong>Computer:</strong> Windows 98 Portfolio</p>
-        <p><strong>Owner:</strong> Anton Lovgren</p>
-        <p><strong>Processor:</strong> Awesome Idea™ 5000</p>
-        <p><strong>RAM:</strong> ∞ GB</p>
-        <p><strong>Status:</strong> Retro & Functional</p>
-        <button class="btn-98" id="properties-btn">Properties</button>        <button class="btn-98" id="resume-btn">📥 Download Resume</button>
-        <p style="margin-top: 12px; font-size: 10px;"><strong>Theme:</strong></p>
-        <div id="theme-selector" style="display: flex; gap: 4px;">
-          <button class="btn-98" data-theme="blue" style="background: #000080; color: #fff; border: none; font-weight: bold;">Blue</button>
-          <button class="btn-98" data-theme="green" style="background: #008000; color: #fff; border: none;">Green</button>
-          <button class="btn-98" data-theme="gray" style="background: #808080; color: #fff; border: none;">Gray</button>
-        </div>      </div>
-      <div class="window-resizer"></div>
-    </div>
+        <ul class="link-list">
+          <li>
+            <a class="link-card" href="/games/">
+              <h3>Game library <span class="tag">web app</span></h3>
+              <span class="arrow" aria-hidden="true">→</span>
+              <p>A shared backlog of co-op and puzzle games, with Steam info, trailers, filters and a “pick a game” button. Published to everyone through the GitHub API.</p>
+            </a>
+          </li>
+          <li>
+            <a class="link-card" href="https://github.com/antonlovg/antonlovg.github.io/actions/workflows/pipeline.yml" rel="noopener">
+              <h3>This site's pipeline <span class="tag">ci/cd</span></h3>
+              <span class="arrow" aria-hidden="true">↗</span>
+              <p>GitHub Actions tests, builds and audits every change for accessibility, privacy and performance, and blocks the deploy if anything fails.</p>
+            </a>
+          </li>
+          <li>
+            <a class="link-card" href="/wc2026/">
+              <h3>World Cup 2026 group stage <span class="tag">archive</span></h3>
+              <span class="arrow" aria-hidden="true">→</span>
+              <p>Every group-stage fixture on one page, with kick-off times converted to Swedish summer time (CEST). Printable as A4.</p>
+            </a>
+          </li>
+          <li>
+            <a class="link-card" href="https://github.com/antonlovg/antonlovg.github.io" rel="noopener">
+              <h3>Source code <span class="tag">github</span></h3>
+              <span class="arrow" aria-hidden="true">↗</span>
+              <p>Plain HTML, CSS and JavaScript on GitHub Pages. No frameworks, no trackers, no cookies.</p>
+            </a>
+          </li>
+        </ul>
+      </section>
 
-    <!-- File Explorer Window -->
-    <div class="window" style="top: 300px; left: 750px; width: 340px; display: none;">
-      <div class="title-bar">
-        <div class="title-bar-text">📂 File Explorer</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
+      <section class="section" aria-labelledby="contact-title">
+        <div class="section-head">
+          <h2 class="section-title" id="contact-title"><span aria-hidden="true">~/</span>contact</h2>
         </div>
-      </div>
-      <div class="window-menu-bar">
-        <span class="menu-item" id="explorer-file-menu">File</span>
-        <span class="menu-item" id="explorer-edit-menu">Edit</span>
-        <span class="menu-item" id="explorer-view-menu">View</span>
-        <span class="menu-item" id="explorer-help-menu">Help</span>
-      </div>
-      <div class="window-content">
-        <h2>Portfolio Files</h2>
-        <div class="file-list">
-          <div class="file-item"><span class="file-icon">📄</span> index.html</div>
-          <div class="file-item"><span class="file-icon">📄</span> style.css</div>
-          <div class="file-item"><span class="file-icon">📄</span> script.js</div>
-          <div class="file-item"><span class="file-icon">📁</span> projects</div>
-          <div class="file-item"><span class="file-icon">📁</span> assets</div>
-          <div class="file-item"><span class="file-icon">📄</span> README.md</div>
-        </div>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
+        <ul class="contact-list">
+          <li><a href="https://github.com/antonlovg" rel="noopener me"><span class="label">GitHub</span> antonlovg</a></li>
+          <li><a href="mailto:anton@lovgren.dev"><span class="label">Email</span> anton@lovgren.dev</a></li>
+          <!-- TODO: add your real LinkedIn profile URL and uncomment.
+          <li><a href="https://www.linkedin.com/in/YOUR-PROFILE/" rel="noopener me"><span class="label">LinkedIn</span> Anton Lövgren</a></li>
+          -->
+        </ul>
+      </section>
+    </main>
 
-    <!-- Notepad Window -->
-    <div class="window" style="top: 150px; left: 500px; width: 400px; height: 300px; display: none;">
-      <div class="title-bar">
-        <div class="title-bar-text">📝 Notepad</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
-        </div>
-      </div>
-      <div class="window-menu-bar">
-        <span class="menu-item">File</span>
-        <span class="menu-item">Edit</span>
-        <span class="menu-item">Search</span>
-        <span class="menu-item">Help</span>
-      </div>
-      <div class="window-content">
-        <textarea id="notepad-textarea" class="notepad-textarea" placeholder="Start typing... Your notes are automatically saved!"></textarea>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
-
-    <!-- Desktop Icons -->
-    <div class="icon" id="my-pc-icon">
-      <div class="icon-img">💻</div>
-      <div>My Computer</div>
-    </div>
-
-    <div class="icon" id="file-explorer-icon">
-      <div class="icon-img">📂</div>
-      <div>File Explorer</div>
-    </div>
-
-    <div class="icon" id="notepad-icon">
-      <div class="icon-img">📝</div>
-      <div>Notepad</div>
-    </div>
-
-    <div class="icon" id="folder-icon">
-      <div class="icon-img">📁</div>
-      <div>My Folder</div>
-    </div>
-
-    <div class="icon" id="recycle-icon">
-      <div class="icon-img">🗑️</div>
-      <div>Recycle Bin</div>
-    </div>
-
-    <div class="icon" id="task-manager-icon">
-      <div class="icon-img">⚙️</div>
-      <div>Task Manager</div>
-    </div>
-
-    <div class="icon" id="calculator-icon">
-      <div class="icon-img">🧮</div>
-      <div>Calculator</div>
-    </div>
-
-    <div class="icon" id="cmd-icon">
-      <div class="icon-img">⌘</div>
-      <div>Command</div>
-    </div>
-
-    <div class="icon" id="minesweeper-icon">
-      <div class="icon-img">💣</div>
-      <div>Minesweeper</div>
-    </div>
-
-    <div class="icon" id="skills-icon">
-      <div class="icon-img">⭐</div>
-      <div>My Skills</div>
-    </div>
-
-    <!-- Task Manager Window -->
-    <div class="window" style="top: 80px; left: 1000px; width: 400px; display: none;">
-      <div class="title-bar">
-        <div class="title-bar-text">⚙️ Task Manager</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
-        </div>
-      </div>
-      <div class="window-content">
-        <h2>Running Applications</h2>
-        <div id="task-list" class="task-list"></div>
-        <button class="btn-98" id="end-task-btn">End Task</button>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
-
-    <!-- Calculator Window -->
-    <div class="window" style="top: 200px; left: 1100px; width: 300px; display: none;">
-      <div class="title-bar">
-        <div class="title-bar-text">🧮 Calculator</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
-        </div>
-      </div>
-      <div class="window-content">
-        <input type="text" id="calc-display" class="calc-display" readonly value="0">
-        <div class="calc-buttons">
-          <button class="calc-btn" data-val="7">7</button>
-          <button class="calc-btn" data-val="8">8</button>
-          <button class="calc-btn" data-val="9">9</button>
-          <button class="calc-btn" data-op="/">÷</button>
-          
-          <button class="calc-btn" data-val="4">4</button>
-          <button class="calc-btn" data-val="5">5</button>
-          <button class="calc-btn" data-val="6">6</button>
-          <button class="calc-btn" data-op="*">×</button>
-          
-          <button class="calc-btn" data-val="1">1</button>
-          <button class="calc-btn" data-val="2">2</button>
-          <button class="calc-btn" data-val="3">3</button>
-          <button class="calc-btn" data-op="-">−</button>
-          
-          <button class="calc-btn" data-val="0">0</button>
-          <button class="calc-btn" data-val=".">.</button>
-          <button class="calc-btn" data-op="+">+</button>
-          <button class="calc-btn calc-equals" data-op="=">=</button>
-          
-          <button class="calc-btn calc-clear" style="grid-column: 1/5;">C</button>
-        </div>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
-
-    <!-- Command Prompt Window -->
-    <div class="window" style="top: 350px; left: 900px; width: 450px; height: 300px; display: none;">
-      <div class="title-bar">
-        <div class="title-bar-text">⌘ Command Prompt</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
-        </div>
-      </div>
-      <div class="window-content" style="background: #000; color: #00ff00; font-family: 'Courier New', monospace; overflow-y: auto;">
-        <div id="cmd-output" style="font-size: 11px;"></div>
-        <div style="display: flex; gap: 4px;">
-          <span>C:\\&gt;</span>
-          <input type="text" id="cmd-input" class="cmd-input" placeholder="type 'help' for commands" style="background: #000; color: #00ff00; border: none; flex: 1; font-family: 'Courier New', monospace; font-size: 11px;">
-        </div>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
-
-    <!-- Minesweeper Window -->
-    <div class="window" style="top: 100px; left: 500px; width: 320px; display: none;">
-      <div class="title-bar">
-        <div class="title-bar-text">💣 Minesweeper</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
-        </div>
-      </div>
-      <div class="window-content">
-        <div style="text-align: center; margin-bottom: 8px;">
-          <span>Mines: <span id="mine-count">10</span></span> | 
-          <span>Time: <span id="mine-time">0</span>s</span>
-          <button class="btn-98" id="new-game-btn">New Game</button>
-        </div>
-        <div id="minesweeper-board" class="minesweeper-board"></div>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
-
-    <!-- Skills & Experience Window -->
-    <div class="window" style="top: 450px; left: 250px; width: 400px; display: none;">
-      <div class="title-bar">
-        <div class="title-bar-text">⭐ Skills & Experience</div>
-        <div class="window-buttons">
-          <button class="window-btn">_</button>
-          <button class="window-btn">□</button>
-          <button class="window-btn">✕</button>
-        </div>
-      </div>
-      <div class="window-content">
-        <div id="skills-display">
-          <p><strong>Total XP:</strong> <span id="total-xp">0</span></p>
-          <p><strong>Level:</strong> <span id="level">1</span></p>
-          <div id="skills-list"></div>
-        </div>
-      </div>
-      <div class="window-resizer"></div>
-    </div>
-
-    <!-- Context Menu (Right-click) -->
-    <div id="context-menu" class="context-menu"></div>
+    <footer class="site-footer">
+      <p>© 2026 Anton Lövgren · No cookies, no tracking. <span class="footer-hint" id="footer-hint" hidden>Press <kbd>Ctrl K</kbd> for the terminal.</span></p>
+      <nav aria-label="Legal">
+        <ul>
+          <li><a href="/privacy/">Privacy policy</a></li>
+          <li><a href="/cookies/">Cookie policy</a></li>
+        </ul>
+      </nav>
+    </footer>
   </div>
 
-  <!-- Taskbar -->
-  <div class="taskbar">
-    <button class="start-btn">Start</button>
-    <div class="start-menu" id="start-menu"></div>
-    
-    <!-- Quick Launch Toolbar -->
-    <div class="quick-launch">
-      <button class="quick-launch-btn" id="ql-calc" title="Calculator">🧮</button>
-      <button class="quick-launch-btn" id="ql-notepad" title="Notepad">📝</button>
-      <button class="quick-launch-btn" id="ql-explorer" title="File Explorer">📂</button>
-      <button class="quick-launch-btn" id="ql-cmd" title="Command Prompt">⌘</button>
+  <dialog class="terminal" id="terminal" aria-labelledby="terminal-title">
+    <div class="term-bar">
+      <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <h2 id="terminal-title">anton@lovgren.dev: ~</h2>
+      <button class="term-close" id="terminal-close" type="button" aria-label="Close terminal">×</button>
     </div>
-    
-    <div class="taskbar-windows"></div>
-    <div class="taskbar-spacer"></div>
-    
-    <!-- System Tray -->
-    <div class="system-tray">
-      <div class="tray-icon" id="volume-icon" title="Volume">🔊</div>
-      <div class="tray-icon" id="network-icon" title="Network">📶</div>
-      <div class="tray-icon" id="battery-icon" title="Battery">🔋</div>
+    <div class="term-body">
+      <div class="term-log" id="term-log" role="log" aria-live="polite" aria-label="Terminal output"></div>
+      <form class="term-input-row" id="term-form">
+        <label class="term-prompt" for="term-input"><span aria-hidden="true">~ $</span><span class="sr-only">Command</span></label>
+        <input class="term-input" id="term-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="term-suggestions" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+      </form>
+      <ul class="term-suggestions" id="term-suggestions" role="listbox" aria-label="Matching commands" hidden></ul>
     </div>
-    
-    <!-- Enhanced Clock -->
-    <div class="system-time" id="time-display" title="Click for system info">10:30 AM</div>
-    <div id="hover-info" class="hover-info"></div>
-  </div>
+    <p class="term-hint"><kbd>Tab</kbd> complete · <kbd>↑</kbd> <kbd>↓</kbd> choose · <kbd>Enter</kbd> run · <kbd>Esc</kbd> close</p>
+  </dialog>
 
-  <script src="script.js"></script>
+  <dialog class="win98" id="win98" aria-labelledby="w98-welcome-title">
+    <div class="w98-desktop">
+      <ul class="w98-icons">
+        <li><button class="w98-icon" type="button" data-w98-open="w98-about"><span class="w98-glyph" aria-hidden="true">🖥️</span>My Computer</button></li>
+        <li><a class="w98-icon" href="/games/"><span class="w98-glyph" aria-hidden="true">🎮</span>Game Library</a></li>
+        <li><button class="w98-icon" type="button" data-w98-open="w98-bin"><span class="w98-glyph" aria-hidden="true">🗑️</span>Recycle Bin</button></li>
+      </ul>
+
+      <section class="w98-window" id="w98-welcome" aria-labelledby="w98-welcome-title">
+        <div class="w98-titlebar">
+          <h2 id="w98-welcome-title">Welcome to Anton 98</h2>
+          <button class="w98-control" type="button" data-w98-close="w98-welcome" aria-label="Close window">×</button>
+        </div>
+        <div class="w98-content">
+          <p><strong>You found the easter egg!</strong> This site used to be a whole Windows 98 desktop. It's been retired, but it lives on here.</p>
+          <p>Drag the windows around, try the Start menu, or open the Recycle Bin.</p>
+          <div class="w98-buttons">
+            <button class="w98-button" type="button" data-w98-action="projects">Projects</button>
+            <button class="w98-button" type="button" data-w98-action="exit">Back to 2026</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="w98-window" id="w98-about" aria-labelledby="w98-about-title" hidden>
+        <div class="w98-titlebar">
+          <h2 id="w98-about-title">System Properties</h2>
+          <button class="w98-control" type="button" data-w98-close="w98-about" aria-label="Close window">×</button>
+        </div>
+        <div class="w98-content">
+          <dl class="w98-props">
+            <div><dt>System</dt><dd>lovgren.dev, 2026 edition</dd></div>
+            <div><dt>Owner</dt><dd>Anton Lövgren</dd></div>
+            <div><dt>Processor</dt><dd>Awesome Idea™ 5000</dd></div>
+            <div><dt>Memory</dt><dd>∞ MB RAM</dd></div>
+            <div><dt>Pipeline</dt><dd id="w98-pipeline">Unknown</dd></div>
+          </dl>
+          <div class="w98-buttons"><button class="w98-button" type="button" data-w98-close="w98-about">OK</button></div>
+        </div>
+      </section>
+
+      <section class="w98-window" id="w98-bin" aria-labelledby="w98-bin-title" hidden>
+        <div class="w98-titlebar">
+          <h2 id="w98-bin-title">Recycle Bin</h2>
+          <button class="w98-control" type="button" data-w98-close="w98-bin" aria-label="Close window">×</button>
+        </div>
+        <div class="w98-content">
+          <p>1 item: <code>old-homepage.html</code>, the Windows 98 desktop with Minesweeper, Notepad and a fake Task Manager.</p>
+          <p>It couldn't be emptied. It's too nostalgic.</p>
+          <div class="w98-buttons"><button class="w98-button" type="button" data-w98-close="w98-bin">OK</button></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="w98-taskbar">
+      <button class="w98-start" id="w98-start" type="button" aria-expanded="false" aria-controls="w98-menu"><span aria-hidden="true">⊞</span> Start</button>
+      <div class="w98-menu" id="w98-menu" hidden>
+        <p class="w98-menu-brand" aria-hidden="true">Anton 98</p>
+        <button type="button" data-w98-action="projects">Projects</button>
+        <a href="/games/">Game Library</a>
+        <a href="/wc2026/">World Cup 2026</a>
+        <button type="button" data-w98-open="w98-about">System Properties</button>
+        <button type="button" data-w98-action="exit">Shut Down…</button>
+      </div>
+      <span class="w98-clock" id="w98-clock" aria-hidden="true"></span>
+    </div>
+  </dialog>
 </body>
 </html>

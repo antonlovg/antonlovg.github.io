@@ -1,10 +1,18 @@
 const STORAGE_KEY = 'personal-game-library-v1';
 const PREFERENCES_KEY = 'personal-game-library-preferences-v1';
 const VALID_STATUSES = ['to-play', 'in-progress', 'played'];
-const VALID_THEMES = ['forest', 'ocean', 'ember', 'light'];
+// Theme names and resolution live in theme-init.js, which runs before first paint.
+const { RENAMED: RENAMED_THEMES, resolve: resolveTheme, prefersLight } = GameLibraryTheme;
+const VALID_THEMES = ['system', ...GameLibraryTheme.THEMES];
+let themePreference = 'system';
 const VALID_SORTS = ['title', 'title-desc', 'priority', 'recently-added', 'random'];
 const STEAM_PROXY_URL = 'https://curly-dawn-c08f.karlanton-lovgren.workers.dev';
 const SHARED_LIBRARY_URL = 'shared-library.json';
+const GITHUB_REPO = 'antonlovg/antonlovg.github.io';
+const GITHUB_BRANCH = 'main';
+const GITHUB_LIBRARY_PATH = 'games/shared-library.json';
+const GITHUB_TOKEN_KEY = 'personal-game-library-github-token';
+const HLS_SCRIPT_URL = 'vendor/hls-1.6.13.min.js';
 const STATUS_LABELS = {
   'to-play': 'To Play',
   'in-progress': 'In Progress',
@@ -97,6 +105,10 @@ let steamCategories = [];
 let randomOrder = new Map();
 let suggestedGameId = null;
 let activeHlsPlayer = null;
+let hlsLoader = null;
+let isLoadingLibrary = false;
+let pendingSharedSnapshot = null;
+let sessionGithubToken = '';
 
 const elements = {
   grid: document.querySelector('#game-grid'),
@@ -236,60 +248,91 @@ function findDuplicateGame(gameToCheck, excludeId = '', candidates = games) {
   });
 }
 
+// Returns false when this browser has no saved library yet, so the caller can seed one.
 function initializeLibrary() {
+  let hasSavedLibrary = true;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === null) {
-      games = makeInitialGames();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
-      loadPreferences();
-      return;
+      hasSavedLibrary = false;
+    } else {
+      const parsed = JSON.parse(saved);
+      if (!validateGameList(parsed)) throw new Error('Saved library data is invalid. It was left untouched.');
+      games = parsed.map(normalizeGame);
     }
-    const parsed = JSON.parse(saved);
-    if (!validateGameList(parsed)) throw new Error('Saved library data is invalid. It was left untouched.');
-    games = parsed.map(normalizeGame);
   } catch (error) {
     games = [];
     showToast(error instanceof SyntaxError ? 'Saved library could not be read. Its stored data was left untouched.' : error.message, true);
   }
   loadPreferences();
+  return hasSavedLibrary;
+}
+
+// First visit: start from the published shared library, falling back to the built-in starter list.
+async function seedLibrary() {
+  isLoadingLibrary = true;
+  render();
+  try {
+    const { snapshot, games: sharedGames } = await fetchSharedSnapshot();
+    isLoadingLibrary = false;
+    if (commitGames(sharedGames)) savePreferences({ sharedVersion: snapshot.exportedAt });
+  } catch {
+    isLoadingLibrary = false;
+    commitGames(makeInitialGames());
+  }
+}
+
+function readPreferences() {
+  try {
+    const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
+    return preferences && typeof preferences === 'object' && !Array.isArray(preferences) ? preferences : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePreferences(changes) {
+  try {
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...readPreferences(), ...changes }));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function loadPreferences() {
   try {
     const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
-    const theme = VALID_THEMES.includes(preferences.theme) ? preferences.theme : 'forest';
+    const savedTheme = RENAMED_THEMES[preferences.theme] || preferences.theme;
+    themePreference = VALID_THEMES.includes(savedTheme) ? savedTheme : 'system';
     const sort = VALID_SORTS.includes(preferences.sort) ? preferences.sort : 'title';
-    document.documentElement.dataset.theme = theme;
-    document.querySelector('#theme-select').value = theme;
+    document.documentElement.dataset.theme = resolveTheme(themePreference);
+    document.querySelector('#theme-select').value = themePreference;
     document.querySelector('#sort-select').value = sort;
     if (sort === 'random') randomOrder = new Map(games.map(game => [game.id, Math.random()]));
   } catch {
-    document.documentElement.dataset.theme = 'forest';
-    document.querySelector('#theme-select').value = 'forest';
+    themePreference = 'system';
+    document.documentElement.dataset.theme = resolveTheme('system');
+    document.querySelector('#theme-select').value = 'system';
     document.querySelector('#sort-select').value = 'title';
   }
 }
 
 function saveTheme(theme) {
   if (!VALID_THEMES.includes(theme)) return;
-  document.documentElement.dataset.theme = theme;
-  try {
-    const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...preferences, theme }));
-  } catch {
-    showToast('Theme changed, but this browser could not save the preference.', true);
-  }
+  themePreference = theme;
+  document.documentElement.dataset.theme = resolveTheme(theme);
+  if (!savePreferences({ theme })) showToast('Theme changed, but this browser could not save the preference.', true);
 }
+
+// "System" follows the device when it switches between light and dark.
+prefersLight.addEventListener('change', () => {
+  if (themePreference === 'system') document.documentElement.dataset.theme = resolveTheme('system');
+});
 
 function saveSort(sort) {
   if (!VALID_SORTS.includes(sort)) return;
-  try {
-    const preferences = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...preferences, sort }));
-  } catch {
-    showToast('Sort changed, but this browser could not save the preference.', true);
-  }
+  if (!savePreferences({ sort })) showToast('Sort changed, but this browser could not save the preference.', true);
 }
 
 function commitGames(nextGames, message) {
@@ -357,21 +400,59 @@ function addText(parent, tagName, className, text) {
   return node;
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const ADVANCE_ACTIONS = {
+  'to-play': { label: 'Start', icon: 'play', next: 'in-progress' },
+  'in-progress': { label: 'Mark played', icon: 'check', next: 'played' },
+  played: { label: 'Replay', icon: 'replay', next: 'to-play' }
+};
+
+// Icons come from the SVG sprite at the top of index.html.
+function makeIcon(name) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'icon');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  const use = document.createElementNS(SVG_NS, 'use');
+  use.setAttribute('href', `#i-${name}`);
+  svg.append(use);
+  return svg;
+}
+
+// Icon-only controls get a visible tooltip via title as well as an accessible name.
+function makeButton(className, { label = '', icon = '', name = '' } = {}) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  if (icon) button.append(makeIcon(icon));
+  if (label) button.append(document.createTextNode(label));
+  if (name) button.setAttribute('aria-label', name);
+  if (name && !label) button.title = name;
+  return button;
+}
+
+function playersLabel(players) {
+  return players ? `${players} ${players === '1' ? 'player' : 'players'}` : '';
+}
+
 function makeCoverPlaceholder(game) {
   const placeholder = document.createElement('div');
   const tone = [...game.title].reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 7) % 4;
   const monogram = game.title.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
   placeholder.className = `cover-placeholder cover-tone-${tone}`;
   placeholder.setAttribute('role', 'img');
-  placeholder.setAttribute('aria-label', `${game.title}, cover art not added`);
+  placeholder.setAttribute('aria-label', `${game.title}, no cover picture added`);
   addText(placeholder, 'span', 'cover-placeholder-mark', monogram || 'GL');
-  addText(placeholder, 'span', 'cover-placeholder-caption', getGenreCategory(game.genre) || 'Cover art not added');
+  addText(placeholder, 'span', 'cover-placeholder-title', game.title);
   return placeholder;
 }
 
 function makeCard(game) {
   const card = document.createElement('article');
-  card.className = 'game-card';
+  card.className = `game-card status-card-${game.status}`;
+  const titleId = `game-title-${game.id}`;
+  card.setAttribute('aria-labelledby', titleId);
+
   const cover = document.createElement('div');
   cover.className = 'cover-wrap';
   const coverUrl = safeWebUrl(game.coverUrl);
@@ -380,48 +461,67 @@ function makeCard(game) {
     image.src = coverUrl;
     image.alt = `${game.title} cover`;
     image.loading = 'lazy';
+    image.decoding = 'async';
     image.referrerPolicy = 'no-referrer';
     image.addEventListener('error', () => image.replaceWith(makeCoverPlaceholder(game)), { once: true });
     cover.append(image);
   } else {
     cover.append(makeCoverPlaceholder(game));
   }
-  if (game.priority) addText(cover, 'span', 'priority-mark', '!');
+  const badges = document.createElement('div');
+  badges.className = 'cover-badges';
+  addText(badges, 'span', `card-status status-${game.status}`, STATUS_LABELS[game.status]);
+  if (game.priority) {
+    const priority = addText(badges, 'span', 'priority-mark', 'Priority');
+    priority.prepend(makeIcon('star'));
+  }
+  cover.append(badges);
+  const trailerButton = makeButton('cover-play trailer-button', { icon: 'play', name: `Watch ${game.title} trailer` });
+  trailerButton.addEventListener('click', () => openTrailer(game));
+  cover.append(trailerButton);
   card.append(cover);
 
   const content = document.createElement('div');
   content.className = 'card-content';
-  const titleRow = document.createElement('div');
-  titleRow.className = 'card-title-row';
-  addText(titleRow, 'h3', 'card-title', game.title);
-  addText(titleRow, 'span', `card-status status-${game.status}`, STATUS_LABELS[game.status]);
-  content.append(titleRow);
-  if (game.description) addText(content, 'p', 'card-description', game.description);
+  const title = addText(content, 'h3', 'card-title', game.title);
+  title.id = titleId;
 
-  const chips = [];
-  const genreCategory = getGenreCategory(game.genre);
-  if (genreCategory) chips.push(genreCategory);
-  if (game.players) chips.push(`${game.players} ${game.players === '1' ? 'player' : 'players'}`);
-  for (const tag of game.tags.split(',').map(item => item.trim()).filter(Boolean)) chips.push(tag);
-  if (chips.length) {
-    const meta = document.createElement('div');
-    meta.className = 'card-meta';
-    for (const chip of chips) addText(meta, 'span', 'meta-chip', chip);
+  const metaParts = [getGenreCategory(game.genre), playersLabel(game.players)].filter(Boolean);
+  if (metaParts.length) {
+    const meta = document.createElement('p');
+    meta.className = 'card-meta-line';
+    metaParts.forEach((part, index) => {
+      if (index) addText(meta, 'span', 'meta-dot', '·').setAttribute('aria-hidden', 'true');
+      addText(meta, 'span', '', part);
+    });
     content.append(meta);
   }
-  if (game.steamCategories.length) {
-    const steamDetails = document.createElement('details');
-    steamDetails.className = 'steam-details';
-    addText(steamDetails, 'summary', '', `Steam categories (${game.steamCategories.length})`);
-    addText(steamDetails, 'p', 'steam-categories', game.steamCategories.join(', '));
-    content.append(steamDetails);
+  if (game.description) addText(content, 'p', 'card-description', game.description);
+
+  const tags = game.tags.split(',').map(item => item.trim()).filter(Boolean);
+  if (tags.length) {
+    const tagList = document.createElement('ul');
+    tagList.className = 'card-tags';
+    tagList.setAttribute('aria-label', 'Tags');
+    for (const tag of tags) addText(tagList, 'li', 'meta-chip', tag);
+    content.append(tagList);
   }
-  if (game.notes) {
-    const notesDetails = document.createElement('details');
-    notesDetails.className = 'notes-details';
-    addText(notesDetails, 'summary', '', 'Personal notes');
-    addText(notesDetails, 'p', 'card-notes', game.notes);
-    content.append(notesDetails);
+
+  // One disclosure for everything secondary; opening it also un-clamps the description (see CSS).
+  const hasExtras = game.notes || game.steamCategories.length;
+  if (hasExtras || game.description.length > 140) {
+    const details = document.createElement('details');
+    details.className = 'card-details';
+    addText(details, 'summary', '', hasExtras ? 'More details' : 'Read more');
+    if (game.notes) {
+      addText(details, 'h4', '', 'Personal notes');
+      addText(details, 'p', 'card-notes', game.notes);
+    }
+    if (game.steamCategories.length) {
+      addText(details, 'h4', '', `Steam categories (${game.steamCategories.length})`);
+      addText(details, 'p', 'steam-categories', game.steamCategories.join(', '));
+    }
+    content.append(details);
   }
   const spacer = document.createElement('div');
   spacer.className = 'card-spacer';
@@ -429,51 +529,48 @@ function makeCard(game) {
 
   const footer = document.createElement('div');
   footer.className = 'card-footer';
+  const advance = ADVANCE_ACTIONS[game.status];
+  const moveButton = makeButton('small-button card-advance', { label: advance.label, icon: advance.icon, name: `${advance.label} ${game.title}` });
+  moveButton.addEventListener('click', () => {
+    commitGames(games.map(item => item.id === game.id ? { ...item, status: advance.next } : item), `${game.title} moved to ${STATUS_LABELS[advance.next]}.`);
+  });
+  footer.append(moveButton);
+
+  const actions = document.createElement('div');
+  actions.className = 'card-actions';
   const steamUrl = safeWebUrl(game.steamUrl);
   if (steamUrl) {
-    const link = addText(footer, 'a', 'steam-link', 'Open Steam ↗');
+    const link = document.createElement('a');
+    link.className = 'icon-button steam-link';
     link.href = steamUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
+    link.title = 'Open on Steam';
+    link.setAttribute('aria-label', `Open ${game.title} on Steam (new tab)`);
+    link.append(makeIcon('external'));
+    actions.append(link);
   }
-  const actions = document.createElement('div');
-  actions.className = 'card-actions';
-  const trailerButton = document.createElement('button');
-  trailerButton.type = 'button';
-  trailerButton.className = 'small-button trailer-button';
-  trailerButton.textContent = 'Trailer';
-  trailerButton.setAttribute('aria-label', `Watch ${game.title} trailer`);
-  trailerButton.addEventListener('click', () => openTrailer(game));
-  actions.append(trailerButton);
-  const moveButton = document.createElement('button');
-  moveButton.type = 'button';
-  moveButton.className = 'small-button card-advance';
-  moveButton.textContent = game.status === 'to-play' ? 'Start' : game.status === 'in-progress' ? 'Mark played' : 'Replay';
-  moveButton.setAttribute('aria-label', `${moveButton.textContent} ${game.title}`);
-  moveButton.addEventListener('click', () => {
-    const nextStatus = game.status === 'to-play' ? 'in-progress' : game.status === 'in-progress' ? 'played' : 'to-play';
-    commitGames(games.map(item => item.id === game.id ? { ...item, status: nextStatus } : item), `${game.title} moved to ${STATUS_LABELS[nextStatus]}.`);
-  });
-  actions.append(moveButton);
-  const editButton = document.createElement('button');
-  editButton.type = 'button';
-  editButton.className = 'small-button card-edit';
-  editButton.textContent = 'Edit';
+  const editButton = makeButton('icon-button card-edit', { icon: 'edit', name: `Edit ${game.title}` });
   editButton.addEventListener('click', () => openEditor(game));
   actions.append(editButton);
+
   const moreActions = document.createElement('details');
-  moreActions.className = 'card-more-actions';
-  const moreSummary = addText(moreActions, 'summary', '', 'More');
+  moreActions.className = 'card-more-actions menu';
+  const moreSummary = document.createElement('summary');
+  moreSummary.className = 'icon-button';
+  moreSummary.title = 'More actions';
   moreSummary.setAttribute('aria-label', `More actions for ${game.title}`);
-  const deleteButton = document.createElement('button');
-  deleteButton.type = 'button';
-  deleteButton.className = 'small-button delete-button';
-  deleteButton.textContent = 'Delete';
+  moreSummary.append(makeIcon('more'));
+  moreActions.append(moreSummary);
+  const menu = document.createElement('div');
+  menu.className = 'menu-panel card-menu';
+  const deleteButton = makeButton('tool-action tool-danger delete-button', { label: 'Delete game', icon: 'trash', name: `Delete ${game.title}` });
   deleteButton.addEventListener('click', () => {
     moreActions.open = false;
     deleteGame(game);
   });
-  moreActions.append(deleteButton);
+  menu.append(deleteButton);
+  moreActions.append(menu);
   actions.append(moreActions);
   footer.append(actions);
   content.append(footer);
@@ -506,10 +603,11 @@ function renderActiveFilters() {
   document.querySelector('#clear-filters').disabled = filters.length === 0;
 
   for (const filter of filters) {
-    const chip = addText(elements.activeFilters, 'button', 'filter-chip', `${filter.label} ×`);
+    const chip = addText(elements.activeFilters, 'button', 'filter-chip', filter.label);
     chip.type = 'button';
     chip.title = `Remove ${filter.label}`;
     chip.setAttribute('aria-label', `Remove ${filter.label} filter`);
+    chip.append(makeIcon('close'));
     chip.addEventListener('click', () => {
       filter.clear();
       render();
@@ -538,7 +636,7 @@ function render() {
   document.querySelectorAll('.view-tab').forEach(tab => {
     const selected = tab.dataset.view === activeView;
     tab.classList.toggle('is-active', selected);
-    tab.setAttribute('aria-current', selected ? 'page' : 'false');
+    tab.setAttribute('aria-pressed', String(selected));
   });
   for (const status of VALID_STATUSES) {
     document.querySelector(`#count-${status}`).textContent = games.filter(game => game.status === status).length;
@@ -547,9 +645,13 @@ function render() {
   document.querySelector('#library-count').textContent = `${games.length} ${games.length === 1 ? 'game' : 'games'} in your library`;
   document.querySelector('#view-heading').textContent = activeView === 'all' ? 'All Games' : STATUS_LABELS[activeView];
   const visible = getVisibleGames();
-  document.querySelector('#results-count').textContent = `${visible.length} ${visible.length === 1 ? 'game' : 'games'}`;
+  document.querySelector('#results-count').textContent = isLoadingLibrary
+    ? 'Loading the shared library…'
+    : `${visible.length} ${visible.length === 1 ? 'game' : 'games'}`;
+  elements.grid.dataset.view = activeView;
+  elements.grid.setAttribute('aria-busy', String(isLoadingLibrary));
   elements.grid.replaceChildren(...visible.map(makeCard));
-  elements.empty.hidden = visible.length !== 0;
+  elements.empty.hidden = isLoadingLibrary || visible.length !== 0;
   document.querySelector('#empty-state-clear').disabled = !elements.search.value && !elements.genreFilter.value && !elements.playersFilter.value && !elements.priorityFilter.checked;
 }
 
@@ -569,11 +671,32 @@ function showRandomSuggestion(previousId = null) {
   const picked = (available.length ? available : candidates)[Math.floor(Math.random() * (available.length || candidates.length))];
   suggestedGameId = picked.id;
   document.querySelector('#suggestion-title').textContent = 'What should you play?';
-  addText(result, 'h3', 'suggestion-game-title', `${picked.priority ? '! ' : ''}${picked.title}`);
-  const details = [picked.genre, picked.players ? `${picked.players} ${picked.players === '1' ? 'player' : 'players'}` : ''].filter(Boolean).join(' · ');
-  if (details) addText(result, 'p', 'suggestion-meta', details);
-  if (picked.description) addText(result, 'p', 'suggestion-description', picked.description);
-  else if (picked.notes) addText(result, 'p', 'suggestion-description', picked.notes);
+  const art = document.createElement('div');
+  art.className = 'suggestion-art';
+  const coverUrl = safeWebUrl(picked.coverUrl);
+  if (coverUrl) {
+    const image = document.createElement('img');
+    image.src = coverUrl;
+    image.alt = '';
+    image.referrerPolicy = 'no-referrer';
+    image.addEventListener('error', () => image.replaceWith(makeCoverPlaceholder(picked)), { once: true });
+    art.append(image);
+  } else {
+    art.append(makeCoverPlaceholder(picked));
+  }
+  result.append(art);
+  const text = document.createElement('div');
+  text.className = 'suggestion-text';
+  const heading = addText(text, 'h3', 'suggestion-game-title', picked.title);
+  if (picked.priority) {
+    const star = addText(heading, 'span', 'priority-mark', 'Priority');
+    star.prepend(makeIcon('star'));
+  }
+  const details = [picked.genre, playersLabel(picked.players), STATUS_LABELS[picked.status]].filter(Boolean).join(' · ');
+  if (details) addText(text, 'p', 'suggestion-meta', details);
+  if (picked.description) addText(text, 'p', 'suggestion-description', picked.description);
+  else if (picked.notes) addText(text, 'p', 'suggestion-description', picked.notes);
+  result.append(text);
   const startButton = document.querySelector('#start-suggested-game');
   startButton.disabled = picked.status === 'in-progress';
   startButton.textContent = picked.status === 'in-progress' ? 'Already in progress' : 'Start this game';
@@ -610,6 +733,23 @@ function openEditor(game = null) {
   document.querySelector('#game-title').focus();
 }
 
+// hls.js is self-hosted and only downloaded the first time a browser without native HLS plays a Steam trailer.
+function loadHls() {
+  if (globalThis.Hls) return Promise.resolve(globalThis.Hls);
+  hlsLoader ||= new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = HLS_SCRIPT_URL;
+    script.addEventListener('load', () => resolve(globalThis.Hls), { once: true });
+    script.addEventListener('error', () => {
+      hlsLoader = null;
+      script.remove();
+      reject(new Error('Could not load the video player.'));
+    }, { once: true });
+    document.head.append(script);
+  });
+  return hlsLoader;
+}
+
 function openTrailer(game) {
   const player = document.querySelector('#trailer-player');
   const error = document.querySelector('#trailer-error');
@@ -622,13 +762,23 @@ function openTrailer(game) {
   if (trailer) {
     sourceLink.href = trailer.source;
     if (trailer.type === 'youtube') {
-      const frame = document.createElement('iframe');
-      frame.src = trailer.player;
-      frame.title = `${game.title} trailer`;
-      frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
-      frame.allowFullscreen = true;
-      frame.referrerPolicy = 'strict-origin-when-cross-origin';
-      player.append(frame);
+      // Click-to-load: nothing is requested from YouTube until the viewer agrees.
+      const consent = document.createElement('div');
+      consent.className = 'trailer-consent';
+      addText(consent, 'p', '', 'This trailer is hosted on YouTube. Loading it connects to YouTube (privacy-enhanced mode), which may store data in your browser while it plays.');
+      const loadButton = addText(consent, 'button', 'button button-primary', 'Load YouTube video');
+      loadButton.type = 'button';
+      loadButton.addEventListener('click', () => {
+        const frame = document.createElement('iframe');
+        frame.src = trailer.player;
+        frame.title = `${game.title} trailer`;
+        frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+        frame.allowFullscreen = true;
+        frame.referrerPolicy = 'strict-origin-when-cross-origin';
+        player.replaceChildren(frame);
+        frame.focus();
+      });
+      player.append(consent);
     } else {
       const video = document.createElement('video');
       video.controls = true;
@@ -640,15 +790,20 @@ function openTrailer(game) {
       if (trailer.type === 'steam-hls') {
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = trailer.player;
-        } else if (globalThis.Hls?.isSupported()) {
-          activeHlsPlayer = new Hls();
-          activeHlsPlayer.loadSource(trailer.player);
-          activeHlsPlayer.attachMedia(video);
-          activeHlsPlayer.on(Hls.Events.ERROR, (_event, data) => {
-            if (data.fatal) error.hidden = false;
-          });
         } else {
-          error.hidden = false;
+          loadHls().then(Hls => {
+            if (!video.isConnected) return;
+            if (!Hls?.isSupported()) {
+              error.hidden = false;
+              return;
+            }
+            activeHlsPlayer = new Hls();
+            activeHlsPlayer.loadSource(trailer.player);
+            activeHlsPlayer.attachMedia(video);
+            activeHlsPlayer.on(Hls.Events.ERROR, (_event, data) => {
+              if (data.fatal) error.hidden = false;
+            });
+          }).catch(() => { error.hidden = false; });
         }
       } else {
         video.src = trailer.player;
@@ -813,38 +968,87 @@ function exportLibrary() {
   }
 }
 
-async function getSharedUpdate() {
+async function fetchSharedSnapshot() {
+  const response = await fetch(new URL(SHARED_LIBRARY_URL, window.location.href), {
+    cache: 'no-store',
+    credentials: 'same-origin',
+    redirect: 'error'
+  });
+  if (!response.ok) throw new Error(`Shared library returned HTTP ${response.status}.`);
+
+  let snapshot;
+  try {
+    snapshot = await response.json();
+  } catch {
+    throw new Error('The shared library is not valid JSON.');
+  }
+
+  const sharedGames = SharedLibrary.prepareSharedLibraryReplacement(snapshot).map(normalizeGame);
+  if (!validateGameList(sharedGames)) throw new Error('The shared library contains invalid game data.');
+  return { snapshot, games: sharedGames };
+}
+
+function describeChanges({ added, changed, removed }) {
+  const parts = [];
+  if (added.length) parts.push(`${added.length} new`);
+  if (changed.length) parts.push(`${changed.length} changed`);
+  if (removed.length) parts.push(`${removed.length} removed`);
+  return parts.length ? parts.join(', ') : 'no differences';
+}
+
+function formatPublishedDate(exportedAt) {
+  const publishedAt = new Date(exportedAt);
+  return Number.isNaN(publishedAt.getTime()) ? 'an unknown date' : publishedAt.toLocaleString();
+}
+
+function hideUpdateBanner() {
+  pendingSharedSnapshot = null;
+  document.querySelector('#update-banner').hidden = true;
+}
+
+// Quietly checks for a shared library published since this browser last loaded or dismissed one.
+async function checkForSharedUpdate() {
+  let shared;
+  try {
+    shared = await fetchSharedSnapshot();
+  } catch {
+    return;
+  }
+  const preferences = readPreferences();
+  const { exportedAt } = shared.snapshot;
+  if (!SharedLibrary.isNewerSnapshot(exportedAt, preferences.sharedVersion)
+    || !SharedLibrary.isNewerSnapshot(exportedAt, preferences.dismissedSharedVersion)) return;
+
+  const changes = SharedLibrary.summarizeChanges(games, shared.games);
+  if (!changes.added.length && !changes.changed.length && !changes.removed.length) {
+    savePreferences({ sharedVersion: exportedAt });
+    return;
+  }
+  pendingSharedSnapshot = shared;
+  document.querySelector('#update-banner-text').textContent =
+    `A shared library update from ${formatPublishedDate(exportedAt)} is available: ${describeChanges(changes)} compared with your library.`;
+  document.querySelector('#update-banner').hidden = false;
+}
+
+async function getSharedUpdate(prefetched = null) {
   const button = document.querySelector('#shared-update-button');
   button.disabled = true;
   button.textContent = 'Loading shared library…';
   try {
-    const response = await fetch(new URL(SHARED_LIBRARY_URL, window.location.href), {
-      cache: 'no-store',
-      credentials: 'same-origin',
-      redirect: 'error'
-    });
-    if (!response.ok) throw new Error(`Shared library returned HTTP ${response.status}.`);
-
-    let snapshot;
-    try {
-      snapshot = await response.json();
-    } catch {
-      throw new Error('The shared library is not valid JSON.');
-    }
-
-    const replacement = SharedLibrary.prepareSharedLibraryReplacement(snapshot);
-    if (!validateGameList(replacement)) throw new Error('The shared library contains invalid game data.');
-
-    const publishedAt = new Date(snapshot.exportedAt);
-    const publishedLabel = Number.isNaN(publishedAt.getTime()) ? 'unknown date' : publishedAt.toLocaleString();
+    const { snapshot, games: replacement } = prefetched || await fetchSharedSnapshot();
+    const changes = SharedLibrary.summarizeChanges(games, replacement);
     const confirmation = [
-      `Shared library published: ${publishedLabel}`,
-      `Games in shared library: ${replacement.length}`,
+      `Shared library published: ${formatPublishedDate(snapshot.exportedAt)}`,
+      `Games in shared library: ${replacement.length} (${describeChanges(changes)} compared with yours)`,
+      changes.removed.length ? `Games that will be removed: ${changes.removed.slice(0, 8).join(', ')}${changes.removed.length > 8 ? ', …' : ''}` : '',
       `This will replace your current library of ${games.length} games, including local additions and changes. Export a backup first if you want to keep them.`
-    ].join('\n\n');
+    ].filter(Boolean).join('\n\n');
     if (!confirm(confirmation)) return;
 
-    commitGames(replacement, `Shared library updated with ${replacement.length} games.`);
+    if (commitGames(replacement, `Shared library updated with ${replacement.length} games.`)) {
+      savePreferences({ sharedVersion: snapshot.exportedAt });
+      hideUpdateBanner();
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not fetch the shared library.';
     showToast(`${message} Your current library is unchanged.`, true);
@@ -852,6 +1056,144 @@ async function getSharedUpdate() {
     button.disabled = false;
     button.textContent = 'Get shared update';
   }
+}
+
+function readSavedGithubToken() {
+  try {
+    return localStorage.getItem(GITHUB_TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+async function openPublishDialog() {
+  const savedToken = readSavedGithubToken();
+  const summary = document.querySelector('#publish-summary');
+  const confirmButton = document.querySelector('#confirm-publish');
+  document.querySelector('#publish-token').value = sessionGithubToken || savedToken;
+  document.querySelector('#publish-remember').checked = Boolean(savedToken);
+  document.querySelector('#forget-token').hidden = !savedToken;
+  confirmButton.disabled = true;
+  confirmButton.textContent = `Publish ${games.length} ${games.length === 1 ? 'game' : 'games'}`;
+  summary.replaceChildren();
+  addText(summary, 'p', '', 'Comparing with the current shared library…');
+  document.querySelector('#publish-dialog').showModal();
+
+  let changes = null;
+  try {
+    const published = await fetchSharedSnapshot();
+    changes = SharedLibrary.summarizeChanges(published.games, games);
+  } catch {
+    // The published file may be missing or broken; publishing replaces it either way.
+  }
+  summary.replaceChildren();
+  if (!changes) {
+    addText(summary, 'p', '', `The current shared library couldn't be read. Publishing will replace it with your ${games.length} games.`);
+  } else if (!changes.added.length && !changes.changed.length && !changes.removed.length) {
+    addText(summary, 'p', '', 'Your library already matches the shared library. There is nothing new to publish.');
+    return;
+  } else {
+    addText(summary, 'p', '', `Compared with the shared library: ${describeChanges(changes)}.`);
+    const list = document.createElement('ul');
+    for (const [label, titles] of [['New', changes.added], ['Changed', changes.changed], ['Removed', changes.removed]]) {
+      if (!titles.length) continue;
+      const more = titles.length > 6 ? `, and ${titles.length - 6} more` : '';
+      const item = addText(list, 'li', label === 'Removed' ? 'is-removed' : '', `${label}: ${titles.slice(0, 6).join(', ')}${more}`);
+      item.title = titles.join(', ');
+    }
+    summary.append(list);
+  }
+  confirmButton.disabled = false;
+}
+
+function githubErrorMessage(status) {
+  if (status === 401) return 'GitHub rejected the token. Check that it is correct and has not expired.';
+  if (status === 403 || status === 404) return `The token can't write to ${GITHUB_REPO}. Give it Contents: Read and write access to that repository.`;
+  if (status === 409 || status === 422) return 'The shared library changed on GitHub while publishing. Try again.';
+  return `GitHub returned HTTP ${status}. Try again later.`;
+}
+
+async function githubRequest(token, url, options = {}) {
+  try {
+    return await fetch(url, {
+      ...options,
+      credentials: 'omit',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(options.body ? { 'Content-Type': 'application/json' } : {})
+      }
+    });
+  } catch {
+    throw new Error('Could not reach GitHub. Check your connection.');
+  }
+}
+
+async function publishLibrary(event) {
+  event.preventDefault();
+  const tokenInput = document.querySelector('#publish-token');
+  const token = tokenInput.value.trim();
+  if (!token) {
+    tokenInput.reportValidity();
+    return;
+  }
+  try {
+    if (document.querySelector('#publish-remember').checked) localStorage.setItem(GITHUB_TOKEN_KEY, token);
+    else localStorage.removeItem(GITHUB_TOKEN_KEY);
+  } catch {
+    // Storage may be unavailable; the token still works for this visit.
+  }
+  sessionGithubToken = token;
+
+  const button = document.querySelector('#confirm-publish');
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Publishing…';
+  try {
+    const snapshot = SharedLibrary.buildSnapshot(games);
+    const contents = SharedLibrary.serializeSnapshot(snapshot);
+    SharedLibrary.prepareSharedLibraryReplacement(JSON.parse(contents));
+
+    const fileUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_LIBRARY_PATH}`;
+    const current = await githubRequest(token, `${fileUrl}?ref=${encodeURIComponent(GITHUB_BRANCH)}`);
+    if (!current.ok && current.status !== 404) throw new Error(githubErrorMessage(current.status));
+    const sha = current.ok ? (await current.json()).sha : undefined;
+
+    const result = await githubRequest(token, fileUrl, {
+      method: 'PUT',
+      body: JSON.stringify({
+        message: `Update shared game library (${games.length} games)`,
+        content: SharedLibrary.encodeBase64Utf8(contents),
+        branch: GITHUB_BRANCH,
+        ...(sha ? { sha } : {})
+      })
+    });
+    if (!result.ok) throw new Error(githubErrorMessage(result.status));
+
+    savePreferences({ sharedVersion: snapshot.exportedAt });
+    hideUpdateBanner();
+    document.querySelector('#publish-dialog').close();
+    showToast(`Published ${games.length} games. The site updates in a minute or two.`);
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : 'Publishing failed.', true);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
+}
+
+function forgetGithubToken() {
+  try {
+    localStorage.removeItem(GITHUB_TOKEN_KEY);
+  } catch {
+    // Nothing stored.
+  }
+  sessionGithubToken = '';
+  document.querySelector('#publish-token').value = '';
+  document.querySelector('#publish-remember').checked = false;
+  document.querySelector('#forget-token').hidden = true;
+  showToast('The saved GitHub token was removed from this device.');
 }
 
 function escapeMarkdown(value) {
@@ -961,10 +1303,21 @@ async function importLibrary(file) {
   }
 }
 
+// Views can be deep-linked, e.g. /games/#in-progress from the homepage.
+const VIEWS = [...VALID_STATUSES, 'all'];
+function applyViewFromHash() {
+  const view = decodeURIComponent(location.hash.slice(1));
+  if (!VIEWS.includes(view) || view === activeView) return false;
+  activeView = view;
+  return true;
+}
 document.querySelectorAll('.view-tab').forEach(tab => tab.addEventListener('click', () => {
   activeView = tab.dataset.view;
+  history.replaceState(null, '', `#${activeView}`);
   render();
 }));
+window.addEventListener('hashchange', () => { if (applyViewFromHash()) render(); });
+applyViewFromHash();
 elements.search.addEventListener('input', render);
 elements.genreFilter.addEventListener('change', render);
 elements.playersFilter.addEventListener('change', render);
@@ -1032,7 +1385,17 @@ elements.form.addEventListener('submit', event => {
   if (commitGames(nextGames, exists ? 'Game updated.' : 'Game added.')) elements.dialog.close();
 });
 document.querySelector('#export-button').addEventListener('click', exportLibrary);
-document.querySelector('#shared-update-button').addEventListener('click', getSharedUpdate);
+document.querySelector('#shared-update-button').addEventListener('click', () => getSharedUpdate());
+document.querySelector('#publish-button').addEventListener('click', openPublishDialog);
+document.querySelector('#publish-form').addEventListener('submit', publishLibrary);
+document.querySelector('#forget-token').addEventListener('click', forgetGithubToken);
+document.querySelector('#close-publish').addEventListener('click', () => document.querySelector('#publish-dialog').close());
+document.querySelector('#cancel-publish').addEventListener('click', () => document.querySelector('#publish-dialog').close());
+document.querySelector('#update-banner-review').addEventListener('click', () => getSharedUpdate(pendingSharedSnapshot));
+document.querySelector('#update-banner-dismiss').addEventListener('click', () => {
+  if (pendingSharedSnapshot) savePreferences({ dismissedSharedVersion: pendingSharedSnapshot.snapshot.exportedAt });
+  hideUpdateBanner();
+});
 document.querySelector('#markdown-export-button').addEventListener('click', () => {
   updateMarkdownPreview();
   document.querySelector('#markdown-dialog').showModal();
@@ -1063,12 +1426,30 @@ document.querySelector('#backup-tip-close').addEventListener('click', () => {
   renderBackupTip();
 });
 document.querySelector('#empty-state-clear').addEventListener('click', clearFilters);
+// Dropdown menus (<details class="menu">): close on outside click, and on Escape with focus returned to the toggle.
 document.addEventListener('click', event => {
-  const detailsToClose = [document.querySelector('.library-tools'), document.querySelector('#filter-menu')];
-  for (const details of detailsToClose) {
-    if (details && details.open && !details.contains(event.target)) details.open = false;
+  for (const details of document.querySelectorAll('details.menu[open]')) {
+    if (!details.contains(event.target)) details.open = false;
   }
 });
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  const openMenu = [...document.querySelectorAll('details.menu[open]')].pop();
+  if (!openMenu) return;
+  openMenu.open = false;
+  openMenu.querySelector('summary').focus();
+});
+// Opening one menu closes the others.
+document.addEventListener('toggle', event => {
+  if (!event.target.matches?.('details.menu') || !event.target.open) return;
+  for (const details of document.querySelectorAll('details.menu[open]')) {
+    if (details !== event.target) details.open = false;
+  }
+}, true);
 
-initializeLibrary();
-render();
+if (initializeLibrary()) {
+  render();
+  checkForSharedUpdate();
+} else {
+  seedLibrary();
+}

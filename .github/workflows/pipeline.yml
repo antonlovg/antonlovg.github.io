@@ -1,0 +1,67 @@
+# Test, build, audit and deploy lovgren.dev.
+# The audit step gates the deploy: any accessibility violation, cookie or third-party request on
+# the homepage and info pages fails the run. Its results are published as /status.json, which the
+# homepage shows as the live pipeline panel. Requires Settings → Pages → Source: "GitHub Actions".
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Also validates games/shared-library.json, including commits made by "Publish to GitHub".
+      - name: Unit tests
+        run: node --test --test-reporter=tap games/tests/*.test.mjs | tee test-report.tap
+
+      - name: JavaScript syntax
+        run: for file in home.js games/app.js games/shared-library.js games/theme-init.js scripts/*.mjs; do node --check "$file"; done
+
+      - name: Build site
+        run: node scripts/build-site.mjs _site
+        env:
+          TEST_REPORT: test-report.tap
+
+      - name: Install audit tools
+        run: npm install --no-save --no-package-lock --prefix .audit axe-core@4.10.2
+
+      - name: Audit accessibility, privacy and performance
+        run: node scripts/audit-site.mjs _site --axe .audit/node_modules/axe-core/axe.min.js --lighthouse --gate
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      - name: Upload site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

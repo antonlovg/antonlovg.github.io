@@ -72,5 +72,56 @@
     return games;
   }
 
-  return { prepareSharedLibraryReplacement };
+  function buildSnapshot(games, exportedAt = new Date()) {
+    return { schemaVersion: 1, exportedAt: new Date(exportedAt).toISOString(), games };
+  }
+
+  function serializeSnapshot(snapshot) {
+    return `${JSON.stringify(snapshot, null, 2)}\n`;
+  }
+
+  // Compares two game lists by id and reports what applying `nextGames` would change.
+  function summarizeChanges(currentGames, nextGames) {
+    const current = new Map(currentGames.map(game => [game.id, game]));
+    const next = new Map(nextGames.map(game => [game.id, game]));
+    const added = [];
+    const changed = [];
+    const removed = [];
+    for (const [id, game] of next) {
+      const previous = current.get(id);
+      if (!previous) added.push(game.title);
+      else if (JSON.stringify(previous) !== JSON.stringify(game)) changed.push(game.title);
+    }
+    for (const [id, game] of current) {
+      if (!next.has(id)) removed.push(game.title);
+    }
+    return { added, changed, removed, unchanged: next.size - added.length - changed.length };
+  }
+
+  // True when the snapshot was published after the version this browser last loaded or dismissed.
+  function isNewerSnapshot(exportedAt, knownVersion) {
+    const published = Date.parse(exportedAt);
+    if (Number.isNaN(published)) return false;
+    const known = Date.parse(knownVersion);
+    return Number.isNaN(known) || published > known;
+  }
+
+  // GitHub's contents API expects base64 of the file's UTF-8 bytes.
+  function encodeBase64Utf8(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    for (let index = 0; index < bytes.length; index += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  return {
+    prepareSharedLibraryReplacement,
+    buildSnapshot,
+    serializeSnapshot,
+    summarizeChanges,
+    isNewerSnapshot,
+    encodeBase64Utf8
+  };
 });

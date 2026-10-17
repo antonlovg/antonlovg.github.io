@@ -1,0 +1,5 @@
+# Build output and audit tools (generated locally and in CI)
+_site/
+.audit/
+node_modules/
+test-report.tap
