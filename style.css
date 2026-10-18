@@ -114,7 +114,8 @@ kbd {
 
 /* ---------- Signature backdrop: dot grid fading out under an indigo glow ---------- */
 
-.home::before {
+.home::before,
+.ops-page::before {
   position: fixed;
   inset: 0;
   z-index: -1;

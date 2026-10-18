@@ -2,11 +2,13 @@
 # Checks the website, the game library and the Steam proxy, stores the results as a single commit
 # on the "uptime-data" branch (force-pushed, so history doesn't grow), then starts the pipeline so
 # the /status page is rebuilt with fresh data. A failed check is recorded, not treated as an error.
+# GitHub's scheduler is best-effort and often delays or drops runs, so it is asked three times an
+# hour; a scheduled run skips when the last check is under 50 minutes old, which keeps it hourly.
 name: Uptime
 
 on:
   schedule:
-    - cron: '7 * * * *'
+    - cron: '7,27,47 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -39,10 +41,27 @@ jobs:
             echo "Starting a new uptime history."
           fi
 
+      - name: Skip if checked within the hour
+        id: due
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            let last = 0;
+            try { last = Date.parse(JSON.parse(fs.readFileSync("uptime.json", "utf8")).checks.at(-1).t) || 0; } catch {}
+            const minutes = Math.round((Date.now() - last) / 60000);
+            const due = process.env.EVENT !== "schedule" || minutes >= 50;
+            console.log(due ? "Checking now." : `Last check was ${minutes} min ago; skipping.`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `due=${due}\n`);
+          '
+
       - name: Check the site
+        if: steps.due.outputs.due == 'true'
         run: node scripts/check-uptime.mjs uptime.json
 
       - name: Save results to the uptime-data branch
+        if: steps.due.outputs.due == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -55,6 +74,7 @@ jobs:
           git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" uptime-data
 
       - name: Refresh the status page
+        if: steps.due.outputs.due == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run pipeline.yml --ref main

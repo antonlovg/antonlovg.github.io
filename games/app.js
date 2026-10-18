@@ -224,11 +224,21 @@ function validateGameList(value) {
     && (game.steamCategories === undefined || game.steamCategories === null || (Array.isArray(game.steamCategories) && game.steamCategories.every(isString))));
 }
 
+// Steam's store API escapes its text ("Glo &amp; Bulder"); it is shown as plain text, so decode it.
+const ENTITIES = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', nbsp: ' ' };
+function decodeEntities(text) {
+  return String(text).replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, name) => {
+    if (name[0] !== '#') return ENTITIES[name.toLowerCase()] ?? entity;
+    const code = name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : Number(name.slice(1));
+    return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+  });
+}
+
 function normalizeGame(game) {
   return {
     id: game.id,
     title: String(game.title).trim(),
-    description: game.description ?? '',
+    description: decodeEntities(game.description ?? ''),
     genre: game.genre ?? '',
     tags: game.tags ?? '',
     players: game.players ?? '',
@@ -1124,8 +1134,8 @@ async function fetchSteamInfo() {
     if (!details?.success || !details.data) throw new Error(t('Steam returned no public details for this app. Check that the URL points to a public game page.'));
     const data = details.data;
     const fetched = {
-      title: typeof data.name === 'string' ? data.name : '',
-      description: typeof data.short_description === 'string' ? data.short_description : '',
+      title: typeof data.name === 'string' ? decodeEntities(data.name) : '',
+      description: typeof data.short_description === 'string' ? decodeEntities(data.short_description) : '',
       coverUrl: typeof data.header_image === 'string' ? data.header_image : '',
       genre: Array.isArray(data.genres) ? data.genres.map(item => item.description).filter(Boolean).join(', ') : '',
       categories: Array.isArray(data.categories) ? data.categories.map(item => item.description).filter(Boolean) : []
