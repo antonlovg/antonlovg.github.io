@@ -548,10 +548,11 @@ function getVisibleGames() {
   const genre = elements.genreFilter.value;
   const players = elements.playersFilter.value;
   const priorityOnly = elements.priorityFilter.checked;
-  const saleOnly = elements.saleFilter.checked;
+  // '' = any price, '1' = any discount, otherwise the minimum discount in percent.
+  const minDiscount = Number(elements.saleFilter.value) || 0;
 
   return games.filter(game => {
-    if (saleOnly && !(priceFor(game)?.discount > 0)) return false;
+    if (minDiscount && !((priceFor(game)?.discount ?? 0) >= minDiscount)) return false;
     if (activeView !== 'all' && game.status !== activeView) return false;
     if (genre && getGenreCategory(game.genre) !== genre) return false;
     if (priorityOnly && !game.priority) return false;
@@ -797,7 +798,7 @@ function renderActiveFilters() {
   if (elements.genreFilter.value) filters.push({ label: t('Genre: {genre}', { genre: t(elements.genreFilter.value) }), clear: () => { elements.genreFilter.value = ''; } });
   if (players) filters.push({ label: players === 'unknown' ? t('Players not specified') : playersLabel(players), clear: () => { elements.playersFilter.value = ''; } });
   if (elements.priorityFilter.checked) filters.push({ label: t('Priority only'), clear: () => { elements.priorityFilter.checked = false; } });
-  if (elements.saleFilter.checked) filters.push({ label: t('On sale'), clear: () => { elements.saleFilter.checked = false; } });
+  if (elements.saleFilter.value) filters.push({ label: elements.saleFilter.selectedOptions[0].textContent, clear: () => { elements.saleFilter.value = ''; } });
 
   elements.activeFilters.replaceChildren();
   elements.activeFilters.hidden = filters.length === 0;
@@ -824,7 +825,7 @@ function clearFilters() {
   elements.genreFilter.value = '';
   elements.playersFilter.value = '';
   elements.priorityFilter.checked = false;
-  elements.saleFilter.checked = false;
+  elements.saleFilter.value = '';
   pendingGenre = '';
   animatedRender();
 }
@@ -866,7 +867,7 @@ function render() {
   elements.grid.replaceChildren(...(isLoadingLibrary ? Array.from({ length: 8 }, makeSkeletonCard) : visible.map(makeCard)));
   elements.empty.hidden = isLoadingLibrary || visible.length !== 0;
   if (!isLoadingLibrary && !pendingGenre) syncUrl();
-  document.querySelector('#empty-state-clear').disabled = !elements.search.value && !elements.genreFilter.value && !elements.playersFilter.value && !elements.priorityFilter.checked && !elements.saleFilter.checked;
+  document.querySelector('#empty-state-clear').disabled = !elements.search.value && !elements.genreFilter.value && !elements.playersFilter.value && !elements.priorityFilter.checked && !elements.saleFilter.value;
   renderPriceNote();
 }
 
@@ -1567,7 +1568,7 @@ function readUrlState() {
   elements.search.value = state.q;
   elements.playersFilter.value = state.players;
   elements.priorityFilter.checked = state.priority;
-  elements.saleFilter.checked = state.sale;
+  elements.saleFilter.value = state.sale;
   pendingGenre = state.genre;
 }
 
@@ -1578,7 +1579,7 @@ function currentUrlState() {
     genre: pendingGenre || elements.genreFilter.value,
     players: elements.playersFilter.value,
     priority: elements.priorityFilter.checked,
-    sale: elements.saleFilter.checked
+    sale: elements.saleFilter.value
   };
 }
 
@@ -1614,8 +1615,9 @@ document.querySelector('#sort-select').addEventListener('change', () => {
 });
 document.querySelector('#theme-select').addEventListener('change', event => SiteTheme.set(event.target.value));
 document.querySelector('#pick-game-button').addEventListener('click', () => {
-  showRandomSuggestion();
+  // Open the dialog first: a wheel inside a still-closed dialog has no styles, so it would not animate.
   document.querySelector('#suggestion-dialog').showModal();
+  showRandomSuggestion();
 });
 document.querySelector('#suggest-another').addEventListener('click', () => showRandomSuggestion(suggestedGameId));
 // Closing during a spin is fine: the pick still finishes in the background without stealing focus.
@@ -1757,7 +1759,7 @@ function showGame(id) {
   elements.genreFilter.value = '';
   elements.playersFilter.value = '';
   elements.priorityFilter.checked = false;
-  elements.saleFilter.checked = false;
+  elements.saleFilter.value = '';
   pendingGenre = '';
   elements.search.value = game.title;
   syncUrl(true);

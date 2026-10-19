@@ -153,9 +153,15 @@
                 <input id="priority-filter" type="checkbox">
                 <span>Priority only</span>
               </label>
-              <label class="sale-filter check-row">
-                <input id="sale-filter" type="checkbox">
-                <span>On sale only</span>
+              <label class="filter-field">
+                <span>Discount</span>
+                <select id="sale-filter">
+                  <option value="">Any price</option>
+                  <option value="1">On sale</option>
+                  <option value="25">25% off or more</option>
+                  <option value="50">50% off or more</option>
+                  <option value="75">75% off or more</option>
+                </select>
               </label>
               <button class="button button-ghost clear-filter-button" id="clear-filters" type="button">Clear filters</button>
             </div>

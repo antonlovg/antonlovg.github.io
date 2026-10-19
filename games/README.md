@@ -73,12 +73,12 @@ The snapshot is public, including personal notes, so don't put anything private 
 
 - Cards show the current Steam price and a sale badge with the original price when discounted: in euro (Swedish store, `prices.json`) on the English and Swedish pages, and in Norwegian kroner (Norwegian store, `prices-nok.json`) on `/no/games/`. The pipeline fetches both at build time; local previews simply show no prices.
 - The library also runs as `/sv/games/` and `/no/games/`. Interface text goes through `SiteI18n.t()` (translations in `i18n/ui.mjs`); all three share the same saved library, and game data from Steam stays English.
-- **On sale only** (in Filters) and **Price: low to high** (in Sort) use those prices. The subtitle counts how many games are on sale.
+- **Discount** (in Filters: on sale, or at least 25/50/75% off) and **Price: low to high** (in Sort) use those prices. The subtitle counts how many games are on sale.
 - **Pick a game** spins a wheel of up to 12 games from the current view and filters (the pick is made first, uniformly at random; the wheel then lands on it). Reduced-motion settings skip the animation.
 
 ## Links and shortcuts
 
-- The view and filters are kept in the address, so links can be shared and Back/Forward work: `/games/?q=portal&genre=Adventure&players=2&priority=1&sale=1#in-progress`. Values from the address are validated in `url-state.js` (tested in `tests/url-state.test.mjs`) and only ever written into form controls.
+- The view and filters are kept in the address, so links can be shared and Back/Forward work: `/games/?q=portal&genre=Adventure&players=2&priority=1&sale=50#in-progress`. Values from the address are validated in `url-state.js` (tested in `tests/url-state.test.mjs`) and only ever written into form controls.
 - <kbd>/</kbd> focuses the search. <kbd>Ctrl</kbd>+<kbd>K</kbd> opens the sitewide terminal, which also finds games by title.
 - Starting, finishing, deleting, importing and resetting can be undone from the notification. Bulk replacements ask first in a styled dialog instead of the browser's `confirm()`.
 - If the browser blocks site storage, the library still loads and works for the visit, and says that changes won't be kept.

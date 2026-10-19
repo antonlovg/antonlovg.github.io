@@ -1,4 +1,5 @@
-// Shareable game-library state in the URL, e.g. /games/?q=portal&genre=Puzzle&players=2&priority=1&sale=1#in-progress
+// Shareable game-library state in the URL, e.g. /games/?q=portal&genre=Puzzle&players=2&priority=1&sale=50#in-progress
+// sale is '1' (any discount) or a minimum discount in percent.
 // Values from the address bar are untrusted: everything is validated or length-limited here,
 // and the app only ever writes them into form controls (never into HTML).
 (function attachUrlState(root, createApi) {
@@ -8,6 +9,7 @@
 })(globalThis, () => {
   const VIEWS = ['to-play', 'in-progress', 'played', 'all'];
   const PLAYERS = ['1', '2', '3', '4', '5+', 'unknown'];
+  const SALES = ['1', '25', '50', '75'];
   const DEFAULT_VIEW = 'to-play';
   const MAX_QUERY = 100;
   const MAX_GENRE = 60;
@@ -21,7 +23,7 @@
     try {
       url = new URL(href);
     } catch {
-      return { view: DEFAULT_VIEW, q: '', genre: '', players: '', priority: false, sale: false };
+      return { view: DEFAULT_VIEW, q: '', genre: '', players: '', priority: false, sale: '' };
     }
     const params = url.searchParams;
     let hash = '';
@@ -31,13 +33,14 @@
       hash = '';
     }
     const players = params.get('players') || '';
+    const sale = params.get('sale') || '';
     return {
       view: VIEWS.includes(hash) ? hash : DEFAULT_VIEW,
       q: cleanText(params.get('q'), MAX_QUERY),
       genre: cleanText(params.get('genre'), MAX_GENRE),
       players: PLAYERS.includes(players) ? players : '',
       priority: params.get('priority') === '1',
-      sale: params.get('sale') === '1'
+      sale: SALES.includes(sale) ? sale : ''
     };
   }
 
@@ -52,15 +55,15 @@
     if (genre) params.set('genre', genre);
     if (PLAYERS.includes(state.players)) params.set('players', state.players);
     if (state.priority) params.set('priority', '1');
-    if (state.sale) params.set('sale', '1');
+    if (SALES.includes(state.sale)) params.set('sale', state.sale);
     const query = params.toString();
     const view = VIEWS.includes(state.view) && state.view !== DEFAULT_VIEW ? `#${state.view}` : '';
     return `${url.pathname}${query ? `?${query}` : ''}${view}`;
   }
 
   function sameState(a, b) {
-    return a.view === b.view && a.q === b.q && a.genre === b.genre && a.players === b.players && Boolean(a.priority) === Boolean(b.priority) && Boolean(a.sale) === Boolean(b.sale);
+    return a.view === b.view && a.q === b.q && a.genre === b.genre && a.players === b.players && Boolean(a.priority) === Boolean(b.priority) && (a.sale || '') === (b.sale || '');
   }
 
-  return { VIEWS, PLAYERS, DEFAULT_VIEW, parse, build, sameState };
+  return { VIEWS, PLAYERS, SALES, DEFAULT_VIEW, parse, build, sameState };
 });
