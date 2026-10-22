@@ -1,0 +1,41 @@
+{
+  "games": [
+    {
+      "id": "jazz",
+      "title": "Jazz Jackrabbit",
+      "year": 1994,
+      "publisher": "Epic MegaGames",
+      "icon": "jazz",
+      "folder": "C:/Games/JAZZ",
+      "program": "JAZZ.EXE",
+      "detect": ["JAZZ.EXE"],
+      "dosbox": { "cycles": "max", "memsize": 16, "sbtype": "sb16" },
+      "setup": {
+        "program": "SETUP.EXE",
+        "creates": "SOUNDCRD.INF",
+        "keys": ["Enter", "ArrowDown", "ArrowDown", "ArrowDown", "ArrowDown", "Enter", "Enter", "Enter", "ArrowDown", "ArrowDown", "Enter"],
+        "hint": "First start: setting up the sound card (Sound Blaster 16, High Quality)…"
+      },
+      "controls": {
+        "keys": "Arrow keys move · Alt jumps · Space shoots · Ctrl changes weapon · Esc opens the menu",
+        "touch": [
+          { "label": "Jump", "key": "Alt" },
+          { "label": "Fire", "key": "Space" },
+          { "label": "Weapon", "key": "Ctrl" },
+          { "label": "Enter", "key": "Enter", "small": true },
+          { "label": "Esc", "key": "Esc", "small": true }
+        ],
+        "gamepad": { "a": "Alt", "b": "Ctrl", "x": "Space", "y": "Ctrl", "start": "Enter", "back": "Esc", "lb": "Ctrl", "rb": "Space" }
+      },
+      "install": "Choose a zip of your Jazz Jackrabbit folder (or the folder itself) — the one with JAZZ.EXE in it. Any version works: the shareware episode, the CD version or the Holiday specials.",
+      "shareware": {
+        "file": "shareware/jazz.zip",
+        "title": "Jazz Jackrabbit shareware episode, version 1.0 (1994)",
+        "size": 1417337,
+        "sha256": "b35114020f278432e1f06fc92b76e168e058ea1aecdc4b00bca76ab78499d455",
+        "notice": "Jazz Jackrabbit is shareware by Epic MegaGames, Inc., who own it. Shareware is try-before-you-buy software: Epic let anyone share the first episode for free, unaltered, so you could try it before buying the full game. LövOS includes that original release unchanged."
+      },
+      "description": "Epic MegaGames' 1994 platformer: a green hare with a blaster saves Carrotus from Devan Shell."
+    }
+  ]
+}

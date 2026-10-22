@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic" data-wallpaper="reactos">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <!-- DOSBox needs WebAssembly ('wasm-unsafe-eval') and a worker made from a blob URL; GitHub Sync talks to api.github.com only when you set it up. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://api.github.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>LövOS · lovgren.dev</title>
+  <meta name="description" content="A little desktop operating system that runs in the browser, with real DOS games.">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#c0c0c0">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="os.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body class="booting">
+  <h1 class="sr-only">LövOS desktop</h1>
+  <div id="boot" class="boot" role="status">
+    <svg class="boot-logo" width="96" height="96" aria-hidden="true" focusable="false"><use href="icons.svg#logo"/></svg>
+    <p class="boot-name"><b>Löv</b>OS</p>
+    <div class="boot-track"><div class="boot-fill"></div></div>
+    <p class="boot-text">Starting LövOS…</p>
+    <noscript><p class="boot-text">LövOS needs JavaScript. <a href="/">Back to lovgren.dev</a></p></noscript>
+  </div>
+  <main id="desktop" class="desktop" aria-label="Desktop">
+    <div id="windows" class="windows"></div>
+  </main>
+  <footer id="taskbar" class="taskbar" aria-label="Taskbar"></footer>
+</body>
+</html>

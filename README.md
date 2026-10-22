@@ -11,6 +11,7 @@ Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions p
 | `/ops/`, `/status/`, `/changelog/` | DORA metrics, deploys, last-run replay, architecture; hourly uptime; changelog + RSS. Templates filled at build time |
 | `/island/` | The whole site as a pixel-art island you can fly over, with live lights and Stockholm's weather (`island/`), see [The island](#the-island) |
 | `/wc2026/` | World Cup 2026 group-stage schedule in CEST (archive) |
+| `/os/` | LövOS: a ReactOS-style desktop in the browser with real DOS (DOSBox) for games like Jazz Jackrabbit. Unlisted (no links, `noindex`, not in the sitemap), English only, see [`os/README.md`](os/README.md) |
 | `/secret/` | Redirect to `/games/` (old address) |
 | `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`, `i18n.js`, `weather.js`), favicon and self-hosted fonts (Manrope, JetBrains Mono) |
 | `404.html` | Not-found page for every language: guesses the page you meant (`assets/not-found.js`) |

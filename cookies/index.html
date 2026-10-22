@@ -40,10 +40,10 @@
     <main id="main" class="article">
       <p class="eyebrow">~/cookies</p>
       <h1>Cookie policy</h1>
-      <p class="updated">Last updated: 17 October 2026</p>
+      <p class="updated">Last updated: 22 October 2026</p>
 
       <div class="summary-box">
-        <p><strong>Short version:</strong> this site sets no cookies and uses no tracking or analytics. That's why there's no cookie banner. The game library keeps your own data in your browser so it works, and that's all.</p>
+        <p><strong>Short version:</strong> this site sets no cookies and uses no tracking or analytics. That's why there's no cookie banner. The game library and the LövOS desktop keep your own data in your browser so they work, and that's all.</p>
       </div>
 
       <h2>Cookies</h2>
@@ -77,6 +77,21 @@
             <tr><td><code>personal-game-library-preferences-v1</code></td><td>Sort order and which shared library version you last loaded (older versions also kept the theme here)</td></tr>
             <tr><td><code>library-backup-tip-dismissed</code></td><td>Hides the backup tip after you close it</td></tr>
             <tr><td><code>personal-game-library-github-token</code></td><td>Only for the site owner, and only if they choose “Remember on this device” when publishing. Never set for visitors.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>LövOS desktop (/os/)</h3>
+      <p>LövOS keeps its C: drive in your browser's <em>IndexedDB</em> storage rather than local storage, and saves a copy of its own program files so it also works offline. Nothing in it is sent anywhere unless you turn on GitHub Sync.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th scope="col">Name</th><th scope="col">Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>lovgren-os</code></td><td>Your LövOS files, installed games, save games and settings. If you set up GitHub Sync, also your repository details and access token.</td></tr>
+            <tr><td><code>lovos-v1</code></td><td>The offline copy of LövOS's own program files (not your files)</td></tr>
+            <tr><td><code>/os/sw.js</code></td><td>A service worker that serves that offline copy when there's no connection. It only handles LövOS.</td></tr>
           </tbody>
         </table>
       </div>

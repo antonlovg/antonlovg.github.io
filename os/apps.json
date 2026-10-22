@@ -1,0 +1,16 @@
+{
+  "apps": [
+    { "id": "explorer", "name": "File Explorer", "icon": "explorer", "module": "js/apps/explorer.js", "menu": "", "run": ["explorer", "explorer.exe", "files"], "opens": ["zip"], "description": "Browse, copy, import and export files on the C: drive." },
+    { "id": "dos", "name": "MS-DOS Prompt", "icon": "dos", "module": "js/apps/dos.js", "menu": "", "run": ["dos", "command", "command.com", "dosbox"], "opens": ["exe", "com", "jsdos"], "description": "A real DOS (DOSBox) with your C: drive mounted. Runs DOS programs and games." },
+    { "id": "dosgames", "name": "DOS Games", "icon": "games", "module": "js/apps/dosgames.js", "menu": "Games", "single": true, "run": ["games", "dosgames"], "description": "Install and play DOS games such as Jazz Jackrabbit." },
+    { "id": "mines", "name": "Minesweeper", "icon": "mines", "module": "js/apps/mines.js", "menu": "Games", "single": true, "run": ["winmine", "minesweeper", "mines"], "description": "Find the mines without setting one off." },
+    { "id": "notepad", "name": "Notepad", "icon": "notepad", "module": "js/apps/notepad.js", "menu": "Accessories", "run": ["notepad", "notepad.exe", "edit"], "opens": ["txt", "md", "log", "ini", "cfg", "conf", "json", "nfo", "diz", "bat"], "description": "A simple text editor." },
+    { "id": "paint", "name": "Paint", "icon": "paint", "module": "js/apps/paint.js", "menu": "Accessories", "run": ["mspaint", "paint", "pbrush"], "opens": ["png", "jpg", "jpeg", "gif", "bmp", "webp"], "description": "Draw pictures and edit images." },
+    { "id": "calc", "name": "Calculator", "icon": "calc", "module": "js/apps/calc.js", "menu": "Accessories", "run": ["calc", "calc.exe", "calculator"], "description": "A pocket calculator." },
+    { "id": "cmd", "name": "Command Prompt", "icon": "cmd", "module": "js/apps/cmd.js", "menu": "Accessories", "run": ["cmd", "cmd.exe", "terminal"], "description": "Work with files and start programs by typing commands." },
+    { "id": "taskmgr", "name": "Task Manager", "icon": "taskmgr", "module": "js/apps/taskmgr.js", "menu": "Accessories/System Tools", "single": true, "run": ["taskmgr", "taskmgr.exe"], "description": "See and end running programs, and check memory and storage." },
+    { "id": "control", "name": "Control Panel", "icon": "control", "module": "js/apps/control.js", "menu": "", "single": true, "run": ["control", "settings", "control.exe"], "hidden": true, "description": "Display, sounds, storage, GitHub sync and more." },
+    { "id": "about", "name": "About LövOS", "icon": "about", "module": "js/apps/about.js", "menu": "", "single": true, "run": ["winver", "about", "ver"], "hidden": true, "description": "Version and credits." },
+    { "id": "help", "name": "Help", "icon": "help", "module": "js/apps/help.js", "menu": "", "single": true, "run": ["help", "winhelp"], "hidden": true, "description": "How to use LövOS, keyboard shortcuts and DOS games." }
+  ]
+}

@@ -23,7 +23,8 @@ const axePath = option('--axe') || 'node_modules/axe-core/axe.min.js';
 // except declared image hosts (the homepage shows game covers from Steam's image CDN).
 const BASE_PAGES = ['/', '/privacy/', '/cookies/', '/games/', '/ops/', '/status/', '/changelog/', '/island/'];
 const LANG_PREFIXES = ['', '/sv', '/no'];
-const PAGES = [...LANG_PREFIXES.flatMap(prefix => BASE_PAGES.map(page => `${prefix}${page}`)), '/404.html', '/sv/no-such-page', '/wc2026/'];
+// Unlisted English-only pages are audited too: the World Cup archive and the LövOS desktop.
+const PAGES = [...LANG_PREFIXES.flatMap(prefix => BASE_PAGES.map(page => `${prefix}${page}`)), '/404.html', '/sv/no-such-page', '/wc2026/', '/os/'];
 const NO_THIRD_PARTY = PAGES.filter(page => !/\/games\/$/.test(page));
 const STEAM_IMAGES = [/\.steamstatic\.com$/];
 const ALLOWED_IMAGE_HOSTS = { '/': STEAM_IMAGES, '/sv/': STEAM_IMAGES, '/no/': STEAM_IMAGES };

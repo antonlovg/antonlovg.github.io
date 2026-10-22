@@ -1,0 +1,16 @@
+js-dos emulators 8.5.2 (DOSBox compiled to WebAssembly)
+========================================================
+
+These files come from the "emulators" package, version 8.5.2, by Alexander Guryanov
+and the js-dos contributors. They are licensed under the GNU General Public License,
+version 2 (see LICENSE in this folder). DOSBox is (C) The DOSBox Team, also GPL-2.0.
+
+Source code: https://github.com/js-dos/emulators (tag/version 8.5.2)
+Package:     https://www.npmjs.com/package/emulators/v/8.5.2
+
+Files: emulators.js, wdosbox.js, wdosbox.wasm, wlibzip.js, wlibzip.wasm
+
+One change was made to emulators.js for lovgren.dev: the DOSBox glue script
+(wdosbox.js / wlibzip.js) is loaded with a <script> element instead of eval(),
+so the page can use a Content Security Policy without 'unsafe-eval'. The
+change is marked with a comment on the first line of the file.
