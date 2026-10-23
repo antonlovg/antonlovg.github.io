@@ -128,6 +128,12 @@ a { color: var(--link); }
 body.busy,
 body.busy * { cursor: progress !important; }
 
+/* ?play=<game>: just the game's window, filling the page (js/main.js → playGame) */
+body.play .taskbar,
+body.play .wbtn-min,
+body.play .wbtn-max { display: none; }
+body.play .desktop { background: #000; }
+
 /* 3D bevels */
 .raised {
   background: var(--face);

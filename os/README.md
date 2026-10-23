@@ -26,7 +26,7 @@ It is deliberately unlisted: nothing on the site links to it, the page is `noind
 | `apps.json` | Every app: id, name, icon, module, start menu folder, Run names, file types it opens |
 | `games.json` | DOS games: folder on C:, program, DOSBox settings, controls (keys, touch buttons, gamepad mapping), the game's own SETUP to run on first start (`setup`: program, the file it creates, the keys that answer it) and an included shareware release (`shareware`) |
 | `shareware/` | Original shareware archives, unaltered (see its README for the licence) |
-| `js/main.js` | Boot, Run dialog, Shut Down, global shortcuts, service worker registration |
+| `js/main.js` | Boot, Run dialog, Shut Down, global shortcuts, service worker registration; play mode (`?play=<game>`, add `&shareware` to install its shareware without asking): just that game's DOS window, for `/osv2/`, which shows it in a frame and is told (`lovos-play-closed`) when it closes |
 | `js/wm.js`, `js/menu.js`, `js/dialogs.js` | Window manager, menus (context, menu bars, start menu), message boxes and the Open/Save dialog |
 | `js/desktop.js`, `js/taskbar.js` | The desktop and the taskbar |
 | `js/vfs.js` | The C: drive in IndexedDB (`lovgren-os`): files and folders keyed by lower-cased path, change events (also across tabs) |

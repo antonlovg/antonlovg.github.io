@@ -24,7 +24,7 @@ const axePath = option('--axe') || 'node_modules/axe-core/axe.min.js';
 const BASE_PAGES = ['/', '/privacy/', '/cookies/', '/games/', '/ops/', '/status/', '/changelog/', '/island/'];
 const LANG_PREFIXES = ['', '/sv', '/no'];
 // Unlisted English-only pages are audited too: the World Cup archive and the LövOS desktop.
-const PAGES = [...LANG_PREFIXES.flatMap(prefix => BASE_PAGES.map(page => `${prefix}${page}`)), '/404.html', '/sv/no-such-page', '/wc2026/', '/os/'];
+const PAGES = [...LANG_PREFIXES.flatMap(prefix => BASE_PAGES.map(page => `${prefix}${page}`)), '/404.html', '/sv/no-such-page', '/wc2026/', '/os/', '/osv2/'];
 const NO_THIRD_PARTY = PAGES.filter(page => !/\/games\/$/.test(page));
 const STEAM_IMAGES = [/\.steamstatic\.com$/];
 const ALLOWED_IMAGE_HOSTS = { '/': STEAM_IMAGES, '/sv/': STEAM_IMAGES, '/no/': STEAM_IMAGES };

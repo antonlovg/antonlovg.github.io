@@ -14,8 +14,13 @@ import { seed } from './seed.js';
 import { applyAppearance } from './appearance.js';
 
 const shell = { run: runDialog, shutdownDialog };
+// ?play=<game id>: only that game, filling the page, for pages that show it in a frame (/osv2/).
+// &shareware installs the game's shareware release without asking, if it isn't installed yet.
+const params = new URLSearchParams(location.search);
+const playId = params.get('play');
 
 async function boot() {
+  if (playId) { playGame(playId); return; }
   const bootScreen = document.getElementById('boot');
   const bar = bootScreen.querySelector('.boot-fill');
   const step = fraction => { bar.style.width = `${Math.round(fraction * 100)}%`; };
@@ -49,6 +54,43 @@ async function boot() {
   sync.watch();
   sync.syncOnStart();
   registerServiceWorker();
+}
+
+// The same drive, settings and DOS window as the desktop (so a game installed here is installed
+// there), but no desktop, taskbar or sync. When the game's window closes, the page that framed
+// it is told, so it can close the frame.
+async function playGame(id) {
+  document.body.classList.add('play');
+  try {
+    await vfs.open();
+    await settings.load();
+    applyAppearance();
+    await loadApps();
+    wm.init(document.getElementById('windows'));
+  } catch (error) {
+    console.error(error);
+    document.querySelector('#boot .boot-text').textContent = `LövOS could not start: ${error.message}`;
+    return;
+  }
+  document.getElementById('boot').hidden = true;
+  document.body.classList.remove('booting');
+  const win = await launch('dos', { game: id, shareware: params.has('shareware') });
+  if (!win) { closed(); return; }
+  win.maximize();
+  wm.events.addEventListener('close', event => { if (event.detail === win) closed(); });
+  window.addEventListener('message', event => {
+    if (event.origin === location.origin && event.source === window.parent && event.data?.type === 'lovos-play-close') win.close();
+  });
+  function closed() {
+    if (window.parent !== window) { window.parent.postMessage({ type: 'lovos-play-closed', game: id }, location.origin); return; }
+    const screen = h('div', { class: 'off-screen', role: 'main' },
+      h('p', { text: 'The game has finished.' }),
+      h('div', { class: 'off-actions' },
+        h('button', { class: 'button', type: 'button', text: 'Play again', onclick: () => location.reload() }),
+        h('a', { class: 'button', href: './', text: 'Open LövOS' })));
+    document.body.replaceChildren(screen);
+    screen.querySelector('button').focus();
+  }
 }
 
 // ---------- Keyboard shortcuts ----------

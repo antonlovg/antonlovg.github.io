@@ -1,0 +1,14 @@
+# Disk images, archives and other binaries are stored byte for byte. Without this, git guesses
+# from the content, and with core.autocrlf on it rewrites "line endings" in any part of the
+# ReactOS CD that happens to look like text.
+*.img binary
+*.iso binary
+*.bin binary
+*.gz binary
+*.zip binary
+*.wasm binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff2 binary

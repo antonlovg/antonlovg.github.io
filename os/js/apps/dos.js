@@ -159,7 +159,7 @@ export default async function open(ctx) {
       }
     };
     const shareware = game.shareware ? h('button', { class: 'button default', type: 'button', text: 'Play the shareware episode' }) : null;
-    shareware?.addEventListener('click', async () => {
+    const playShareware = async () => {
       problem.textContent = '';
       setButtons(true);
       try {
@@ -172,7 +172,8 @@ export default async function open(ctx) {
         statusText.textContent = 'Not installed.';
         setButtons(false);
       }
-    });
+    };
+    shareware?.addEventListener('click', playShareware);
     const setButtons = disabled => [chooseZip, chooseFolder, syncButton, shareware].forEach(b => { if (b) b.disabled = disabled; });
     chooseZip.addEventListener('click', async () => run((await pickFiles({ accept: '.zip,application/zip', multiple: false }))[0]));
     chooseFolder.addEventListener('click', async () => run(await pickFiles({ folder: true })));
@@ -198,6 +199,8 @@ export default async function open(ctx) {
       h('p', { class: 'dos-install-note', text: 'You can also drop the zip or folder here.' }),
       problem);
     setOverlay(panel);
+    // Asked to play the shareware (LövOS's play mode, from /osv2/): no need to ask again.
+    if (shareware && args.shareware) playShareware();
     screen.ondragover = event => { event.preventDefault(); screen.classList.add('drop-hover'); };
     screen.ondragleave = () => screen.classList.remove('drop-hover');
     screen.ondrop = async event => {

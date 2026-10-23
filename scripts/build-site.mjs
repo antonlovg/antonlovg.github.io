@@ -156,7 +156,7 @@ async function writeSitemap() {
 ${urls}
 </urlset>
 `);
-  await writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /secret/\nDisallow: /os/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  await writeFile(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /secret/\nDisallow: /os/\nDisallow: /osv2/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
   return pages.length;
 }
 

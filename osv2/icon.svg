@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <symbol id="logo" viewBox="0 0 64 64">
+    <rect x="6" y="9" width="52" height="38" rx="4" fill="#26324a" stroke="#9fb4d8" stroke-width="3"/>
+    <ellipse cx="32" cy="28" rx="17" ry="7" fill="none" stroke="#5aa0ff" stroke-width="3" transform="rotate(-20 32 28)"/>
+    <circle cx="32" cy="28" r="7" fill="#d8e6ff"/>
+    <path d="M24 55h16M32 47v8" stroke="#9fb4d8" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+  <use href="#logo"/>
+</svg>

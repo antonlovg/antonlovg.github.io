@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- v86 needs WebAssembly ('wasm-unsafe-eval'), and workers and its sound worklet made from blob URLs; the Jazz Jackrabbit frame is LövOS (/os/). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>ReactOS · lovgren.dev</title>
+  <meta name="description" content="The real ReactOS, running on a PC emulated in the browser, with Jazz Jackrabbit.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#1e1f24">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="osv2.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <h1 class="name"><b>ReactOS</b> <span>0.4.16</span></h1>
+    <p class="status" id="status" role="status">Not started</p>
+    <nav class="actions" aria-label="Machine">
+      <button type="button" id="jazz" disabled>Jazz Jackrabbit</button>
+      <button type="button" id="keys" disabled title="Send Ctrl+Alt+Del to ReactOS">Ctrl+Alt+Del</button>
+      <button type="button" id="save" disabled title="Keep this session in this browser">Save</button>
+      <button type="button" id="restart" disabled>Restart</button>
+      <button type="button" id="full" disabled>Full screen</button>
+      <button type="button" id="about">About</button>
+    </nav>
+  </header>
+  <main class="stage" id="stage">
+    <section class="start" id="start" aria-labelledby="start-title">
+      <svg class="start-logo" viewBox="0 0 64 64" width="72" height="72" aria-hidden="true" focusable="false"><use href="icon.svg#logo"/></svg>
+      <h2 id="start-title">ReactOS, in your browser</h2>
+      <p>The real ReactOS 0.4.16, the free operating system that runs Windows programs, on a PC that is emulated right here in the page. It starts at the desktop once about <span id="size">45 MB</span> has downloaded, and everything runs on your device.</p>
+      <p>Jazz Jackrabbit's shareware episode is on the desktop.</p>
+      <div class="start-buttons">
+        <button type="button" class="primary" id="go">Start ReactOS</button>
+        <button type="button" id="resume" hidden>Resume saved session</button>
+        <button type="button" id="forget" class="quiet" hidden>Delete saved session</button>
+      </div>
+      <p class="note" id="start-note">Works best on a computer with a mouse and keyboard. Prefer something quicker? <a href="../os/">LövOS</a> is the ReactOS-style desktop that starts instantly.</p>
+      <p class="error" id="error" role="alert" hidden></p>
+    </section>
+    <div class="screen" id="screen" hidden><div class="text"></div><canvas aria-label="ReactOS screen"></canvas></div>
+    <p class="hint" id="hint" hidden>Click the screen to use the mouse in ReactOS. Press Esc to get it back.</p>
+    <div class="game" id="game" hidden></div>
+  </main>
+
+  <dialog class="dialog" id="about-dialog" aria-labelledby="about-title">
+    <h2 id="about-title">About this computer</h2>
+    <p><a href="https://reactos.org/">ReactOS</a> 0.4.16 (2026), started from its live CD, running in <a href="https://github.com/copy/v86">v86</a>, a PC emulator in WebAssembly. Nothing leaves your browser: the machine has no network.</p>
+    <p>C: is a small hard disk with the desktop, My Documents and Jazz Jackrabbit. What you change lasts until you close or reload the page; <b>Save</b> keeps the whole machine in this browser so you can resume it later (about 50 MB of storage).</p>
+    <h3>Jazz Jackrabbit</h3>
+    <p>ReactOS can't run this DOS game yet: its DOS support takes the game's protected-mode program for a 16-bit Windows one. So the icon on the desktop asks this page to open it in DOSBox (<a href="../os/">LövOS</a>'s MS-DOS window), beside ReactOS, at full speed. The game is installed and saved in LövOS's drive, so it's the same game in both places.</p>
+    <p>Jazz Jackrabbit is shareware by Epic MegaGames, Inc., who own it. Shareware is try-before-you-buy software: Epic let anyone share the first episode for free, unaltered. This is that original release, unchanged.</p>
+    <h3>Licences</h3>
+    <ul>
+      <li>ReactOS: GNU GPL 2 and others. <a href="https://github.com/reactos/reactos/tree/0.4.16-release">Source code of this release</a></li>
+      <li>v86: BSD 2-clause, with SeaBIOS (LGPL 3) and the Bochs VGA BIOS (LGPL 2.1). <a href="https://github.com/copy/v86">Source code</a></li>
+      <li>DOSBox (js-dos): GPL 2. See <a href="../os/">LövOS</a>.</li>
+    </ul>
+    <form method="dialog" class="dialog-buttons"><button class="primary">Close</button></form>
+  </dialog>
+
+  <dialog class="dialog" id="restart-dialog" aria-labelledby="restart-title">
+    <h2 id="restart-title">Restart ReactOS?</h2>
+    <p>The machine starts again from a fresh desktop. Anything you haven't saved is lost.</p>
+    <form method="dialog" class="dialog-buttons"><button class="primary" value="restart">Restart</button> <button value="cancel">Cancel</button></form>
+  </dialog>
+</body>
+</html>
