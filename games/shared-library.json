@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportedAt": "2026-10-17T16:43:22.563Z",
+  "exportedAt": "2026-10-23T22:22:25.702Z",
   "games": [
     {
       "id": "d8b1eeb6-f749-4173-873f-5e842f6e0720",
@@ -4496,6 +4496,33 @@
         "DualSense Controller Support",
         "Steam Cloud",
         "Remote Play on TV",
+        "Family Sharing"
+      ]
+    },
+    {
+      "id": "30c0df80-a44f-4a85-9988-53c4752adb5c",
+      "title": "We Were Here Tomorrow",
+      "description": "You and your partner awaken inside a mysterious Norček facility with little recollection of how you got there. Communicate, cooperate, and unravel the secrets in this asymmetrical co-op adventure. Only together will you decide the fate of Tomorrow…",
+      "genre": "Action, Adventure, Casual, Indie",
+      "tags": "",
+      "players": "2",
+      "steamUrl": "https://store.steampowered.com/app/2315050/We_Were_Here_Tomorrow/",
+      "trailerUrl": "https://video.akamai.steamstatic.com/store_trailers/2315050/679079920/8161167bab24465dcf46ec4021ddb533fb0ca5b9/1790629007/hls_264_master.m3u8?t=1792500919",
+      "coverUrl": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2315050/1e74865089e86e73fe7abefec0f5b59c1ce48305/header_alt_assets_3.jpg?t=1792695687",
+      "notes": "",
+      "status": "in-progress",
+      "priority": false,
+      "steamCategories": [
+        "Multi-player",
+        "Co-op",
+        "Online Co-op",
+        "Cross-Platform Multiplayer",
+        "Steam Achievements",
+        "DualShock Controller Support",
+        "DualShock Controller Support",
+        "DualSense Controller Support",
+        "DualSense Controller Support",
+        "Partial Controller Support",
         "Family Sharing"
       ]
     }
