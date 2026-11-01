@@ -1217,7 +1217,8 @@ function exportLibrary() {
     link.href = url;
     link.download = `game-library-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
-    URL.revokeObjectURL(url);
+    // Revoking right away can cancel the download in some browsers.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     showToast(t('Library export downloaded.'));
   } catch {
     showToast(t('Could not export the library.'), true);

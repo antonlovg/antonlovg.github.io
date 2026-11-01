@@ -62,6 +62,7 @@ async function start(getState) {
     buttons.forEach(button => { button.disabled = false; });
     $('hint').hidden = false;
     fit();
+    $('screen').focus();
   } catch (error) {
     console.error(error);
     emu?.destroy?.();
@@ -103,7 +104,14 @@ function wire() {
     clearTimeout(reading);
     reading = setTimeout(() => status(game ? 'Paused while Jazz Jackrabbit runs' : 'Running'), 800);
   });
-  $('screen').addEventListener('click', () => { if (!document.pointerLockElement) emu.lock_mouse(); });
+  $('screen').addEventListener('click', () => { $('screen').focus(); if (!document.pointerLockElement) emu.lock_mouse(); });
+  // v86 takes every key on the page, so it only gets them while its screen has the focus (or the
+  // mouse is captured): the bar's buttons and the dialogs keep Tab, Enter and Space.
+  const keyboard = () => emu?.keyboard_set_enabled(!game && (document.activeElement === $('screen') || Boolean(document.pointerLockElement)));
+  $('screen').addEventListener('focus', keyboard);
+  $('screen').addEventListener('blur', keyboard);
+  document.addEventListener('pointerlockchange', keyboard);
+  keyboard();
 }
 
 // ---------- Jazz Jackrabbit, in LövOS's DOS window ----------
@@ -117,28 +125,37 @@ function openGame() {
   $('game').replaceChildren(frame);
   $('game').hidden = false;
   $('jazz').textContent = 'Back to ReactOS';
+  $('save').disabled = $('keys').disabled = true;
   game = frame;
+  emu.keyboard_set_enabled(false);
   frame.addEventListener('load', () => frame.focus());
   status('Paused while Jazz Jackrabbit runs');
 }
 
 function closeGame() {
   if (!game) return;
+  clearTimeout(closing);
   game.remove();
   game = null;
   $('game').hidden = true;
   $('jazz').textContent = 'Jazz Jackrabbit';
+  $('save').disabled = $('keys').disabled = false;
   emu.run();
   status('Running');
+  $('screen').focus();
 }
 
 // LövOS says when the game's window has closed (it saves the game's files first).
 window.addEventListener('message', event => {
   if (event.origin === location.origin && event.source === game?.contentWindow && event.data?.type === 'lovos-play-closed') closeGame();
 });
+// If LövOS doesn't answer (it didn't load, say), the frame is closed anyway.
+let closing = 0;
 $('jazz').addEventListener('click', () => {
-  if (game) game.contentWindow.postMessage({ type: 'lovos-play-close' }, location.origin);
-  else openGame();
+  if (!game) { openGame(); return; }
+  game.contentWindow.postMessage({ type: 'lovos-play-close' }, location.origin);
+  clearTimeout(closing);
+  closing = setTimeout(closeGame, 8000);
 });
 
 // ---------- Machine buttons ----------

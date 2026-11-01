@@ -14,6 +14,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body {
   display: grid;
@@ -76,7 +77,9 @@ button.quiet { background: none; border-color: transparent; color: var(--muted);
 .error { color: var(--error) !important; }
 
 .screen { display: grid; place-items: center; }
-.screen canvas { display: block; image-rendering: auto; cursor: none; }
+.screen canvas { display: block; }
+.screen:focus { outline: none; }
+.screen:focus-visible canvas { outline: 2px solid var(--accent); outline-offset: 2px; }
 .screen .text { white-space: pre; font: 14px/14px monospace; color: #fff; }
 .screen .text:empty { display: none; }
 .hint {

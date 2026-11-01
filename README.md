@@ -1,6 +1,6 @@
 # lovgren.dev
 
-Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions pipeline (custom domain in `CNAME`). Plain HTML, CSS and JavaScript, with no framework and no build tools beyond two small Node scripts.
+Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions pipeline (custom domain in `CNAME`). Plain HTML, CSS and JavaScript, with no framework and no build tools beyond the small Node scripts in `scripts/`.
 
 | Path | What it is |
 | --- | --- |
@@ -12,6 +12,8 @@ Personal site for Anton Lövgren, deployed to GitHub Pages by a GitHub Actions p
 | `/island/` | The whole site as a pixel-art island you can fly over, with live lights and Stockholm's weather (`island/`), see [The island](#the-island) |
 | `/wc2026/` | World Cup 2026 group-stage schedule in CEST (archive) |
 | `/os/` | LövOS: a ReactOS-style desktop in the browser with real DOS (DOSBox) for games like Jazz Jackrabbit. Unlisted (no links, `noindex`, not in the sitemap), English only, see [`os/README.md`](os/README.md) |
+| `/osv2/` | The real ReactOS 0.4.16 running in the v86 PC emulator, with Jazz Jackrabbit on its desktop (opened in LövOS's DOS window). Unlisted like `/os/`, see [`osv2/README.md`](osv2/README.md) |
+| `/matschema/` | A meal plan (in Swedish) from week 45 to the end of the year: each day with recipes and check-offs, the week, and a shopping list built from the recipes. Unlisted, see [`matschema/README.md`](matschema/README.md) |
 | `/secret/` | Redirect to `/games/` (old address) |
 | `/assets/` | The shared shell (`site.css`, `site.js`, `theme.js`, `i18n.js`, `weather.js`), favicon and self-hosted fonts (Manrope, JetBrains Mono) |
 | `404.html` | Not-found page for every language: guesses the page you meant (`assets/not-found.js`) |

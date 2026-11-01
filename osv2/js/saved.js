@@ -27,7 +27,9 @@ async function run(mode, action) {
 export const store = (blob, version) => run('readwrite', s => s.put({ blob, version, time: Date.now() }, 'last'));
 export const remove = () => run('readwrite', s => s.delete('last'));
 
+// Looking for a session mustn't create the database (nothing is stored until you save).
 export async function info() {
+  if (indexedDB.databases && !(await indexedDB.databases()).some(database => database.name === NAME)) return null;
   const record = await run('readonly', s => s.get('last'));
   return record ? { version: record.version, time: record.time, size: record.blob.size } : null;
 }

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>Matschema · lovgren.dev</title>
+  <meta name="description" content="Matschema med ca 2100 kcal och minst 90 g protein om dagen, med inköpslista.">
+  <meta name="theme-color" content="#24473a">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="matschema.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Till innehållet</a>
+  <header class="top">
+    <div class="top-inner">
+      <div>
+        <h1 class="top-title" id="title">Matschema</h1>
+        <p class="top-sub" id="subtitle"></p>
+      </div>
+      <p class="top-goal"><b>2100 kcal</b><span>minst 90 g protein / dag</span></p>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Vyer">
+    <a href="#dag" data-view="dag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg>Dag</a>
+    <a href="#vecka" data-view="vecka"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Vecka</a>
+    <a href="#handla" data-view="handla"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11h10.8L21 8H7M10 20h.01M17 20h.01"/></svg>Handla</a>
+    <a href="#anpassa" data-view="anpassa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4"/></svg>Anpassa</a>
+  </nav>
+
+  <main id="main" class="main" tabindex="-1">
+    <!-- Dag -->
+    <section id="view-dag" class="view" aria-labelledby="day-title" hidden>
+      <nav class="strip" aria-label="Veckans dagar">
+        <button type="button" class="strip-step" id="day-prev-week" aria-label="Föregående vecka">‹</button>
+        <ol class="strip-days" id="strip"></ol>
+        <button type="button" class="strip-step" id="day-next-week" aria-label="Nästa vecka">›</button>
+      </nav>
+      <div class="day-head">
+        <div>
+          <h2 id="day-title" class="day-title"></h2>
+          <p class="day-date" id="day-date"></p>
+        </div>
+        <button type="button" class="today" id="go-today" hidden>Idag</button>
+      </div>
+      <div class="totals" id="totals" aria-live="polite"></div>
+      <ol class="meals" id="meals"></ol>
+      <p class="hint">Tryck på en måltid för recept, och bocka av när du ätit. Svep åt sidan för att byta dag.</p>
+    </section>
+
+    <!-- Vecka -->
+    <section id="view-vecka" class="view" aria-labelledby="week-title" hidden>
+      <div class="week-bar">
+        <button type="button" class="step" id="week-prev" aria-label="Föregående vecka">‹</button>
+        <h2 id="week-title" class="week-title"></h2>
+        <button type="button" class="step" id="week-next" aria-label="Nästa vecka">›</button>
+      </div>
+      <div class="week" id="week"></div>
+      <div class="boxes" id="week-boxes"></div>
+    </section>
+
+    <!-- Handla -->
+    <section id="view-handla" class="view" aria-labelledby="shop-title" hidden>
+      <div class="week-bar">
+        <button type="button" class="step" id="shop-prev" aria-label="Föregående vecka">‹</button>
+        <h2 id="shop-title" class="week-title"></h2>
+        <button type="button" class="step" id="shop-next" aria-label="Nästa vecka">›</button>
+      </div>
+      <div class="shop-tools">
+        <p class="shop-count" id="shop-count" aria-live="polite"></p>
+        <label class="switch"><input type="checkbox" id="shop-hide"> Dölj avbockade</label>
+      </div>
+      <div class="shop" id="shop"></div>
+      <div class="shop-actions">
+        <button type="button" class="button" id="shop-share">Dela det som är kvar</button>
+        <button type="button" class="button quiet" id="shop-clear">Avmarkera alla</button>
+      </div>
+      <p class="fine" id="shop-status" role="status"></p>
+    </section>
+
+    <!-- Anpassa -->
+    <section id="view-anpassa" class="view" aria-labelledby="choices-title" hidden>
+      <h2 id="choices-title" class="section-title">Det här äter jag inte</h2>
+      <p>Välj bort det du inte gillar. Det byts mot något liknande i recepten (champinjoner blir zucchini, kyckling blir kalkon), och går inte det byts måltiden mot en annan med ungefär lika mycket kcal. Matlådor och inköpslistor följer med.</p>
+      <div id="excluded" aria-live="polite"></div>
+      <div class="foods" id="foods"></div>
+
+      <h3 class="section-sub">Bytta måltider</h3>
+      <p id="swaps" tabindex="-1"></p>
+      <button type="button" class="button quiet" id="clear-swaps" hidden>Ångra alla byten</button>
+
+      <h3 class="section-sub">Så funkar schemat</h3>
+      <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, tonfisk, ägg och kvarg (ingen annan fisk). Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag.</p>
+      <div class="boxes">
+        <div class="box box-sand"><h3>Matlådeflödet</h3><p>Måndagens middag blir tisdagens lunch, och så vidare till fredag. Måndagens lunch förbereder du på söndagen.</p></div>
+        <div class="box box-rose"><h3>Protein utan stress</h3><p>Dagarna landar på 140–180 g protein, gott och väl över målet på 90 g. Kvarg, kyckling och Huel gör det mesta av jobbet.</p></div>
+        <div class="box box-mint"><h3>Byt fritt</h3><p>Byt måltider under varje måltid på dagens sida: alternativen närmast i kcal står först. Kryddor, vitlök, soja och citron räknas inte och kan användas fritt.</p></div>
+      </div>
+
+      <h3 class="section-sub">Utan nät</h3>
+      <p id="offline"></p>
+
+      <h3 class="section-sub">Din data</h3>
+      <p>Det du bockar av och väljer sparas bara i den här webbläsaren, i lokal lagring under namnet <code>lovgren-matschema</code>. Inget skickas någonstans. Mer om det i <a href="/cookies/">cookiepolicyn</a>.</p>
+      <button type="button" class="button quiet" id="forget">Radera allt jag sparat</button>
+      <p class="fine" id="forget-status" role="status"></p>
+      <h3 class="section-sub">Om näringsvärdena</h3>
+      <p class="fine">Näringsvärdena är ungefärliga och räknas fram ur vanliga svenska livsmedel (råvikt för kött, torrvikt för ris, pasta och gryn). Huel Black Edition Strawberry Banana, 500 ml = 400 kcal och 35 g protein. Mängderna i inköpslistan gäller en person och är avrundade uppåt; kolla skafferiet först.</p>
+    </section>
+  </main>
+
+</body>
+</html>
