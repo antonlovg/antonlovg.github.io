@@ -32,17 +32,41 @@ test('every day has 2000–2200 kcal, at least 90 g protein and one Huel', async
   }
 });
 
+// Every lunchbox comes from a dinner one to three days before, which is cooked for exactly the portions
+// eaten of it: a double batch from yesterday, or a storkok (up to its size, oldest storkok first).
 const checkLeftovers = plan => plan.days.forEach((day, index) => {
-  if (day.meals[1].leftover) {
-    assert.equal(day.meals[1].recipe, plan.days[index - 1].meals[3].recipe, day.date);
-    assert.deepEqual(day.meals[1].items, plan.days[index - 1].meals[3].items, day.date);
-    assert.ok(plan.days[index - 1].meals[3].batch, day.date);
-  } else if (index) {
-    assert.ok(!plan.days[index - 1].meals[3].batch, day.date);
-  }
+  const dinner = day.meals[3];
+  const eaten = plan.days.filter(other => other.meals[1].leftover && other.meals[1].from === day.date).length;
+  assert.equal(dinner.portions, 1 + eaten, `${day.date}: portions`);
+  assert.equal(dinner.batch, eaten > 0, `${day.date}: batch`);
+  assert.ok(dinner.portions <= (dinner.storkok || 2), `${day.date}: ${dinner.portions} portions of ${dinner.recipe}`);
+  const lunch = day.meals[1];
+  if (!lunch.leftover) return;
+  const source = plan.day(lunch.from);
+  const back = index - plan.days.indexOf(source);
+  assert.ok(back >= 1 && back <= (source.meals[3].storkok ? 3 : 1), `${day.date}: lunch from ${lunch.from}`);
+  assert.equal(lunch.recipe, source.meals[3].recipe, day.date);
+  assert.deepEqual(lunch.items, source.meals[3].items, day.date);
 });
 
-test('leftovers are the day before\'s dinner, cooked as a double batch', () => checkLeftovers(makePlan()));
+test('lunchboxes come from a double batch or a storkok, cooked for the portions eaten', () => {
+  const plan = makePlan();
+  checkLeftovers(plan);
+  assert.ok(plan.days.some(day => day.meals[3].portions === 4), 'some week has a storkok');
+  assert.ok(plan.days.filter(day => day.meals[3].portions === 2).length > 15, 'most weeks cook double batches');
+});
+
+test('a storkok feeds the next three lunches, and its shopping is in the week it is cooked', () => {
+  const plan = makePlan({ swaps: { '2026-11-02:middag': 'ugnspasta' } });
+  checkLeftovers(plan);
+  assert.equal(plan.days[0].meals[3].portions, 4);
+  assert.deepEqual(plan.days.slice(1, 4).map(day => day.meals[1].recipe), ['ugnspasta', 'ugnspasta', 'ugnspasta']);
+  assert.ok(!plan.days[1].meals[3].batch && !plan.days[2].meals[3].batch, 'Tuesday and Wednesday cook single portions');
+  const sunday = makePlan().day('2026-12-06'); // gulasch, eaten Monday–Wednesday of week 50
+  assert.equal(sunday.meals[3].portions, 4);
+  const bread = week => Object.fromEntries(makePlan().shopping(week).flatMap(group => group.items).map(item => [item.food, item.amount])).brod;
+  assert.equal(bread(50), 'ca 200 g', 'week 50 buys 160 g of bread for its own meals, not the 240 g in the gulasch it eats');
+});
 
 test('recipes use known foods, swaps lead to known foods, and the numbers match the PDF for week 45', () => {
   for (const [id, recipe] of Object.entries(RECIPES)) {

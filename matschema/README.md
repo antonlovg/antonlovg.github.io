@@ -6,6 +6,8 @@ A meal plan in Swedish: about 2100 kcal and at least 90 g of protein a day, from
 - **Vecka** (`#vecka/46`): the week as a table (cards on a phone), the lunchbox flow and the week's range.
 - **Handla** (`#handla/46`): the week's shopping list, built from the recipes, grouped by store section. Check items off, hide them, or share or copy what's left.
 - **Anpassa** (`#anpassa`): foods you don't eat. Each is swapped in the recipes for something similar (`SWAPS` in `js/foods.js`: chicken → turkey, mushrooms → courgette; dish names follow, `WORDS`), small amounts are left out, and a meal that can't do without it is replaced by the one closest in kcal from the same slot (`POOLS` in `js/plan.js`), avoiding dishes from the last few days. Also: undo manual swaps, delete everything.
+- **Storkok**: recipes with `storkok: 4` are cooked once for up to four portions. A lunchbox (`<`) takes from a storkok cooked in the last three days that has portions left (the oldest first), otherwise from yesterday's dinner (a double batch). Each dinner is cooked, and shopped for, as many portions as are eaten of it; the day page shows the whole batch's amounts. A storkok on Sunday is shopped for in Sunday's week.
+- **Färgtema** (under Anpassa): Skog, Hav, Bär or Grafit, light, dark or following the device. `js/theme.js` is a plain script in `<head>` that sets `data-palette` and `data-mode` on `<html>` before the page is drawn, so it never flashes the wrong colours.
 - **Byt måltid**, under each meal on the day page: pick any meal for that slot, closest in kcal first. A swapped dinner's leftovers follow it to the next day's lunch; swapping a lunchbox away makes the dinner before a single batch.
 - **Offline**: `sw.js` keeps a copy of the page (cache `matschema-v1`, scope `/matschema/`, both listed on /cookies/). With a connection it fetches fresh files but gives up after 3 s, so the page opens quickly in a store with bad coverage.
 
@@ -17,6 +19,7 @@ A meal plan in Swedish: about 2100 kcal and at least 90 g of protein a day, from
 | `js/recipes.js` | Recipes for one portion: `[food, grams, text]` per ingredient. kcal and protein are calculated from the grams |
 | `js/plan.js` | The weeks (five recipe ids a day; `<` = yesterday's dinner as lunch, so that dinner is cooked as a double batch), holidays, and `makePlan(choices)`: the plan with your exclusions and swaps, day totals and shopping lists |
 | `js/store.js` | What you check off and choose (foods you don't eat, swapped meals), in local storage (`lovgren-matschema`, listed on /cookies/), written only when you change something |
+| `js/theme.js` | The colour theme, applied before the page is drawn |
 | `sw.js` | The offline copy. Add new files to `PRECACHE` (a test checks) and bump `CACHE` to clear old copies |
 | `js/app.js` | The views |
 

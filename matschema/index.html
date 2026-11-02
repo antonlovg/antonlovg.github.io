@@ -13,6 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="matschema.css">
+  <script src="js/theme.js"></script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
@@ -85,8 +86,29 @@
     </section>
 
     <!-- Anpassa -->
-    <section id="view-anpassa" class="view" aria-labelledby="choices-title" hidden>
-      <h2 id="choices-title" class="section-title">Det här äter jag inte</h2>
+    <section id="view-anpassa" class="view" aria-label="Anpassa" hidden>
+      <h2 id="choices-title" class="section-title">Utseende</h2>
+      <form class="looks" id="looks">
+        <fieldset>
+          <legend>Färg</legend>
+          <div class="palettes">
+            <label class="palette"><input type="radio" name="palette" value="skog"><span class="swatch swatch-skog" aria-hidden="true"><i></i><i></i><i></i></span><b>Skog</b></label>
+            <label class="palette"><input type="radio" name="palette" value="hav"><span class="swatch swatch-hav" aria-hidden="true"><i></i><i></i><i></i></span><b>Hav</b></label>
+            <label class="palette"><input type="radio" name="palette" value="bar"><span class="swatch swatch-bar" aria-hidden="true"><i></i><i></i><i></i></span><b>Bär</b></label>
+            <label class="palette"><input type="radio" name="palette" value="grafit"><span class="swatch swatch-grafit" aria-hidden="true"><i></i><i></i><i></i></span><b>Grafit</b></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Ljust eller mörkt</legend>
+          <div class="modes">
+            <label><input type="radio" name="mode" value="auto"> Följ enheten</label>
+            <label><input type="radio" name="mode" value="light"> Ljust</label>
+            <label><input type="radio" name="mode" value="dark"> Mörkt</label>
+          </div>
+        </fieldset>
+      </form>
+
+      <h2 class="section-title section-gap">Det här äter jag inte</h2>
       <p>Välj bort det du inte gillar. Det byts mot något liknande i recepten (champinjoner blir zucchini, kyckling blir kalkon), och går inte det byts måltiden mot en annan med ungefär lika mycket kcal. Matlådor och inköpslistor följer med.</p>
       <div id="excluded" aria-live="polite"></div>
       <div class="foods" id="foods"></div>

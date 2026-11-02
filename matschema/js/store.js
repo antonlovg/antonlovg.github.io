@@ -39,6 +39,14 @@ export function setHide(hide) {
   save();
 }
 
+// Färgtemat: { palette, mode }, läses också av theme.js innan sidan ritas.
+export const theme = () => data.theme || {};
+
+export function setTheme(value) {
+  data.theme = value;
+  save();
+}
+
 // Det planen behöver: vad du inte äter och vilka måltider du bytt.
 export const choices = () => ({ exclude: data.exclude, swaps: data.swaps });
 

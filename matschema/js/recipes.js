@@ -1,7 +1,9 @@
 // Recepten, för en portion. Varje ingrediens är [livsmedel, gram, text som visas]; kcal och protein
 // räknas fram ur gram och livsmedlens värden (foods.js), så samma recept ger alltid samma siffror.
+// Storkok anges också per portion; sidan visar hela satsen.
 // 1 tsk olja = 4,5 g, 1 msk = 13,5 g, en brödskiva ≈ 40 g, ett knäckebröd ≈ 13 g, en ostskiva ≈ 10 g.
-const r = (name, items, how = '') => ({ name, items, how });
+// Ett storkok (storkok: 4) lagas en gång och räcker till middag och matlådor de närmaste dagarna.
+const r = (name, items, how = '', extra = {}) => ({ name, items, how, ...extra });
 
 export const RECIPES = {
   // ---------- Frukost ----------
@@ -85,6 +87,53 @@ export const RECIPES = {
   nyar: r('Nyårsmiddag: oxfilé, rostad potatis & bearnaisekvarg', [['oxfile', 160, '160 g oxfilé'], ['potatis', 250, '250 g potatis'], ['olja', 9, '2 tsk olja'], ['kvarg', 50, '50 g kvarg'], ['creme', 20, '1 msk lätt crème fraiche + dragon/bearnaiseessens'], ['broccoli', 100, '100 g broccolini']],
     'Rosta potatisen 225 °C ca 30 min. Bryn filén runtom och låt den gå i ugnen 150 °C tills den är 56 °C inuti. Rör ihop kvarg, crème fraiche, dragon och vinäger.'),
 
+  // ---------- Storkok: laga en gång, mat i flera dagar ----------
+  ugnspasta: r('Krämig ugnspasta med kyckling & broccoli', [['pasta', 85, '85 g fullkornspasta'], ['kyckling', 120, '120 g kycklingfilé'], ['creme', 50, '50 g lätt crème fraiche'], ['mjolk', 50, '½ dl mjölk'], ['broccoli', 100, '100 g broccoli'], ['spenat', 30, 'en näve spenat'], ['ost', 20, '20 g riven ost']],
+    'Koka pastan 2 min kortare än paketet säger. Blanda pasta, strimlad rå kyckling, broccoli, spenat, crème fraiche, mjölk, en buljongtärning och vitlök i en stor ugnsform och strö över osten. 200 °C ca 30 min, tills kycklingen är genomstekt.', { storkok: 4 }),
+  kycklingris: r('Kycklingris i ugn med paprika & majs', [['ris', 70, '70 g ris (torrt)'], ['kyckling', 140, '140 g kycklingfilé'], ['paprika', 75, '½ paprika'], ['majs', 50, '50 g majs'], ['lok', 50, '½ lök'], ['ost', 15, 'lite riven ost'], ['kvarg', 40, 'en klick kvarg'], ['olja', 4.5, '1 tsk olja']],
+    'Lägg ris, hackad lök, paprika och majs i en ugnsform och häll på 2½ dl buljong per portion. Lägg kycklingen ovanpå med paprikapulver och vitlök. Täck med folie, 200 °C ca 40 min, och strö på osten de sista 5 min.', { storkok: 4 }),
+  tacogratang: r('Tacogratäng med nötfärs & bönor', [['notfars', 120, '120 g nötfärs 10 %'], ['kidney', 80, '80 g kidneybönor'], ['krossade', 100, '1 dl krossade tomater'], ['ris', 50, '50 g ris (torrt)'], ['majs', 30, 'majs'], ['ost', 25, '25 g riven ost'], ['kvarg', 40, 'kvarg till servering'], ['sallad', 30, 'sallad']],
+    'Bryn färsen med tacokrydda, rör ner tomat, bönor och majs. Varva med kokt ris i en form och toppa med ost. 225 °C ca 15 min. Servera med kvarg och sallad.', { storkok: 4 }),
+  kycklingkokos: r('Kyckling- och sötpotatisgryta med kokos', [['kyckling', 140, '140 g kycklingfilé'], ['sotpotatis', 200, '200 g sötpotatis'], ['kokos', 80, '¾ dl lätt kokosmjölk'], ['krossade', 100, '1 dl krossade tomater'], ['lok', 50, '½ lök'], ['spenat', 40, 'en näve spenat'], ['ris', 50, '50 g ris (torrt)']],
+    'Fräs lök och kyckling med curry och ingefära, tillsätt tärnad sötpotatis, tomat och kokosmjölk och låt puttra 20 min. Vänd ner spenaten sist. Servera med ris.', { storkok: 4 }),
+  kottfarslimpa: r('Köttfärslimpa med potatis & ärtor', [['notfars', 140, '140 g nötfärs 10 %'], ['agg', 15, '¼ ägg'], ['strobrod', 15, '1 msk ströbröd'], ['lok', 30, 'riven lök'], ['potatis', 250, '250 g potatis'], ['arter', 80, '80 g gröna ärtor'], ['creme', 20, 'crème fraiche till såsen']],
+    'Blanda färs, ägg, ströbröd, lök, salt och peppar, forma en limpa och baka 200 °C ca 40 min (70 °C inuti). Koka potatisen. Skivad limpa håller sig fint i matlådan.', { storkok: 4 }),
+  gulasch: r('Gulaschsoppa med bröd', [['notfars', 120, '120 g nötfärs 10 %'], ['potatis', 150, '150 g potatis'], ['krossade', 150, '1½ dl krossade tomater'], ['paprika', 75, '½ paprika'], ['lok', 50, '½ lök'], ['morot', 70, '1 morot'], ['kvarg', 30, 'en klick kvarg'], ['brod', 80, '2 skivor bröd']],
+    'Bryn färs och lök med rikligt med paprikapulver och kummin. Tillsätt potatis, morot, paprika, tomat och 3 dl buljong per portion och koka 20 min. Blir godare dag två.', { storkok: 4 }),
+  kycklingchili: r('Kycklingchili med bönor & ris', [['kyckling', 140, '140 g kycklingfilé'], ['kidney', 100, '100 g kidneybönor'], ['krossade', 150, '1½ dl krossade tomater'], ['lok', 50, '½ lök'], ['paprika', 75, '½ paprika'], ['ris', 60, '60 g ris (torrt)'], ['kvarg', 30, 'en klick kvarg']],
+    'Fräs lök och kyckling i bitar med chilikrydda och spiskummin, tillsätt paprika, tomat och bönor och sjud 20 min. Servera med ris och kvarg.', { storkok: 4 }),
+  frittata: r('Ugnsomelett med potatis, spenat & feta', [['agg', 180, '3 ägg'], ['potatis', 120, '120 g kokt potatis'], ['spenat', 40, 'en näve spenat'], ['feta', 30, '30 g feta'], ['keso', 50, '50 g keso'], ['tomat', 60, 'tomat'], ['brod', 40, '1 skiva bröd']],
+    'Vispa ägg och keso, häll över skivad potatis, spenat och feta i en form. 200 °C ca 25 min tills den stelnat. Lika god kall i matlådan.', { storkok: 4 }),
+
+  // ---------- Enkla middagar ----------
+  kycklingpasta: r('Kycklingpasta med crème fraiche & broccoli', [['pasta', 85, '85 g fullkornspasta'], ['kyckling', 130, '130 g kycklingfilé'], ['creme', 40, '40 g lätt crème fraiche'], ['broccoli', 100, '100 g broccoli'], ['parmesan', 10, 'lite parmesan'], ['olja', 4.5, '1 tsk olja']],
+    'Koka pasta och broccoli i samma kastrull. Stek kycklingen, rör ner crème fraiche, vitlök och lite pastavatten, och vänd ihop allt. 15 minuter.'),
+  platmat: r('Plåtkyckling med potatis, morot & tzatziki', [['kyckling', 150, '150 g kycklingfilé'], ['potatis', 250, '250 g potatis'], ['morot', 100, '1 stor morot'], ['rodlok', 30, 'rödlök'], ['olja', 9, '2 tsk olja'], ['feta', 20, 'lite feta'], ['kvarg', 60, '60 g kvarg + gurka & vitlök'], ['gurka', 40, 'gurka']],
+    'Allt på en plåt: potatis, morot och lök i bitar med olja och oregano, 225 °C i 15 min. Lägg på kycklingen och kör 20 min till. Smula över feta.'),
+  shakshuka: r('Shakshuka med ägg, feta & bröd', [['agg', 180, '3 ägg'], ['krossade', 200, '2 dl krossade tomater'], ['paprika', 75, '½ paprika'], ['lok', 50, '½ lök'], ['feta', 30, '30 g feta'], ['brod', 80, '2 skivor bröd'], ['olja', 4.5, '1 tsk olja']],
+    'Fräs lök och paprika med spiskummin, häll på tomaterna och sjud 5 min. Gör gropar, knäck i äggen och lägg på lock tills vitan stelnat. Smula över feta.'),
+  burrito: r('Burrito med nötfärs, bönor & ris', [['tortilla', 80, '2 fullkornstortillas'], ['notfars', 100, '100 g nötfärs 10 %'], ['kidney', 60, '60 g kidneybönor'], ['ris', 40, '40 g ris (torrt)'], ['salsa', 40, 'salsa'], ['kvarg', 40, 'kvarg'], ['ost', 15, 'lite riven ost'], ['sallad', 20, 'sallad']],
+    'Stek färsen med tacokrydda och bönor. Fyll tortillorna med ris, färs, salsa, kvarg och ost, rulla ihop och bryn dem snabbt i pannan.'),
+  kycklingpytt: r('Kycklingpytt med stekt ägg', [['potatis', 300, '300 g potatis'], ['kyckling', 120, '120 g kycklingfilé'], ['lok', 50, '½ lök'], ['agg', 60, '1 ägg'], ['olja', 9, '2 tsk olja'], ['gurka', 50, 'gurka']],
+    'Tärna potatis (gärna kokt från igår), lök och kyckling och stek allt gyllene. Toppa med ett stekt ägg.'),
+  tonfisktomat: r('Pasta med tonfisk i tomatsås', [['pasta', 90, '90 g fullkornspasta'], ['tonfisk', 120, '1 burk tonfisk'], ['krossade', 150, '1½ dl krossade tomater'], ['lok', 50, '½ lök'], ['parmesan', 10, 'lite parmesan'], ['olja', 4.5, '1 tsk olja']],
+    'Fräs lök och vitlök, häll på tomat och oregano och sjud 5 min. Rör ner tonfisken och vänd med pastan.'),
+  quesadilla: r('Kycklingquesadilla med salsa', [['tortilla', 80, '2 fullkornstortillas'], ['kyckling', 120, '120 g kycklingfilé'], ['ost', 30, '30 g riven ost'], ['paprika', 50, 'paprika'], ['majs', 30, 'majs'], ['salsa', 40, 'salsa'], ['kvarg', 40, 'kvarg'], ['sallad', 30, 'sallad']],
+    'Stek kycklingen med tacokrydda. Lägg kyckling, paprika, majs och ost på en tortilla, lägg den andra över och stek 2 min per sida.'),
+  nudelsoppa: r('Kycklingnudelsoppa med ägg', [['nudlar', 60, '60 g äggnudlar'], ['kyckling', 120, '120 g kycklingfilé'], ['agg', 60, '1 ägg'], ['wok', 150, '150 g wokgrönsaker']],
+    'Koka upp 5 dl buljong med soja och ingefära. Lägg i kyckling i tunna strimlor, grönsaker och nudlar och koka 4 min. Toppa med ett halvkokt ägg.'),
+  tacobowl: r('Tacobowl med nötfärs & ris', [['notfars', 120, '120 g nötfärs 10 %'], ['ris', 70, '70 g ris (torrt)'], ['majs', 40, 'majs'], ['tomat', 80, 'tomat'], ['sallad', 30, 'sallad'], ['avokado', 35, '¼ avokado'], ['salsa', 30, 'salsa'], ['kvarg', 50, 'kvarg']],
+    'Stek färsen med tacokrydda. Lägg ris i en skål med färs, grönsaker, avokado, salsa och en klick kvarg.'),
+
+  // ---------- Enkla luncher och frukostar ----------
+  tonfiskrora: r('Tonfiskröra på knäcke med ägg', [['tonfisk', 120, '1 burk tonfisk'], ['kvarg', 50, '50 g kvarg'], ['majs', 30, 'majs'], ['knacke', 39, '3 knäckebröd'], ['agg', 60, '1 kokt ägg'], ['gurka', 50, 'gurka']],
+    'Rör ihop tonfisk, kvarg, majs, senap och citron och bred på knäcket.'),
+  kycklingmacka: r('Kycklingmackor med hummus', [['brod', 80, '2 skivor bröd'], ['kyckling', 100, '100 g stekt kyckling i skivor'], ['hummus', 30, '2 msk hummus'], ['spenat', 20, 'spenat'], ['tomat', 60, 'tomat']]),
+  kvargmusli: r('Kvarg med müsli, banan & blåbär', [['kvarg', 250, '250 g kvarg'], ['musli', 60, '60 g müsli'], ['banan', 60, '½ banan'], ['blabar', 80, '80 g blåbär'], ['honung', 7, '1 tsk honung']]),
+  smoothie: r('Proteinsmoothie med bär & havre', [['kvarg', 150, '150 g kvarg'], ['mjolk', 200, '2 dl mjölk'], ['banan', 120, '1 banan'], ['hallon', 80, '80 g hallon'], ['havre', 30, '30 g havregryn'], ['jordnot', 10, '2 tsk jordnötssmör']],
+    'Mixa allt slätt.'),
+  aggmackor: r('Äggmackor med keso & kalkon', [['brod', 80, '2 skivor bröd'], ['agg', 120, '2 kokta ägg'], ['keso', 50, '50 g keso'], ['kalkon', 30, 'kalkonpålägg'], ['tomat', 60, 'tomat']]),
+
   // ---------- Mellanmål och kvällsmål ----------
   apple_mandlar: r('Äpple + mandlar', [['apple', 150, '1 äpple'], ['mandlar', 30, '30 g mandlar (en näve)']]),
   clementin_mandlar: r('Clementiner + mandlar', [['clementin', 140, '2 clementiner'], ['mandlar', 30, '30 g mandlar (en näve)']]),
@@ -101,5 +150,9 @@ export const RECIPES = {
   julgodis: r('Julgodis: mörk choklad & clementin', [['choklad', 30, '30 g mörk choklad'], ['clementin', 70, '1 clementin']]),
   pepparkakor: r('Pepparkakor, clementin & mjölk', [['pepparkakor', 30, '4 pepparkakor'], ['clementin', 70, '1 clementin'], ['mjolk', 200, '2 dl mjölk']], 'Adventsfika.'),
   lussekatt: r('Lussekatt & mjölk', [['lussekatt', 60, '1 lussekatt'], ['mjolk', 200, '2 dl mjölk']], 'Glad Lucia!'),
+  chokladkvarg: r('Chokladkvarg med banan', [['kvarg', 200, '200 g kvarg'], ['kakao', 5, '1 tsk kakao'], ['banan', 60, '½ banan'], ['honung', 7, '1 tsk honung']], 'Rör ner kakao och honung i kvargen, toppa med banan.'),
+  riskakor: r('Riskakor med jordnötssmör & banan', [['riskaka', 24, '3 riskakor'], ['jordnot', 15, '1 msk jordnötssmör'], ['banan', 60, '½ banan']]),
+  agg_morot: r('Kokta ägg & morot', [['agg', 120, '2 kokta ägg'], ['morot', 70, '1 morot']]),
+  keso_hallon: r('Keso med hallon & honung', [['keso', 200, '200 g keso'], ['hallon', 80, '80 g hallon'], ['honung', 7, '1 tsk honung']]),
   nyarsdessert: r('Nyårsdessert: kvarg med hallon & choklad', [['kvarg', 150, '150 g kvarg'], ['hallon', 80, '80 g hallon'], ['choklad', 20, '20 g mörk choklad, riven']])
 };

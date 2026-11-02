@@ -1,6 +1,6 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, TARGET, makePlan, alternatives, startDate, todayIso } from './plan.js';
+import { MEALS, WEEK_NUMBERS, TARGET, makePlan, alternatives, cookAmount, startDate, todayIso } from './plan.js';
 import { RECIPES } from './recipes.js';
 import { FOODS, SECTIONS, SPICES, SWAPS } from './foods.js';
 import * as store from './store.js';
@@ -90,6 +90,8 @@ function currentMeal(day) {
 }
 
 const dayIndex = date => plan.days.findIndex(day => day.date === date);
+// Dagarna vars matlåda kommer från den här dagens middag.
+const lunchesFrom = date => plan.days.filter(day => day.meals[1].leftover && day.meals[1].from === date);
 
 function renderDay() {
   const day = plan.day(state.date);
@@ -167,14 +169,13 @@ function swapper(day, meal) {
 function mealCard(day, meal, isNow) {
   const key = `${day.date}:${meal.id}`;
   const eaten = store.isEaten(day.date, meal.id);
-  const index = dayIndex(day.date);
-  const from = meal.leftover ? plan.days[index - 1] : null;
-  const to = meal.batch ? plan.days[index + 1] : null;
+  const from = meal.leftover ? plan.day(meal.from) : null;
+  const fed = meal.id === 'middag' ? lunchesFrom(day.date) : [];
   const changed = meal.swapped || (meal.replaced && !meal.leftover);
   const tags = [
     isNow ? h('span', { class: 'tag tag-now' }, 'Nu') : null,
     from ? h('span', { class: 'tag' }, 'Matlåda') : null,
-    to ? h('span', { class: 'tag tag-batch' }, 'Dubbel sats') : null,
+    fed.length ? h('span', { class: 'tag tag-batch' }, fed.length > 1 ? 'Storkok' : 'Dubbel sats') : null,
     changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null
   ];
   const name = `${meal.title}${from ? ' (rester)' : ''}`;
@@ -193,7 +194,10 @@ function mealCard(day, meal, isNow) {
       meal.replaced && !meal.leftover ? h('p', { class: 'changed' }, `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
       meal.changes.length ? h('p', { class: 'changed' }, `${meal.changes.join('. ')}.`) : null,
       h('ul', { class: 'ingredients' }, meal.items.map(([, , text]) => h('li', {}, text))),
-      to ? h('p', { class: 'batch' }, h('b', {}, 'Laga dubbel sats: '), `hälften blir lunch på ${weekdayName(to.date).toLowerCase()}.`) : null,
+      fed.length === 1 ? h('p', { class: 'batch' }, h('b', {}, 'Laga dubbel sats: '), `hälften blir lunch på ${weekdayName(fed[0].date).toLowerCase()}.`) : null,
+      fed.length > 1 ? h('p', { class: 'batch' }, h('b', {}, `Storkok, ${meal.portions} portioner: `), `middag idag och matlåda ${list(fed.map(other => weekdayName(other.date).toLowerCase()))}.`) : null,
+      fed.length ? h('div', { class: 'whole' }, h('p', {}, h('b', {}, `Hela satsen (${meal.portions} portioner)`)),
+        h('ul', { class: 'ingredients' }, meal.items.map(([food, grams]) => h('li', {}, `${cookAmount(food, grams * meal.portions)} ${lower(FOODS[food].name)}`)))) : null,
       from ? h('p', { class: 'how' }, `Matlådan från ${weekdayName(from.date).toLowerCase()}ens middag.`) : meal.how ? h('p', { class: 'how' }, meal.how) : null,
       swapper(day, meal)));
 
@@ -238,7 +242,7 @@ function renderWeek() {
     })));
   $('week').replaceChildren(table);
 
-  const flow = days.filter(day => day.meals[3].batch).map(day => h('li', {}, h('b', {}, `${shortDay(day.date)}:`), ` ${day.meals[3].title} → ${shortDay(plan.days[dayIndex(day.date) + 1].date)} lunch`));
+  const flow = days.filter(day => day.meals[3].batch).map(day => h('li', {}, h('b', {}, `${shortDay(day.date)}:`), ` ${day.meals[3].title} → ${lunchesFrom(day.date).map(other => shortDay(other.date)).join(', ')} lunch`));
   const kcal = days.map(day => day.kcal), protein = days.map(day => day.protein);
   const changes = days.flatMap(day => day.meals).filter(meal => !meal.leftover && (meal.swapped || meal.replaced || meal.changes.length)).length;
   $('week-boxes').replaceChildren(...[
@@ -338,6 +342,9 @@ function renderChoices() {
         h('span', {}, FOODS[food].name, h('small', {}, consequence(food, without))))))));
   }));
 
+  const { palette = 'skog', mode = 'auto' } = store.theme();
+  for (const input of $('looks').elements) input.checked = input.value === (input.name === 'palette' ? palette : mode);
+
   const swaps = Object.keys(store.choices().swaps).length;
   $('swaps').textContent = swaps ? `Du har bytt ${swaps} ${swaps === 1 ? 'måltid' : 'måltider'} för hand.` : 'Du har inte bytt några måltider. Det gör du under en måltid på dagens sida.';
   $('clear-swaps').hidden = !swaps;
@@ -355,8 +362,15 @@ $('shop-next').addEventListener('click', () => moveWeek(1, 'handla'));
 $('shop-hide').addEventListener('change', event => { store.setHide(event.target.checked); renderShop(); });
 $('shop-share').addEventListener('click', shareShop);
 $('shop-clear').addEventListener('click', () => { store.clearHave(state.week); $('shop-status').textContent = 'Alla varor är avmarkerade.'; renderShop(); });
+$('looks').addEventListener('change', () => {
+  const form = $('looks').elements;
+  const mode = form.mode.value === 'auto' ? undefined : form.mode.value;
+  store.setTheme({ palette: form.palette.value || 'skog', ...(mode && { mode }) });
+  globalThis.matschemaTheme?.apply(store.theme());
+});
+$('looks').addEventListener('submit', event => event.preventDefault());
 $('clear-swaps').addEventListener('click', () => { store.clearSwaps(); refresh(); $('swaps').focus(); });
-$('forget').addEventListener('click', () => { store.forget(); refresh(); $('forget-status').textContent = 'Allt du sparat är raderat.'; });
+$('forget').addEventListener('click', () => { store.forget(); globalThis.matschemaTheme?.apply(); refresh(); $('forget-status').textContent = 'Allt du sparat är raderat.'; });
 
 // Svep åt sidan på dagen för att byta dag.
 let touch = null;

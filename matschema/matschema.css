@@ -1,4 +1,4 @@
-/* Matschemat (/matschema/): PDF:ens färger (mörkgrönt, sand, rosa för Huel), mobilen först.
+/* Matschemat (/matschema/): mobilen först, i fyra färgteman (se nedan).
    Flikarna ligger längst ner på mobilen och uppe till höger på bredare skärmar. */
 @font-face {
   font-family: 'Manrope';
@@ -8,6 +8,9 @@
   font-display: swap;
 }
 
+/* ---------- Färgteman ----------
+   js/theme.js sätter data-palette (skog, hav, bar, grafit) och data-mode (light, dark) på <html> innan
+   sidan ritas. Skog är PDF:ens färger. Varje palett sätter samma variabler, i ljust och mörkt. */
 :root {
   --bg: #fbfaf7;
   --surface: #ffffff;
@@ -29,34 +32,68 @@
   --now: #b54d1a;
   --now-text: #ffffff;
   --focus: #2f6b4f;
-  --shadow: 0 1px 2px rgb(36 71 58 / 0.08);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.08);
   --font: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color-scheme: light dark;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101513;
-    --surface: #161d1a;
-    --sand: #1c2420;
-    --sand-line: #2b3631;
-    --rose: #3a2620;
-    --mint: #1b2b24;
-    --head: #183128;
-    --head-text: #f2f5f3;
-    --head-muted: #a9c3b6;
-    --accent: #e8956b;
-    --green: #8fcaa9;
-    --green-strong: #b5ddc7;
-    --text: #e6ebe8;
-    --muted: #a3ada7;
-    --line: #2b3631;
-    --check: #6fbf93;
-    --check-text: #0d1a14;
-    --now: #f0a07a;
-    --now-text: #1f120b;
-    --focus: #8fcaa9;
-    --shadow: none;
-  }
+:root[data-mode="dark"] {
+  --bg: #101513;
+  --surface: #161d1a;
+  --sand: #1c2420;
+  --sand-line: #2b3631;
+  --rose: #3a2620;
+  --mint: #1b2b24;
+  --head: #183128;
+  --head-text: #f2f5f3;
+  --head-muted: #a9c3b6;
+  --green: #8fcaa9;
+  --green-strong: #b5ddc7;
+  --text: #e6ebe8;
+  --muted: #a3ada7;
+  --line: #2b3631;
+  --check: #6fbf93;
+  --check-text: #0d1a14;
+  --now: #f0a07a;
+  --now-text: #1f120b;
+  --focus: #8fcaa9;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+/* Hav: djupblått och aprikos. */
+:root[data-palette="hav"] {
+  --bg: #f6f9fc; --sand: #edf3f9; --sand-line: #d5e1ee; --rose: #fde3d3; --mint: #e0f0ee;
+  --head: #1d3d5c; --head-muted: #c4d7ea; --accent: #f0a35e; --green: #24598a; --green-strong: #1d3d5c;
+  --text: #18222c; --muted: #55616e; --line: #dbe3ec; --check: #24598a; --focus: #24598a;
+}
+:root[data-palette="hav"][data-mode="dark"] {
+  --bg: #0e141b; --surface: #141c25; --sand: #19232e; --sand-line: #2a3746; --rose: #3a2a22; --mint: #15292a;
+  --head: #13293f; --head-text: #f0f5fa; --head-muted: #a6c0da; --green: #8ebef0; --green-strong: #bcd8f5;
+  --text: #e5ebf1; --muted: #a1adba; --line: #2a3746; --check: #6ea6e0; --check-text: #0a1520; --focus: #8ebef0;
+}
+
+/* Bär: lingon och plommon. */
+:root[data-palette="bar"] {
+  --bg: #fcf8f9; --sand: #f7edf1; --sand-line: #e8d6de; --rose: #f9dde6; --mint: #ede6f4;
+  --head: #5b1f3c; --head-muted: #ecc9d9; --accent: #e8a23f; --green: #8c2b57; --green-strong: #5b1f3c;
+  --text: #25181e; --muted: #6b5a62; --line: #e8dade; --check: #8c2b57; --focus: #8c2b57;
+}
+:root[data-palette="bar"][data-mode="dark"] {
+  --bg: #140f12; --surface: #1b1418; --sand: #23191f; --sand-line: #3b2a33; --rose: #3d2029; --mint: #241e2e;
+  --head: #3d1528; --head-text: #f8eef2; --head-muted: #ddb5c7; --green: #eda3c3; --green-strong: #f5c8da;
+  --text: #efe6ea; --muted: #b5a3ab; --line: #3b2a33; --check: #dc7fa9; --check-text: #1b0a12; --focus: #eda3c3;
+}
+
+/* Grafit: svartvitt med gul accent, högst kontrast. */
+:root[data-palette="grafit"] {
+  --bg: #f6f6f4; --sand: #eeeeeb; --sand-line: #d6d6d1; --rose: #ffecb8; --mint: #e6ece9;
+  --head: #1f1f1f; --head-muted: #cfcfcf; --accent: #f2b705; --green: #2b2b2b; --green-strong: #111111;
+  --text: #111111; --muted: #4f4f4f; --line: #d6d6d1; --check: #1f1f1f; --focus: #111111;
+}
+:root[data-palette="grafit"][data-mode="dark"] {
+  --bg: #0c0c0c; --surface: #161616; --sand: #1d1d1d; --sand-line: #333333; --rose: #3a3010; --mint: #1c2420;
+  --head: #000000; --head-text: #ffffff; --head-muted: #bdbdbd; --green: #e6e6e6; --green-strong: #ffffff;
+  --text: #f2f2f2; --muted: #b0b0b0; --line: #333333; --check: #f2f2f2; --check-text: #000000; --focus: #ffffff;
 }
 
 * { box-sizing: border-box; }
@@ -198,7 +235,7 @@ button { font: inherit; color: inherit; }
 .meal details[open] .meal-name::after { content: ' ▴'; }
 .meal-numbers { font-size: 14px; color: var(--muted); }
 .meal-numbers b { color: var(--text); }
-.meal.is-eaten .meal-name, .meal.is-eaten .meal-numbers { opacity: 0.6; }
+.meal.is-eaten .meal-name, .meal.is-eaten .meal-numbers b { color: var(--muted); }
 .meal.is-eaten .meal-name { text-decoration: line-through; text-decoration-thickness: 1px; }
 .tag { padding: 1px 8px; border-radius: 99px; background: var(--surface); color: var(--text); font-size: 11px; letter-spacing: 0.02em; }
 .tag-now { background: var(--now); color: var(--now-text); }
@@ -294,6 +331,30 @@ button { font: inherit; color: inherit; }
 .shop-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 
 /* ---------- Anpassa ---------- */
+.looks { display: grid; gap: 16px; margin: 0 0 8px; }
+.looks fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.looks legend { margin-bottom: 8px; padding: 0; font-weight: 800; color: var(--green-strong); }
+.palettes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 560px) { .palettes { grid-template-columns: repeat(4, 1fr); } }
+.palette { position: relative; display: grid; gap: 8px; padding: 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; }
+.palette:has(input:checked) { border-color: var(--green); }
+.palette:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.palette input { position: absolute; opacity: 0; pointer-events: none; }
+.palette b { font-size: 15px; }
+.swatch { display: flex; height: 28px; border-radius: 8px; overflow: hidden; border: 1px solid rgb(0 0 0 / 0.12); }
+.swatch i { flex: 1; }
+.swatch-skog i:nth-child(1) { background: #24473a; } .swatch-skog i:nth-child(2) { background: #f5f0e8; } .swatch-skog i:nth-child(3) { background: #e8956b; }
+.swatch-hav i:nth-child(1) { background: #1d3d5c; } .swatch-hav i:nth-child(2) { background: #edf3f9; } .swatch-hav i:nth-child(3) { background: #f0a35e; }
+.swatch-bar i:nth-child(1) { background: #5b1f3c; } .swatch-bar i:nth-child(2) { background: #f7edf1; } .swatch-bar i:nth-child(3) { background: #e8a23f; }
+.swatch-grafit i:nth-child(1) { background: #1f1f1f; } .swatch-grafit i:nth-child(2) { background: #eeeeeb; } .swatch-grafit i:nth-child(3) { background: #f2b705; }
+.modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.modes label { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 14px; border: 2px solid var(--line); border-radius: 99px; background: var(--surface); cursor: pointer; }
+.modes label:has(input:checked) { border-color: var(--green); font-weight: 700; }
+.modes input { accent-color: var(--check); margin: 0; }
+.whole { margin-top: 8px; padding: 8px 12px; border-radius: 8px; background: var(--surface); }
+.whole p { margin: 0 0 4px; }
+.whole .ingredients { margin: 0; }
+
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; padding: 0; list-style: none; }
 .chip { min-height: 40px; padding: 6px 14px; border: 0; border-radius: 99px; background: var(--rose); color: var(--text); font-weight: 700; cursor: pointer; }
 .foods { display: grid; gap: 8px; margin-top: 12px; }
@@ -309,6 +370,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- Om ---------- */
 .section-title { margin: 0 0 8px; font-size: 24px; color: var(--green-strong); }
+.section-gap { margin-top: 28px; }
 .section-sub { margin: 24px 0 6px; font-size: 18px; color: var(--green-strong); }
 .lead { font-size: 17px; }
 .fine { color: var(--muted); font-size: 14px; }
