@@ -231,6 +231,11 @@ button { font: inherit; color: inherit; }
 .vegan-choice { display: flex; align-items: center; gap: 10px; min-height: 48px; font-weight: 600; }
 .vegan-choice input { width: 22px; height: 22px; accent-color: var(--check); }
 .vegan-choice + .fine { margin-top: 0; }
+.rate { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.rate .button[aria-pressed="true"] { background: var(--mint); color: var(--green-strong); }
+.ratings h4 { margin: 12px 0 6px; font-size: 15px; }
+.sync-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.sync-offer { margin: 12px 0; }
 .meter-goal { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--accent); }
 
 
@@ -280,6 +285,7 @@ button { font: inherit; color: inherit; }
 .check[aria-pressed="true"] .check-mark { border-color: var(--check-text); }
 .tag-changed { background: var(--mint); color: var(--green-strong); }
 .tag-vegan { background: var(--mint); color: var(--green-strong); }
+.tag-fav { background: var(--sand); color: var(--text); }
 .changed { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface); font-size: 14px; }
 .swap { display: grid; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--sand-line); }
 .swap label { font-size: 13px; font-weight: 800; color: var(--green); }

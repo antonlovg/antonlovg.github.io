@@ -1,5 +1,5 @@
-// Veckorna, från vecka 45 till årets sista vecka. En dag är fem recept i måltidsordning; "<" i lunchen
-// betyder en matlåda (rester). makePlan lägger på dina val (det du inte äter, måltider du bytt), justerar
+// Veckorna: vecka 45–53 handskrivna, sedan byggda av sig själva (se generateWeek). En dag är fem recept i
+// måltidsordning; "<" i lunchen betyder en matlåda (rester). makePlan lägger på dina val (det du inte äter, måltider du bytt), justerar
 // portionerna och proteinshaken efter dina dagliga mål och räknar fram näringen och inköpslistan.
 import { ANIMAL, FOODS, MACROS, SECTIONS, WORDS, swapFor } from './foods.js';
 import { RECIPES } from './recipes.js';
@@ -27,62 +27,62 @@ const WEEKS = {
     'huel < banan_jnt chili knacke_keso',
     'huel < apple_mandlar ugnskyckling kvarg_blabar',
     'huel < banan_jnt bolognese kalkonmackor',
-    'huel < kvarg_mango tacos choklad',
+    'huel < kvarg_mango tacos knacke_ost',
     'aggrora tonfiskwrap huel burgare kvarg_blabar_liten',
     'proteingrot grekisk huel kycklingwok knacke_ost'],
   46: ['huel kycklingsallad apple_mandlar kycklinggryta knacke_agg',
     'huel < banan_jnt lasagne kvarg_blabar_liten',
     'huel < apple_mandlar mexgryta knacke_ost',
     'huel < banan_jnt stroganoff kvarg_blabar_liten',
-    'huel < kvarg_mango tortillapizza choklad',
+    'huel < kvarg_mango tortillapizza knacke_ost',
     'omelett tonfisksallad huel pannbiff kvarg_hallon',
     'pannkakor linssoppa huel nudelwok knacke_ost'],
   47: ['huel tonfiskpasta apple_mandlar ugnspasta knacke_keso',
     'huel < banan_jnt shakshuka kvarg_blabar',
     'huel < apple_mandlar kycklingpasta knacke_keso',
     'huel < banan_jnt chili kvarg_blabar_liten',
-    'huel < kvarg_mango gyros choklad',
+    'huel < kvarg_mango gyros knacke_ost',
     'smoothie kycklingwrap huel burgare kvarg_blabar_liten',
     'overnight grekisk huel schnitzel knacke_ost'],
   48: ['huel pestosallad apple_mandlar curry kvarg_blabar_liten',
     'huel < banan_jnt bolognese knacke_keso',
     'huel < apple_mandlar ugnskyckling kvarg_blabar',
     'huel < banan_jnt kottbullar knacke_agg',
-    'huel < kvarg_mango tacos choklad',
+    'huel < kvarg_mango tacos knacke_ost',
     'pannkakor tonfiskrora huel platmat riskakor',
-    'kvargmusli linssoppa huel kycklingwok pepparkakor'],
+    'kvargmusli linssoppa huel kycklingwok knacke_keso'],
   49: ['huel kycklingsallad clementin_mandlar kycklingkokos kalkonmackor',
     'huel < banan_jnt burrito kvarg_blabar_liten',
     'huel < clementin_mandlar tonfisktomat knacke_ost',
-    'huel < banan_jnt biffar kvarg_blabar',
-    'huel < banan_jnt tortillapizza choklad',
+    'huel < banan_jnt biffar knacke_agg',
+    'huel < banan_jnt tortillapizza knacke_agg',
     'omelett tonfisksallad huel burgare kvarg_hallon',
-    'overnight tonfiskwrap huel gulasch pepparkakor'],
+    'overnight tonfiskwrap huel gulasch knacke_keso'],
   50: ['huel < clementin_mandlar stroganoff kvarg_blabar_liten',
     'huel < banan_jnt quesadilla kalkonmackor',
     'huel < clementin_mandlar chili kvarg_blabar',
     'huel < banan_jnt pestopasta knacke_agg',
-    'huel < kvarg_mango gyros choklad',
+    'huel < kvarg_mango gyros knacke_agg',
     'aggmackor kycklingwrap huel schnitzel kvarg_blabar_liten',
-    'pannkakor tonfiskwrap huel pannbiff lussekatt'],
+    'pannkakor tonfiskwrap huel pannbiff knacke_ost'],
   51: ['huel pestosallad clementin_mandlar tacogratang kalkonmackor',
     'huel < riskakor kycklingpytt knacke_agg',
     'huel < clementin_mandlar nudelsoppa kalkonmackor',
     'huel < banan_jnt bolognese knacke_agg',
-    'huel < kvarg_mango tortillapizza choklad',
+    'huel < kvarg_mango tortillapizza knacke_ost',
     'proteingrot tonfiskwrap huel burgare kvarg_blabar',
-    'omelett grekisk huel kycklingwok pepparkakor'],
+    'omelett grekisk huel kycklingwok knacke_keso'],
   52: ['huel kycklingsallad clementin_mandlar kycklinggryta knacke_agg',
     'huel < banan_jnt lasagne kvarg_blabar_liten',
     'huel < clementin_mandlar mexgryta knacke_ost',
-    'risgrynsgrot tonfiskwrap huel julbord julgodis',
-    'aggrora julmacka huel kottbullar julgodis',
+    'risgrynsgrot tonfiskwrap huel julbord agg_morot',
+    'aggrora julmacka huel kottbullar agg_morot',
     'pannkakor tonfisksallad huel nudelwok kvarg_blabar_liten',
     'overnight linssoppa huel schnitzel knacke_keso'],
   53: ['huel tonfiskpasta clementin_mandlar kottfarslimpa kalkonmackor',
     'huel < banan_jnt kycklingpasta knacke_keso',
     'huel < clementin_mandlar platmat kvarg_blabar',
-    'huel < banan_jnt nyar nyarsdessert',
+    'huel < banan_jnt nyar kalkonmackor',
     'pannkakor kycklingwrap huel kycklingwok kvarg_blabar',
     'aggrora grekisk huel burgare kvarg_blabar_liten',
     'proteingrot tonfisksallad huel pestopasta knacke_keso']
@@ -99,10 +99,29 @@ export const NOTES = {
   '2026-12-25': 'Juldagen',
   '2026-12-26': 'Annandag jul',
   '2026-12-31': 'Nyårsafton',
-  '2027-01-01': 'Nyårsdagen'
+  '2027-01-01': 'Nyårsdagen',
+  '2027-01-06': 'Trettondedag jul',
+  '2027-03-26': 'Långfredagen',
+  '2027-03-27': 'Påskafton',
+  '2027-03-28': 'Påskdagen',
+  '2027-03-29': 'Annandag påsk',
+  '2027-04-30': 'Valborg',
+  '2027-05-01': 'Första maj',
+  '2027-05-06': 'Kristi himmelsfärd',
+  '2027-05-30': 'Mors dag',
+  '2027-06-06': 'Nationaldagen',
+  '2027-06-25': 'Midsommarafton',
+  '2027-06-26': 'Midsommardagen',
+  '2027-11-06': 'Alla helgons dag',
+  '2027-11-14': 'Fars dag',
+  '2027-11-28': 'Första advent',
+  '2027-12-13': 'Lucia',
+  '2027-12-24': 'Julafton',
+  '2027-12-25': 'Juldagen',
+  '2027-12-26': 'Annandag jul',
+  '2027-12-31': 'Nyårsafton'
 };
 
-export const WEEK_NUMBERS = Object.keys(WEEKS).map(Number);
 const FIRST_MONDAY = Date.UTC(2026, 10, 2); // vecka 45
 const DAY = 86400000;
 
@@ -132,7 +151,99 @@ export function nutrition(id) {
   return rounded(contents(recipe.items));
 }
 
-// Planen som den är skriven: varje dag med fem recept-id ("<" = gårdagens middag).
+// ---------- Veckorna efter vecka 53 ----------
+// Samma mönster som de handskrivna: Huel och matlåda på vardagarna, varannan vecka ett storkok på måndagen
+// (lunch tisdag–torsdag), annars dubbel sats måndag–torsdag; fredag och helg något lite roligare, och
+// lagad frukost och lunch på helgen. Ingen rätt kommer tillbaka förrän efter ett par veckor. Mellanmål,
+// kvällsmål och helglunch väljs så att dagen (som recepten är skrivna) hamnar nära 2100 kcal med minst
+// 145 g protein och så lite socker som möjligt. Slumpen har veckans nummer som frö och veckorna byggs i
+// ordning, så en vecka blir alltid likadan och planen ändras inte när den byggs längre fram.
+const KINDS = {
+  vardag: ['curry', 'chili', 'ugnskyckling', 'bolognese', 'kottbullar', 'linsgryta', 'lasagne', 'kycklinggryta', 'biffar', 'pestopasta', 'mexgryta',
+    'stroganoff', 'kycklingpasta', 'shakshuka', 'burrito', 'kycklingpytt', 'tonfisktomat', 'nudelsoppa', 'tacobowl'],
+  storkok: ['ugnspasta', 'kycklingris', 'tacogratang', 'kycklingkokos', 'kottfarslimpa', 'gulasch', 'kycklingchili', 'frittata'],
+  helg: ['tacos', 'tortillapizza', 'gyros', 'burgare', 'kycklingwok', 'nudelwok', 'pannbiff', 'schnitzel', 'platmat', 'quesadilla'],
+  lunch: ['tonfiskpasta', 'kycklingsallad', 'pestosallad', 'tonfiskwrap', 'kycklingwrap', 'grekisk', 'tonfisksallad', 'linssoppa', 'tonfiskrora', 'kycklingmacka'],
+  frukost: ['aggrora', 'proteingrot', 'pannkakor', 'omelett', 'overnight', 'kvargmusli', 'smoothie', 'aggmackor'],
+  mellanmal: ['apple_mandlar', 'clementin_mandlar', 'banan_jnt', 'kvarg_mango', 'kvarg_hallon', 'riskakor', 'agg_morot'],
+  kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'chokladkvarg', 'keso_hallon', 'agg_morot', 'kvarg_musli']
+};
+const WRITTEN = Object.keys(WEEKS).map(Number);
+const LAST_WRITTEN = WRITTEN.at(-1);
+
+// Ett litet slumptal med frö (mulberry32).
+function random(seed) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function generateWeek(week, seen) {
+  const rand = random(week * 7919);
+  const day0 = (week - WRITTEN[0]) * 7;
+  const recent = (id, gap, at) => at - (seen.get(id) ?? -99) < gap;
+  // En rätt som inte ätits på gap dagar, slumpvis (finns ingen, den som var längst sedan).
+  const pick = (list, gap, at) => {
+    const free = list.filter(id => !recent(id, gap, at));
+    return free.length ? free[Math.floor(rand() * free.length)] : [...list].sort((a, b) => (seen.get(a) ?? -99) - (seen.get(b) ?? -99))[0];
+  };
+  const storkok = week % 2 === 0;
+  const dinners = [storkok ? pick(KINDS.storkok, 28, day0) : pick(KINDS.vardag, 14, day0)];
+  seen.set(dinners[0], day0);
+  for (let d = 1; d < 7; d++) {
+    const at = day0 + d;
+    const id = pick(d < 4 ? KINDS.vardag : d === 6 ? [...KINDS.vardag, ...KINDS.helg] : KINDS.helg, 14, at);
+    dinners.push(id);
+    seen.set(id, at);
+  }
+  const lines = [];
+  for (let d = 0; d < 7; d++) {
+    const at = day0 + d;
+    const weekend = d >= 5;
+    const breakfast = weekend ? pick(KINDS.frukost, 5, at) : 'huel';
+    // Matlådan tisdag–fredag: storkoket (tis–tors) eller gårdagens middag.
+    const box = d >= 1 && d <= 4 ? (storkok && d <= 3 ? dinners[0] : dinners[d - 1]) : null;
+    const fixed = [breakfast, box, dinners[d], weekend ? 'huel' : null].filter(Boolean).map(nutrition);
+    const lunches = box ? ['<'] : KINDS.lunch.filter(id => !recent(id, 6, at));
+    const snacks = weekend ? ['huel'] : KINDS.mellanmal;
+    let best = null;
+    for (const lunch of lunches) for (const snack of snacks) for (const evening of KINDS.kvallsmal) {
+      if (snack === evening) continue;
+      const parts = [...fixed, ...[box ? null : lunch, weekend ? null : snack, evening].filter(Boolean).map(nutrition)];
+      const total = key => parts.reduce((sum, part) => sum + part[key], 0);
+      const kcal = total('kcal');
+      const cost = Math.abs(kcal - 2100) + 20 * (Math.max(0, 2020 - kcal) + Math.max(0, kcal - 2180)) + 6 * Math.max(0, 145 - total('protein'))
+        + total('sugar') + 8 * Math.max(0, total('satfat') - 20)
+        + (recent(snack, 2, at) ? 60 : 0) + (recent(evening, 2, at) ? 60 : 0) + rand() * 20;
+      if (!best || cost < best.cost) best = { cost, lunch, snack, evening };
+    }
+    seen.set(breakfast, at);
+    for (const id of [best.lunch, best.snack, best.evening]) seen.set(id, at);
+    lines.push([breakfast, best.lunch, best.snack, dinners[d], best.evening].join(' '));
+  }
+  return lines;
+}
+
+// Planen räcker året ut 2027, och alltid minst åtta veckor framåt.
+const LAST_SUNDAY = Math.max(Date.UTC(2028, 0, 2), parseIso(todayIso()) + 8 * 7 * DAY);
+export const WEEK_NUMBERS = Array.from({ length: Math.floor((LAST_SUNDAY - FIRST_MONDAY) / (7 * DAY)) + 1 }, (_, i) => WRITTEN[0] + i);
+{
+  const seen = new Map();
+  WRITTEN.forEach((week, w) => WEEKS[week].forEach((line, d) => line.split(/\s+/).forEach(id => seen.set(id, w * 7 + d))));
+  for (const week of WEEK_NUMBERS) if (week > LAST_WRITTEN) WEEKS[week] = generateWeek(week, seen);
+}
+
+// Veckans namn i almanackan (ISO-vecka): vecka 54 i planen är vecka 1 2027.
+export function weekLabel(week) {
+  const thursday = FIRST_MONDAY + ((week - WRITTEN[0]) * 7 + 3) * DAY;
+  const year = new Date(thursday).getUTCFullYear();
+  return { number: Math.floor((thursday - Date.UTC(year, 0, 1)) / DAY / 7) + 1, year };
+}
+
+// Planen som den är skriven: varje dag med fem recept-id ("<" = en matlåda).
 const BASE = WEEK_NUMBERS.flatMap((week, w) => WEEKS[week].map((line, d) => {
   const date = iso(FIRST_MONDAY + (w * 7 + d) * DAY);
   const ids = line.split(/\s+/);
@@ -158,11 +269,9 @@ export const POOLS = {
     'falafelwrap', 'linsquinoa', 'kikartsrora', 'edamamebowl', 'tofumacka', 'linssoppa_vegan', ...DINNERS, ...VEGAN_DINNERS],
   mellanmal: ['huel', ...SNACKS],
   middag: [...DINNERS, ...VEGAN_DINNERS],
-  kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'choklad', 'pepparkakor', 'chokladkvarg', 'keso_hallon',
+  kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'chokladkvarg', 'keso_hallon', 'kvarg_musli',
     'sojayoghurt_musli', 'chia_hallon', 'chokladmousse', ...SNACKS]
 };
-
-const TREATS = ['choklad', 'julgodis', 'pepparkakor', 'lussekatt', 'nyarsdessert'];
 
 // Det du inte äter: det du valt bort, och allt från djur om du är vegan.
 export const excludedFoods = ({ exclude = [], vegan = false } = {}) => new Set([...exclude, ...(vegan ? ANIMAL : [])].filter(food => FOODS[food]));
@@ -225,7 +334,8 @@ const SHAKE = [0, 8]; // i 10 g pulver
 const OIL = [0, 6]; // i teskedar (4,5 g)
 const CAPS = ['sugar', 'satfat'];
 const CAP = 8; // att gå över ett tak väger tyngre än att missa ett mål
-const MARGIN = 0.95; // och lösaren siktar lite under taken, så att avrundningen inte tar dem över
+// och lösaren siktar under taken (sockret, som du vill undvika, lite extra), så att avrundningen inte tar dem över
+const MARGIN = { sugar: 0.85, satfat: 0.95 };
 const KEEP = 0.04; // hur mycket det kostar att ändra en portion från receptet
 
 function fitDay(day, goals, shake, oil, powder) {
@@ -239,26 +349,34 @@ function fitDay(day, goals, shake, oil, powder) {
   const total = (key, at = x) => fixed[key] + at.reduce((sum, value, j) => sum + value * parts[j][key], 0);
   // Hur långt från målen (och över taken) dagen hamnar, plus en liten kostnad för att ändra recepten.
   const loss = at => FIT.reduce((sum, key) => sum + WEIGHT[key] * ((total(key, at) - goals[key]) / goals[key]) ** 2, 0)
-    + CAPS.reduce((sum, key) => sum + CAP * Math.max(0, (total(key, at) - goals[key] * MARGIN) / goals[key]) ** 2, 0)
+    + CAPS.reduce((sum, key) => sum + CAP * Math.max(0, (total(key, at) - goals[key] * MARGIN[key]) / goals[key]) ** 2, 0)
     + at.reduce((sum, value, j) => sum + (j < n ? KEEP : KEEP / 100) * (value - start[j]) ** 2 / 2, 0);
-  for (let round = 0; round < 200; round++) {
+  // Summorna hålls uppdaterade medan x ändras, och sökningen slutar när inget rör sig längre.
+  const sums = Object.fromEntries([...FIT, ...CAPS].map(key => [key, total(key)]));
+  for (let round = 0, moved = 1; round < 200 && moved > 1e-7; round++) {
+    moved = 0;
     for (let j = 0; j < x.length; j++) {
       let gradient = 0, curve = 0;
       for (const key of FIT) {
         const c = WEIGHT[key] / goals[key] ** 2;
-        gradient += c * (total(key) - goals[key]) * parts[j][key];
+        gradient += c * (sums[key] - goals[key]) * parts[j][key];
         curve += c * parts[j][key] ** 2;
       }
       for (const key of CAPS) {
-        if (total(key) <= goals[key] * MARGIN) continue;
+        if (sums[key] <= goals[key] * MARGIN[key]) continue;
         const c = CAP / goals[key] ** 2;
-        gradient += c * (total(key) - goals[key] * MARGIN) * parts[j][key];
+        gradient += c * (sums[key] - goals[key] * MARGIN[key]) * parts[j][key];
         curve += c * parts[j][key] ** 2;
       }
       const keep = j < n ? KEEP : KEEP / 100;
       gradient += keep * (x[j] - start[j]);
       curve += keep;
-      if (curve > 0) x[j] = Math.min(bounds[j][1], Math.max(bounds[j][0], x[j] - gradient / curve));
+      const next = Math.min(bounds[j][1], Math.max(bounds[j][0], x[j] - gradient / curve));
+      const change = next - x[j];
+      if (!change) continue;
+      for (const key in sums) sums[key] += change * parts[j][key];
+      x[j] = next;
+      moved = Math.max(moved, Math.abs(change));
     }
   }
   // Avrunda till steg man kan laga efter (5 % portion, 5 g pulver, 1 tsk olja) och putsa sedan ett steg i
@@ -289,17 +407,26 @@ function scaled(meal, scale) {
 }
 
 // Planen med dina val: exclude = livsmedel du inte äter, swaps = { "2026-11-02:middag": "lasagne" },
-// goals = dagliga mål (GOALS), fit = justera portionerna efter målen, vegan = inget från djur. Matlådorna
-// följer middagarna.
-export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false } = {}) {
+// goals = dagliga mål (GOALS), fit = justera portionerna efter målen, vegan = inget från djur, ratings =
+// { recept: { r: 1 (favorit) | -1 (aldrig mer) | 0 (ångrat), at: "ÅÅÅÅ-MM-DD" } }. Matlådorna följer middagarna.
+export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false, ratings = {} } = {}) {
   goals = { ...GOALS, ...goals };
   const without = excludedFoods({ exclude, vegan });
   // Byten som bara beror på att du är vegan (inte på något du själv valt bort) visas som veganska.
   const mine = new Set(exclude);
   const veganOnly = foods => vegan && foods.length > 0 && foods.every(food => ANIMAL.includes(food) && !mine.has(food));
+  // "Aldrig mer" gäller från dagen du satte det, en favorit från veckan efter (så att veckan du redan
+  // handlat för står kvar). En favorit tar en annan rätts plats i samma måltid: en middag högst en gång i veckan,
+  // annat två gånger (middagar högst var tionde dag, annat var tredje) och bara om den är ungefär lika stor.
+  const rated = Object.entries(ratings).filter(([id, rating]) => RECIPES[id] && /^\d{4}-\d{2}-\d{2}$/.test(rating?.at));
+  const nextMonday = date => iso(parseIso(date) + (7 - (new Date(parseIso(date)).getUTCDay() + 6) % 7) * DAY);
+  const dislikes = rated.filter(([, rating]) => rating.r === -1).map(([id, rating]) => [id, rating.at]);
+  const favourites = rated.filter(([, rating]) => rating.r === 1).map(([id, rating]) => [id, nextMonday(rating.at)]).sort(([a], [b]) => a.localeCompare(b));
   const days = [];
-  const lastUsed = new Map(), uses = new Map();
+  const lastUsed = new Map(), uses = new Map(), perWeek = new Map();
   BASE.forEach((base, index) => {
+    const avoid = dislikes.filter(([, from]) => base.date >= from).map(([id]) => id);
+    const liked = favourites.filter(([, from]) => base.date >= from).map(([id]) => id);
     const meals = MEALS.map((slot, m) => {
       const chosen = swaps[`${base.date}:${slot.id}`];
       const manual = POOLS[slot.id].includes(chosen) ? chosen : null;
@@ -311,24 +438,37 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
       }
       // En matlåda utan middag att ta från (du har bytt bort den): en vanlig lunch nära i kcal.
       const planned = base.ids[m] === '<' ? alternatives('lunch', 600, without, base.ids)[0]?.recipe ?? 'grekisk' : base.ids[m];
-      const wanted = manual || planned;
+      let wanted = manual || planned, favourite = false;
+      if (!manual && base.ids[m] !== '<' && wanted !== 'huel' && POOLS[slot.id].includes(wanted) && !liked.includes(wanted)) {
+        const size = nutrition(wanted).kcal, storkok = Boolean(RECIPES[wanted].storkok);
+        const fav = liked.find(id => POOLS[slot.id].includes(id) && !(slot.id === 'lunch' && POOLS.middag.includes(id))
+          && !avoid.includes(id) && !base.ids.includes(id) && Boolean(RECIPES[id].storkok) === storkok
+          && Math.abs(nutrition(id).kcal - size) <= 300 && (perWeek.get(`${base.week}:${id}`) || 0) < (POOLS.middag.includes(id) ? 1 : 2)
+          && index - (lastUsed.get(id) ?? -99) >= (POOLS.middag.includes(id) ? 10 : 3) && adapt(id, without).ok);
+        if (fav) { wanted = fav; favourite = true; }
+      }
       let dish = adapt(wanted, without);
       let replaced = null;
-      if (!dish.ok) {
+      const unwanted = !manual && avoid.includes(wanted);
+      if (!dish.ok || unwanted) {
         // Närmast i kcal, men inte samma rätt som de senaste dagarna: annars blir det samma ersättning överallt.
         const target = adapt(wanted).kcal;
         // Ett storkok ersätts helst av ett annat storkok, så att matlådorna räcker som planerat.
         const storkok = Boolean(RECIPES[wanted].storkok);
-        // Godis bara där det var godis förut, och rätter som redan valts många gånger lite längre bak i kön.
-        const treat = TREATS.includes(wanted);
+        // Rätter som redan valts många gånger hamnar lite längre bak i kön.
         const score = option => Math.abs(option.kcal - target) + (index - (lastUsed.get(option.recipe) ?? -99) < 4 ? 400 : 0)
-          + (Boolean(option.storkok) !== storkok ? 250 : 0) + (TREATS.includes(option.recipe) !== treat ? 300 : 0) + 30 * (uses.get(option.recipe) || 0);
-        const pick = alternatives(slot.id, target, without, base.ids).sort((a, b) => score(a) - score(b))[0];
-        if (pick) { replaced = { from: wanted, because: dish.blocking, vegan: veganOnly(dish.blocking) }; dish = pick; }
+          + (Boolean(option.storkok) !== storkok ? 250 : 0) + 30 * (uses.get(option.recipe) || 0) - (liked.includes(option.recipe) ? 100 : 0);
+        const pick = alternatives(slot.id, target, without, [...base.ids, ...avoid]).sort((a, b) => score(a) - score(b))[0];
+        if (pick) {
+          replaced = { from: wanted, because: dish.blocking, vegan: !unwanted && veganOnly(dish.blocking), disliked: unwanted };
+          dish = pick;
+          favourite = liked.includes(pick.recipe);
+        }
       }
       lastUsed.set(dish.recipe, index);
+      perWeek.set(`${base.week}:${dish.recipe}`, (perWeek.get(`${base.week}:${dish.recipe}`) || 0) + 1);
       if (replaced) uses.set(dish.recipe, (uses.get(dish.recipe) || 0) + 1);
-      return { ...slot, ...dish, vegan: veganOnly(dish.touched), leftover: false, swapped: Boolean(manual), planned, replaced, extra: 0 };
+      return { ...slot, ...dish, vegan: veganOnly(dish.touched), favourite, leftover: false, swapped: Boolean(manual), planned, replaced, extra: 0 };
     });
     days.push({ week: base.week, weekday: base.weekday, date: base.date, note: base.note, meals });
   });
@@ -361,6 +501,8 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
     days,
     without,
     vegan,
+    favourites: favourites.map(([id]) => id),
+    disliked: dislikes.map(([id]) => id),
     day: date => days.find(day => day.date === date),
     week: week => days.filter(day => day.week === week),
     shopping: week => shoppingList(days, week)

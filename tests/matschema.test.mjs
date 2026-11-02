@@ -4,7 +4,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
-import { WEEK_NUMBERS, GOALS, POOLS, makePlan, nutrition, startDate } from '../matschema/js/plan.js';
+import { WEEK_NUMBERS, GOALS, POOLS, makePlan, nutrition, startDate, weekLabel } from '../matschema/js/plan.js';
+import { pack, unpack, fileText, readFile as readSyncFile } from '../matschema/js/sync.js';
+import * as store from '../matschema/js/store.js';
 import { RECIPES } from '../matschema/js/recipes.js';
 import { ANIMAL, FOODS, SWAPS } from '../matschema/js/foods.js';
 
@@ -12,13 +14,33 @@ const root = new URL('../', import.meta.url);
 const read = file => readFile(new URL(file, root), 'utf8');
 const { days, shopping } = makePlan({ fit: false }); // the recipes as written
 
-test('the plan runs from week 45 to the last day of the year, a week at a time', () => {
+test('the plan runs from week 45 through 2027 (and always eight weeks ahead), a week at a time', () => {
   assert.equal(days[0].date, '2026-11-02');
-  assert.equal(days.at(-1).date, '2027-01-03');
+  assert.ok(days.at(-1).date >= '2028-01-02' && new Date(`${days.at(-1).date}T12:00:00Z`).getUTCDay() === 0, days.at(-1).date);
   assert.equal(days.length, WEEK_NUMBERS.length * 7);
   assert.equal(startDate('2026-01-01'), '2026-11-02');
-  assert.equal(startDate('2026-11-20'), '2026-11-20');
-  assert.equal(startDate('2027-06-01'), '2027-01-03');
+  assert.equal(startDate('2027-06-01'), '2027-06-01');
+  assert.equal(startDate('2099-01-01'), days.at(-1).date);
+  assert.deepEqual(weekLabel(53), { number: 53, year: 2026 });
+  assert.deepEqual(weekLabel(54), { number: 1, year: 2027 });
+  assert.equal(makePlan().day('2027-01-04').week, 54);
+});
+
+test('weeks after 53 follow the pattern, without sweets', () => {
+  for (const week of WEEK_NUMBERS.filter(week => week > 53)) {
+    const plan = days.filter(day => day.week === week);
+    plan.forEach((day, d) => {
+      assert.equal(day.meals[d < 5 ? 0 : 2].recipe, 'huel', `${day.date}: Huel`);
+      assert.equal(day.meals[1].leftover, d >= 1 && d <= 4, `${day.date}: lunchbox`);
+    });
+    assert.equal(Boolean(plan[0].meals[3].storkok), week % 2 === 0, `week ${week}: storkok`);
+    const dinners = plan.map(day => day.meals[3].recipe);
+    assert.equal(new Set(dinners).size, 7, `week ${week}: ${dinners}`);
+  }
+  for (const id of ['choklad', 'julgodis', 'pepparkakor', 'lussekatt']) assert.ok(!RECIPES[id], id);
+  for (const food of ['choklad', 'honung', 'pepparkakor', 'lussekatt']) assert.ok(!FOODS[food], food);
+  const sugar = makePlan().days.map(day => day.sugar).sort((a, b) => a - b);
+  assert.ok(sugar[Math.floor(sugar.length / 2)] < 0.9 * GOALS.sugar, `median sugar ${sugar[Math.floor(sugar.length / 2)]}`);
 });
 
 test('as written, every day has 2000–2200 kcal, at least 140 g protein and one Huel', () => {
@@ -167,6 +189,43 @@ test('vegan: nothing from animals, dairy swapped, a vegan shake, storkok kept, a
   assert.ok(mine.days.flatMap(day => day.meals).some(meal => meal.changes.includes('Vegobitar av soja (kylda) i stället för tofu, fast') && !meal.vegan));
   // Utan vegan är planen som förut.
   assert.deepEqual(makePlan().days.map(day => day.meals.map(meal => meal.recipe)), makePlan({ vegan: false }).days.map(day => day.meals.map(meal => meal.recipe)));
+});
+
+test('never again replaces a dish from that day; a favourite comes more often from the week after', () => {
+  const base = makePlan();
+  const ratings = { tacos: { r: 1, at: '2026-11-04' }, curry: { r: -1, at: '2026-11-10' }, chili: { r: 0, at: '2026-11-04' } };
+  const plan = makePlan({ ratings });
+  const count = (p, id, from, to = '9999') => p.days.filter(day => day.date >= from && day.date < to).flatMap(day => day.meals).filter(meal => meal.recipe === id && !meal.leftover).length;
+  assert.equal(count(plan, 'curry', '2026-11-10'), 0);
+  assert.equal(count(plan, 'curry', '2026-11-02', '2026-11-10'), count(base, 'curry', '2026-11-02', '2026-11-10'), 'earlier days stay');
+  assert.ok(plan.days.flatMap(day => day.meals).some(meal => meal.replaced?.disliked && meal.replaced.from === 'curry'));
+  assert.deepEqual(plan.week(45).map(day => day.meals.map(meal => meal.recipe)), base.week(45).map(day => day.meals.map(meal => meal.recipe)), 'the week already shopped for stays');
+  assert.ok(count(plan, 'tacos', '2026-11-09') > count(base, 'tacos', '2026-11-09') * 2, 'tacos more often');
+  for (const week of WEEK_NUMBERS) assert.ok(count(plan, 'tacos', plan.week(week)[0].date, plan.week(week)[6].date + 'z') <= 2, `week ${week}`);
+  const recipes = p => p.days.map(day => day.meals.map(meal => meal.recipe).join(' '));
+  assert.deepEqual(recipes(makePlan({ ratings: { chili: { r: 0, at: '2026-11-04' } } })), recipes(base), 'an undone rating does nothing');
+  checkLeftovers(plan);
+});
+
+test('sync: a link or file carries everything, and reading it in merges', async () => {
+  const value = { eaten: { '2026-11-02': ['frukost'] }, swaps: { '2026-11-03:middag': 'lasagne' }, vegan: true, goals: { kcal: 2400 }, ratings: { tacos: { r: 1, at: '2026-11-04' } } };
+  const code = await pack(value);
+  assert.match(code, /^1\.[\w-]+$/);
+  assert.deepEqual(await unpack(code), value);
+  assert.deepEqual(readSyncFile(fileText(value, '2026-11-05')), value);
+  assert.deepEqual(store.clean({ ...value, evil: '<script>', eaten: { x: [1, 'a'] }, ratings: { a: { r: 5, at: 'x' } } }),
+    { eaten: { x: ['a'] }, have: {}, hide: false, exclude: [], swaps: value.swaps, ratings: {}, goals: { kcal: 2400 }, vegan: true });
+  store.forget();
+  store.toggleEaten('2026-11-02', 'lunch');
+  store.setRating('tacos', -1, '2026-11-06');
+  store.setRating('curry', 1, '2026-11-01');
+  store.merge(value);
+  assert.deepEqual(store.snapshot().eaten['2026-11-02'].sort(), ['frukost', 'lunch']);
+  assert.equal(store.rating('tacos'), -1, 'the newer rating wins');
+  assert.equal(store.rating('curry'), 1);
+  assert.equal(store.choices().vegan, true);
+  assert.deepEqual(store.choices().goals, { kcal: 2400 });
+  store.forget();
 });
 
 test('a swapped meal sticks, and the next day\'s lunchbox follows the swapped dinner', () => {

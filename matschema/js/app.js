@@ -1,6 +1,8 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
-// bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, makePlan, alternatives, cookAmount, startDate, todayIso } from './plan.js';
+// bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa (veckorna räknas vidare efter 53, så
+// vecka 54 är vecka 1 2027). #synk/… läser in det du sparat på en annan enhet. Utan adress öppnas dagens dag.
+import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, makePlan, alternatives, cookAmount, startDate, todayIso, weekLabel } from './plan.js';
+import { pack, unpack, fileText, readFile } from './sync.js';
 import { RECIPES } from './recipes.js';
 import { ANIMAL, FOODS, SECTIONS, SPICES, swapFor } from './foods.js';
 import * as store from './store.js';
@@ -39,6 +41,8 @@ const weekdayName = date => { const name = format(date, { weekday: 'long' }); re
 const shortDay = date => format(date, { weekday: 'short' }).replace('.', '');
 const dayMonth = date => format(date, { day: 'numeric', month: 'long' });
 const number = value => value.toLocaleString('sv-SE');
+// Veckans namn i almanackan: planens vecka 54 är vecka 1 2027.
+const weekName = week => `Vecka ${weekLabel(week).number}`;
 
 function range(week) {
   const days = plan.week(week);
@@ -63,6 +67,11 @@ function route() {
     if (plan.day(state.date).week !== state.week) state.date = state.week === plan.day(startDate(today)).week ? startDate(today) : plan.week(state.week)[0].date;
   } else if (view === 'anpassa' || view === 'om') {
     state.view = 'anpassa';
+  } else if (view === 'synk' && arg) {
+    // Ta bort datan ur adressen direkt (och ur historiken), och fråga innan något läses in.
+    history.replaceState(null, '', '#anpassa');
+    state.view = 'anpassa';
+    offerSync(arg);
   } else {
     state.view = 'dag';
     state.date = plan.day(arg) ? arg : startDate(today);
@@ -102,7 +111,7 @@ const lunchesFrom = date => plan.days.filter(day => day.meals[1].leftover && day
 function renderDay() {
   const day = plan.day(state.date);
   $('title').textContent = 'Matschema';
-  $('subtitle').textContent = `Vecka ${day.week} · ${range(day.week)}`;
+  $('subtitle').textContent = `${weekName(day.week)} · ${range(day.week)}`;
 
   $('strip').replaceChildren(...plan.week(day.week).map(other => {
     const eaten = other.meals.filter(meal => store.isEaten(other.date, meal.id)).length;
@@ -159,7 +168,7 @@ function renderTotals(day) {
 // Väljaren för att byta en måltid mot en annan, närmast i kcal först.
 function swapper(day, meal) {
   if (meal.id === 'shake') return null;
-  const options = alternatives(meal.id, meal.kcal, plan.without, [meal.recipe]);
+  const options = alternatives(meal.id, meal.kcal, plan.without, [meal.recipe, ...plan.disliked]);
   const select = h('select', {
     id: `swap-${meal.id}`,
     onchange: event => {
@@ -170,7 +179,7 @@ function swapper(day, meal) {
     }
   }, h('option', { value: '' }, 'Välj en annan måltid…'), options.map(option => {
     const diff = option.kcal - meal.kcal;
-    return h('option', { value: option.recipe }, `${option.title} · ${option.kcal} kcal (${diff >= 0 ? '+' : '−'}${Math.abs(diff)})`);
+    return h('option', { value: option.recipe }, `${plan.favourites.includes(option.recipe) ? '★ ' : ''}${option.title} · ${option.kcal} kcal (${diff >= 0 ? '+' : '−'}${Math.abs(diff)})`);
   }));
   return h('div', { class: 'swap' },
     h('label', { for: `swap-${meal.id}` }, 'Byt måltid'),
@@ -187,6 +196,22 @@ function wholeBatch(meal, fed) {
   return grams;
 }
 
+// Favorit eller aldrig mer, för rätten (en matlåda betygsätts som middagen den kommer från).
+function rater(meal) {
+  if (meal.id === 'shake') return null;
+  const value = store.rating(meal.recipe);
+  const rate = next => {
+    store.setRating(meal.recipe, next, today);
+    refresh();
+    $('day-status').textContent = next === 1 ? `${RECIPES[meal.recipe].name} är en favorit. Den kommer oftare från nästa vecka.`
+      : next === -1 ? `${RECIPES[meal.recipe].name} kommer inte tillbaka. Den byts ut från idag.` : 'Betyget är borttaget.';
+    document.querySelector(`[data-meal="${meal.id}"] .rate button[data-rate="${next || value}"]`)?.focus();
+  };
+  return h('div', { class: 'rate' },
+    h('button', { type: 'button', class: 'button quiet small', 'data-rate': '1', 'aria-pressed': String(value === 1), onclick: () => rate(value === 1 ? 0 : 1) }, value === 1 ? '★ Favorit' : '☆ Favorit'),
+    h('button', { type: 'button', class: 'button quiet small', 'data-rate': '-1', 'aria-pressed': String(value === -1), onclick: () => rate(value === -1 ? 0 : -1) }, 'Aldrig mer'));
+}
+
 function mealCard(day, meal, isNow) {
   const key = `${day.date}:${meal.id}`;
   const eaten = store.isEaten(day.date, meal.id);
@@ -194,7 +219,9 @@ function mealCard(day, meal, isNow) {
   const fed = meal.id === 'middag' ? lunchesFrom(day.date) : [];
   const changed = meal.swapped || (meal.replaced && !meal.leftover);
   const vegan = !meal.swapped && !meal.leftover && (meal.replaced ? meal.replaced.vegan : meal.vegan);
+  const favourite = meal.id !== 'shake' && store.rating(meal.recipe) === 1;
   const tags = [
+    favourite ? h('span', { class: 'tag tag-fav' }, '★ Favorit') : null,
     isNow ? h('span', { class: 'tag tag-now' }, 'Nu') : null,
     from ? h('span', { class: 'tag' }, 'Matlåda') : null,
     fed.length ? h('span', { class: 'tag tag-batch' }, fed.length > 1 ? 'Storkok' : 'Dubbel sats') : null,
@@ -214,7 +241,9 @@ function mealCard(day, meal, isNow) {
       h('span', { class: 'meal-name' }, name),
       h('span', { class: 'meal-numbers' }, h('b', {}, `${meal.kcal} kcal`), ` · ${meal.protein} g protein · ${meal.carbs} g kolh · ${meal.fat} g fett`)),
     h('div', { class: 'meal-body' },
-      meal.replaced && !meal.leftover ? h('p', { class: 'changed' }, meal.replaced.vegan
+      meal.replaced && !meal.leftover ? h('p', { class: 'changed' }, meal.replaced.disliked
+        ? `I stället för ${lower(RECIPES[meal.replaced.from].name)}, som du inte vill ha mer.`
+        : meal.replaced.vegan
         ? `Veganskt i stället för ${lower(RECIPES[meal.replaced.from].name)}.`
         : `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
       meal.changes.length ? h('p', { class: 'changed' }, `${meal.changes.join('. ')}.`) : null,
@@ -225,6 +254,7 @@ function mealCard(day, meal, isNow) {
       fed.length ? h('div', { class: 'whole' }, h('p', {}, h('b', {}, `Hela satsen (${meal.portions} portioner)`)),
         h('ul', { class: 'ingredients' }, [...wholeBatch(meal, fed)].map(([food, grams]) => h('li', {}, `${cookAmount(food, grams)} ${lower(FOODS[food].name)}`)))) : null,
       from ? h('p', { class: 'how' }, `Matlådan från ${weekdayName(from.date).toLowerCase()}ens middag.`) : meal.how ? h('p', { class: 'how' }, meal.how) : null,
+      rater(meal),
       swapper(day, meal)));
 
   return h('li', { class: classes('meal', meal.recipe === 'huel' && 'is-huel', eaten && 'is-eaten', isNow && 'is-now'), 'data-meal': meal.id }, details, check);
@@ -246,14 +276,14 @@ function moveWeek(step, view) {
 // ---------- Vecka ----------
 function renderWeek() {
   const days = plan.week(state.week);
-  $('title').textContent = `Vecka ${state.week}`;
+  $('title').textContent = weekName(state.week);
   $('subtitle').textContent = range(state.week);
-  $('week-title').textContent = `Vecka ${state.week} · ${range(state.week)}`;
+  $('week-title').textContent = `${weekName(state.week)} · ${range(state.week)}`;
   $('week-prev').disabled = state.week === WEEK_NUMBERS[0];
   $('week-next').disabled = state.week === WEEK_NUMBERS.at(-1);
 
   const table = h('table', { class: 'week-table' },
-    h('caption', { class: 'visually-hidden' }, `Måltider vecka ${state.week}`),
+    h('caption', { class: 'visually-hidden' }, `Måltider ${weekName(state.week).toLowerCase()}`),
     h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Dag'), MEALS.map(meal => h('th', { scope: 'col' }, meal.name)), h('th', { scope: 'col' }, 'kcal / protein'))),
     h('tbody', {}, days.map(day => {
       const eaten = day.meals.filter(meal => store.isEaten(day.date, meal.id)).length;
@@ -277,7 +307,7 @@ function renderWeek() {
       h('p', {}, `${number(Math.min(...kcal))}–${number(Math.max(...kcal))} kcal och ${Math.min(...protein)}–${Math.max(...protein)} g protein om dagen.`),
       changes ? h('p', {}, `${changes} måltider är bytta eller anpassade (markerade med •).`) : null),
     h('div', { class: 'box box-mint' }, h('h3', {}, 'Handla'),
-      h('p', {}, 'Allt till veckan på en lista. '), h('a', { href: `#handla/${state.week}` }, `Inköpslista vecka ${state.week}`))
+      h('p', {}, 'Allt till veckan på en lista. '), h('a', { href: `#handla/${state.week}` }, `Inköpslista ${weekName(state.week).toLowerCase()}`))
   ].filter(Boolean));
 }
 
@@ -288,8 +318,8 @@ function renderShop() {
   const items = groups.flatMap(group => group.items);
   const done = items.filter(item => store.has(week, item.food)).length;
   $('title').textContent = 'Inköpslista';
-  $('subtitle').textContent = `Vecka ${week} · ${range(week)}`;
-  $('shop-title').textContent = `Vecka ${week} · ${range(week)}`;
+  $('subtitle').textContent = `${weekName(week)} · ${range(week)}`;
+  $('shop-title').textContent = `${weekName(week)} · ${range(week)}`;
   $('shop-prev').disabled = week === WEEK_NUMBERS[0];
   $('shop-next').disabled = week === WEEK_NUMBERS.at(-1);
   $('shop-count').textContent = done === items.length ? `Allt klart: ${items.length} varor` : `${done} av ${items.length} avbockade`;
@@ -309,7 +339,7 @@ function renderShop() {
 }
 
 function shopText(week) {
-  const lines = [`Inköpslista vecka ${week} (${range(week)})`];
+  const lines = [`Inköpslista ${weekName(week).toLowerCase()} (${range(week)})`];
   for (const group of plan.shopping(week)) {
     const left = group.items.filter(item => !store.has(week, item.food));
     if (!left.length) continue;
@@ -323,7 +353,7 @@ async function shareShop() {
   const status = $('shop-status');
   try {
     if (navigator.share && matchMedia('(pointer: coarse)').matches) {
-      await navigator.share({ title: `Inköpslista vecka ${state.week}`, text });
+      await navigator.share({ title: `Inköpslista ${weekName(state.week).toLowerCase()}`, text });
       status.textContent = '';
     } else {
       await navigator.clipboard.writeText(text);
@@ -348,7 +378,7 @@ function consequence(food, without) {
 
 function renderChoices() {
   $('title').textContent = 'Anpassa';
-  $('subtitle').textContent = `Vecka ${WEEK_NUMBERS[0]}–${WEEK_NUMBERS.at(-1)} · ${number(plan.days.length)} dagar`;
+  $('subtitle').textContent = `${format(plan.days[0].date, { month: 'short', year: 'numeric' })} – ${format(plan.days.at(-1).date, { month: 'short', year: 'numeric' })}`;
   const { exclude, vegan } = store.choices();
   const mine = new Set(exclude.filter(food => FOODS[food]));
   const without = plan.without;
@@ -382,6 +412,16 @@ function renderChoices() {
 
   const { palette = 'skog', mode = 'auto' } = store.theme();
   for (const input of $('looks').elements) input.checked = input.value === (input.name === 'palette' ? palette : mode);
+
+  const rated = value => Object.entries(store.ratings()).filter(([recipe, rating]) => rating.r === value && RECIPES[recipe])
+    .map(([recipe]) => recipe).sort((a, b) => RECIPES[a].name.localeCompare(RECIPES[b].name, 'sv'));
+  const chips = (recipes, label) => h('ul', { class: 'chips' }, recipes.map(recipe => h('li', {},
+    h('button', { type: 'button', class: 'chip', 'aria-label': `Ta bort ${RECIPES[recipe].name} från ${label}`, onclick: () => { store.setRating(recipe, 0, today); refresh(); $('ratings-title').focus(); } },
+      RECIPES[recipe].name, h('span', { 'aria-hidden': 'true' }, ' ×')))));
+  const [liked, never] = [rated(1), rated(-1)];
+  $('ratings').replaceChildren(
+    h('h4', {}, 'Favoriter'), liked.length ? chips(liked, 'favoriterna') : h('p', { class: 'fine' }, 'Inga favoriter än.'),
+    h('h4', {}, 'Aldrig mer'), never.length ? chips(never, 'aldrig mer') : h('p', { class: 'fine' }, 'Inga rätter bortvalda.'));
 
   const swaps = Object.keys(store.choices().swaps).length;
   $('swaps').textContent = swaps ? `Du har bytt ${swaps} ${swaps === 1 ? 'måltid' : 'måltider'} för hand.` : 'Du har inte bytt några måltider. Det gör du under en måltid på dagens sida.';
@@ -434,6 +474,88 @@ $('vegan').addEventListener('change', event => {
     ? 'Schemat är veganskt: kött, fisk, ägg och mejeri är bytta mot veganska rätter och alternativ.'
     : 'Schemat är som vanligt igen.';
 });
+// ---------- Synk ----------
+let incoming = null; // det som väntar på att läsas in från en annan enhet
+
+async function offerSync(code) {
+  try {
+    showOffer(await unpack(code));
+  } catch {
+    $('sync-status').textContent = 'Länken gick inte att läsa. Kopiera en ny synklänk på den andra enheten.';
+    $('sync-title').scrollIntoView();
+  }
+}
+
+function showOffer(value) {
+  const other = store.clean(value);
+  const days = Object.keys(other.eaten).length;
+  const liked = Object.values(other.ratings).filter(rating => rating.r === 1).length;
+  incoming = other;
+  $('sync-summary').textContent = [
+    `${days} ${days === 1 ? 'dag' : 'dagar'} med ätna måltider`,
+    `${liked} ${liked === 1 ? 'favorit' : 'favoriter'}`,
+    `${other.exclude.length} bortvalda livsmedel`,
+    other.vegan ? 'vegan' : null,
+    other.goals ? 'egna mål' : null
+  ].filter(Boolean).join(', ') + '.';
+  $('sync-offer').hidden = false;
+  $('sync-title').scrollIntoView();
+  $('sync-accept').focus();
+}
+
+async function shareSync() {
+  const status = $('sync-status');
+  try {
+    const link = `${location.origin}${location.pathname}#synk/${await pack(store.snapshot())}`;
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      await navigator.share({ title: 'Matschema: synklänk', url: link });
+      status.textContent = '';
+    } else {
+      await navigator.clipboard.writeText(link);
+      status.textContent = 'Synklänken är kopierad. Öppna den på den andra enheten.';
+    }
+  } catch (error) {
+    if (error.name !== 'AbortError') status.textContent = 'Det gick inte att skapa länken. Spara som fil i stället.';
+  }
+}
+
+$('sync-link').addEventListener('click', shareSync);
+$('sync-save').addEventListener('click', () => {
+  const url = URL.createObjectURL(new Blob([fileText(store.snapshot(), today)], { type: 'application/json' }));
+  const link = h('a', { href: url, download: `matschema-${today}.json` });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  $('sync-status').textContent = 'Filen är sparad. Läs in den på den andra enheten.';
+});
+$('sync-open').addEventListener('click', () => $('sync-file').click());
+$('sync-file').addEventListener('change', async event => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  try {
+    showOffer(readFile(await file.text()));
+  } catch {
+    $('sync-status').textContent = 'Filen gick inte att läsa. Välj en fil som sparats här.';
+  }
+});
+$('sync-accept').addEventListener('click', () => {
+  if (incoming) store.merge(incoming);
+  incoming = null;
+  $('sync-offer').hidden = true;
+  globalThis.matschemaTheme?.apply(store.theme());
+  refresh();
+  $('sync-status').textContent = 'Inläst. Schemat, bockarna och favoriterna är nu desamma som på den andra enheten.';
+  $('sync-title').focus();
+});
+$('sync-cancel').addEventListener('click', () => {
+  incoming = null;
+  $('sync-offer').hidden = true;
+  $('sync-status').textContent = 'Inget lästes in.';
+  $('sync-title').focus();
+});
+
 $('clear-swaps').addEventListener('click', () => { store.clearSwaps(); refresh(); $('swaps').focus(); });
 $('forget').addEventListener('click', () => { store.forget(); globalThis.matschemaTheme?.apply(); refresh(); $('forget-status').textContent = 'Allt du sparat är raderat.'; });
 

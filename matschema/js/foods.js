@@ -64,7 +64,6 @@ export const FOODS = {
   knacke: food('Knäckebröd', 340, 10, 'Bröd'),
   tortilla: food('Fullkornstortilla', 300, 9, 'Bröd', st(40)),
   burgerbrod: food('Hamburgerbröd, fullkorn', 260, 9, 'Bröd', st(70)),
-  lussekatt: food('Lussekatter', 330, 7, 'Bröd', st(60)),
 
   pasta: food('Fullkornspasta (torr)', 350, 13, 'Skafferi', { pantry: true }),
   lasagne: food('Lasagneplattor (torra)', 350, 12, 'Skafferi', { pantry: true }),
@@ -98,9 +97,6 @@ export const FOODS = {
   pesto: food('Pesto', 450, 5, 'Skafferi'),
   mandlar: food('Mandlar', 600, 21, 'Skafferi'),
   jordnot: food('Jordnötssmör', 600, 25, 'Skafferi'),
-  honung: food('Honung', 300, 0.3, 'Skafferi', { pantry: true }),
-  choklad: food('Mörk choklad 70 %', 580, 8, 'Skafferi'),
-  pepparkakor: food('Pepparkakor', 470, 6, 'Skafferi'),
   olja: food('Olivolja', 900, 0, 'Skafferi', { pantry: true, spoon: 13.5 }),
 
   huel: food('Huel Black Edition Strawberry Banana', 80, 7, 'Kyl/övrigt', st(500, 'flaska', 'flaskor')),
@@ -113,10 +109,10 @@ export const FOODS = {
   tempeh: food('Tempeh', 200, 19, 'Kyl/övrigt')
 };
 
-// Det som kommer från djur (kött, fisk, ägg, mejeri, honung och bakverk med mjölk eller smör): bort
+// Det som kommer från djur (kött, fisk, ägg, mejeri, äggnudlar och pesto med parmesan): bort
 // när du väljer vegan.
 export const ANIMAL = ['kyckling', 'kalkonfile', 'notfars', 'kycklingfars', 'oxfile', 'kalkon', 'tonfisk', 'agg', 'kvarg', 'skyr', 'keso',
-  'ost', 'feta', 'parmesan', 'mozzarella', 'mjolk', 'creme', 'nudlar', 'lussekatt', 'pesto', 'honung', 'whey'];
+  'ost', 'feta', 'parmesan', 'mozzarella', 'mjolk', 'creme', 'nudlar', 'pesto', 'whey'];
 
 // Kolhydrater, varav socker, fett och varav mättat fett, gram per 100 g (ungefärliga svenska värden).
 export const MACROS = {
@@ -129,13 +125,13 @@ export const MACROS = {
   morot: [7, 5, 0.2, 0], paprika: [5, 4, 0.3, 0], potatis: [16, 0.6, 0.1, 0], sotpotatis: [18, 5, 0.1, 0], sallad: [1.5, 1, 0.2, 0],
   spenat: [1, 0.4, 0.4, 0.1], tomat: [3, 2.6, 0.2, 0], zucchini: [2.5, 2, 0.3, 0],
   blabar: [10, 8, 0.4, 0], hallon: [5, 4.5, 0.5, 0], mango: [14, 13, 0.3, 0.1], wok: [5, 3, 0.3, 0], arter: [10, 4, 0.5, 0.1],
-  brod: [42, 4, 3.5, 0.6], knacke: [60, 1.5, 2, 0.3], tortilla: [48, 3, 7, 2.5], burgerbrod: [45, 5, 4.5, 1], lussekatt: [50, 14, 10, 5],
+  brod: [42, 4, 3.5, 0.6], knacke: [60, 1.5, 2, 0.3], tortilla: [48, 3, 7, 2.5], burgerbrod: [45, 5, 4.5, 1],
   pasta: [64, 3, 2.5, 0.5], lasagne: [70, 2, 1.5, 0.3], ris: [77, 0.3, 1, 0.2], grotris: [78, 0, 0.6, 0.1], nudlar: [70, 2, 4, 1],
   bulgur: [70, 0.5, 1.5, 0.2], linser: [50, 2, 1.5, 0.2], havre: [58, 1, 7, 1.2], musli: [60, 12, 7, 1.5], riskaka: [80, 0.5, 3, 0.6],
   kakao: [12, 1, 21, 13], vetemjol: [70, 0.5, 1.5, 0.2], strobrod: [72, 4, 4, 1], tonfisk: [0, 0, 1, 0.3], krossade: [4, 3.5, 0.2, 0],
   kokos: [3, 2, 8, 7], kidney: [15, 0.5, 0.5, 0.1], kikartor: [16, 0.5, 2.5, 0.3], majs: [15, 4, 1.2, 0.2], salsa: [7, 5, 0.2, 0],
   rodkal: [11, 10, 0.1, 0], lingon: [43, 40, 0.3, 0], pesto: [4, 2, 45, 7], mandlar: [7, 4, 50, 3.8], jordnot: [13, 5, 50, 10],
-  honung: [80, 80, 0, 0], choklad: [34, 28, 42, 25], pepparkakor: [70, 30, 18, 8], olja: [0, 0, 100, 14],
+  olja: [0, 0, 100, 14],
   huel: [4.8, 0.8, 3.4, 0.7], hummus: [14, 1, 22, 2.5], whey: [7, 5, 5, 3],
   sojadryck: [0.5, 0.2, 1.8, 0.3], sojayoghurt: [2.5, 1.5, 2.8, 0.5], havrefraiche: [6, 1.5, 13, 1.2], vegost: [20, 0, 22, 19],
   blomkal: [3, 2, 0.3, 0], edamame: [7, 2, 5, 0.6], falafel: [25, 2, 11, 1.2], gronalinser: [48, 2, 1.5, 0.2], quinoa: [64, 1, 6, 0.7],
@@ -158,7 +154,7 @@ export const SWAPS = {
   broccoli: 'arter', arter: 'broccoli', brysselkal: 'broccoli', majs: 'arter', potatis: 'sotpotatis', sotpotatis: 'potatis',
   blabar: 'hallon', hallon: 'blabar', mango: 'blabar', banan: 'apple', apple: 'clementin', clementin: 'apple',
   kidney: 'kikartor', kikartor: 'kidney', ris: 'bulgur', bulgur: 'ris', nudlar: 'ris', kokos: 'creme',
-  rodlok: 'lok', lok: 'drop', avokado: 'drop', salsa: 'drop', lingon: 'drop', rodkal: 'drop', honung: 'drop', hummus: 'drop'
+  rodlok: 'lok', lok: 'drop', avokado: 'drop', salsa: 'drop', lingon: 'drop', rodkal: 'drop', hummus: 'drop'
 };
 
 // Hur livsmedlen heter i rätternas namn, så att "Kycklingwok" blir "Kalkonwok" när kycklingen byts.

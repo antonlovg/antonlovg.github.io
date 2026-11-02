@@ -52,6 +52,7 @@
       </div>
       <div class="totals" id="totals" aria-live="polite"></div>
       <ol class="meals" id="meals"></ol>
+      <p class="fine" id="day-status" role="status"></p>
       <p class="hint">Tryck på en måltid för recept, och bocka av när du ätit. Svep åt sidan för att byta dag.</p>
     </section>
 
@@ -134,8 +135,31 @@
       <p id="swaps" tabindex="-1"></p>
       <button type="button" class="button quiet" id="clear-swaps" hidden>Ångra alla byten</button>
 
+      <h3 class="section-sub" id="ratings-title" tabindex="-1">Favoriter och aldrig mer</h3>
+      <p>Markera rätter under varje måltid på dagens sida. En favorit kommer oftare från och med veckan efter (en middag högst en gång i veckan), och en rätt du inte vill ha byts ut från samma dag.</p>
+      <div class="ratings" id="ratings"></div>
+
+      <h2 class="section-title section-gap" id="sync-title" tabindex="-1">Synka mobil och dator</h2>
+      <p>Det finns ingen inloggning: allt du sparar ligger bara i webbläsaren. För att få samma bockar, favoriter, mål och val på en annan enhet, skicka en synklänk till dig själv och öppna den där, eller spara en fil och läs in den. Inställningarna från den andra enheten gäller, och ätna måltider och avbockade varor slås ihop.</p>
+      <div class="sync-buttons">
+        <button type="button" class="button" id="sync-link">Kopiera synklänk</button>
+        <button type="button" class="button quiet" id="sync-save">Spara som fil</button>
+        <button type="button" class="button quiet" id="sync-open">Läs in fil</button>
+        <input type="file" id="sync-file" accept="application/json,.json" hidden>
+      </div>
+      <div class="box box-sand sync-offer" id="sync-offer" hidden>
+        <h3>Läsa in från en annan enhet?</h3>
+        <p id="sync-summary"></p>
+        <div class="sync-buttons">
+          <button type="button" class="button" id="sync-accept">Läs in</button>
+          <button type="button" class="button quiet" id="sync-cancel">Avbryt</button>
+        </div>
+      </div>
+      <p class="fine" id="sync-status" role="status"></p>
+      <p class="fine">Länken innehåller allt du sparat, men efter #, så den skickas aldrig till webbservern. Skickar du den i en chatt eller ett mejl kan den tjänsten se den.</p>
+
       <h3 class="section-sub">Så funkar schemat</h3>
-      <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, tonfisk, ägg och kvarg (ingen annan fisk), eller helt veganskt med tofu, tempeh, vegofärs, bönor och linser om du bockar i <b>Jag är vegan</b>. Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag.</p>
+      <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, tonfisk, ägg och kvarg (ingen annan fisk), eller helt veganskt med tofu, tempeh, vegofärs, bönor och linser om du bockar i <b>Jag är vegan</b>. Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag. Vecka 45–53 är handskrivna; sedan bygger schemat nya veckor efter samma mönster (varannan vecka ett storkok), året ut 2027 och alltid minst åtta veckor framåt. Inget godis och så lite socker som möjligt.</p>
       <div class="boxes">
         <div class="box box-sand"><h3>Matlådeflödet</h3><p>Måndagens middag blir tisdagens lunch, och så vidare till fredag. Måndagens lunch förbereder du på söndagen.</p></div>
         <div class="box box-rose"><h3>Efter dina mål</h3><p>Varje dag räknas mot dina mål för energi, protein, kolhydrater och fett. Portionerna, proteinshaken (Star Nutrition Banana) och lite olivolja justeras så att dagen hamnar rätt.</p></div>
