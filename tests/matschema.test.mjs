@@ -214,7 +214,9 @@ test('sync: a link or file carries everything, and reading it in merges', async 
   assert.deepEqual(await unpack(code), value);
   assert.deepEqual(readSyncFile(fileText(value, '2026-11-05')), value);
   assert.deepEqual(store.clean({ ...value, evil: '<script>', eaten: { x: [1, 'a'] }, ratings: { a: { r: 5, at: 'x' } } }),
-    { eaten: { x: ['a'] }, have: {}, hide: false, exclude: [], swaps: value.swaps, ratings: {}, goals: { kcal: 2400 }, vegan: true });
+    { eaten: { x: ['a'] }, have: {}, hide: false, exclude: [], swaps: value.swaps, ratings: {}, fixed: {}, goals: { kcal: 2400 }, vegan: true });
+  assert.deepEqual(store.clean({ fixed: { frukost: { recipe: 'havregrot', days: 'vardag', at: '2026-11-04' }, middag: { recipe: 'tacos', days: 'alla', at: '2026-11-04' }, lunch: { recipe: 'x', days: 'ibland', at: '2026-11-04' } } }).fixed,
+    { frukost: { recipe: 'havregrot', days: 'vardag', at: '2026-11-04' } }, 'only meals that can be fixed, in the right shape');
   store.forget();
   store.toggleEaten('2026-11-02', 'lunch');
   store.setRating('tacos', -1, '2026-11-06');
@@ -236,8 +238,39 @@ test('a swapped meal sticks, and the next day\'s lunchbox follows the swapped di
   assert.ok(plan.days[1].meals[1].leftover);
   assert.equal(plan.days[2].meals[1].recipe, 'grekisk'); // the lunchbox swapped away…
   assert.ok(!plan.days[1].meals[3].batch); // …so Tuesday's dinner is a single batch
-  assert.equal(plan.days[3].meals[3].recipe, 'bolognese', 'swaps outside the pool are ignored');
+  assert.equal(plan.days[3].meals[3].recipe, 'bolognese', 'dishes you can\'t choose are ignored');
+  // Vilken rätt som helst går att välja i vilken måltid som helst, t.ex. gröt till kvällsmål.
+  const porridge = makePlan({ swaps: { '2026-11-05:kvallsmal': 'havregrot' } }).day('2026-11-05').meals[4];
+  assert.equal(porridge.recipe, 'havregrot');
+  assert.ok(porridge.swapped);
   checkLeftovers(plan);
+});
+
+test('a fixed choice ("porridge every weekday") holds from its day, and a swap for one day comes first', () => {
+  const base = makePlan();
+  const fixed = { frukost: { recipe: 'havregrot', days: 'vardag', at: '2026-11-04' }, lunch: { recipe: 'kycklingbowl', days: 'alla', at: '2026-11-09' } };
+  const plan = makePlan({ fixed, swaps: { '2026-11-12:frukost': 'omelett' } });
+  for (const day of plan.days) {
+    const breakfast = day.meals[0];
+    if (day.date === '2026-11-12') assert.equal(breakfast.recipe, 'omelett', 'the day\'s own swap');
+    else if (day.date >= '2026-11-04' && day.weekday < 5) assert.ok(breakfast.recipe === 'havregrot' && breakfast.fixed && !breakfast.swapped, day.date);
+    else assert.equal(breakfast.recipe, base.day(day.date).meals[0].recipe, day.date);
+    if (day.date >= '2026-11-09') assert.ok(day.meals[1].recipe === 'kycklingbowl' && !day.meals[1].leftover, `${day.date}: lunch`);
+    assert.ok(day.meals.every(meal => meal.scale >= 0.7 && meal.scale <= 1.4), `${day.date}: portions`);
+  }
+  // Utan matlådor lagas middagarna i enkel sats.
+  assert.ok(plan.days.filter(day => day.date >= '2026-11-09').every(day => !day.meals[3].batch));
+  assert.ok(plan.days.filter(day => day.date >= '2026-11-04').every(day => Math.abs(day.kcal - GOALS.kcal) / GOALS.kcal < 0.1), 'still near the goals');
+  checkLeftovers(plan);
+  // Ett fast val tar bort byten från och med sin dag.
+  store.forget();
+  store.setSwap('2026-11-03', 'frukost', 'omelett');
+  store.setSwap('2026-11-05', 'frukost', 'omelett');
+  store.setFixed('frukost', { recipe: 'havregrot', days: 'alla', at: '2026-11-04' });
+  assert.deepEqual(store.choices().swaps, { '2026-11-03:frukost': 'omelett' });
+  store.setFixed('frukost', null);
+  assert.deepEqual(store.choices().fixed, {});
+  store.forget();
 });
 
 test('the offline copy has every file the page loads', async () => {

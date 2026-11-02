@@ -160,13 +160,14 @@ export function nutrition(id) {
 // ordning, så en vecka blir alltid likadan och planen ändras inte när den byggs längre fram.
 const KINDS = {
   vardag: ['curry', 'chili', 'ugnskyckling', 'bolognese', 'kottbullar', 'linsgryta', 'lasagne', 'kycklinggryta', 'biffar', 'pestopasta', 'mexgryta',
-    'stroganoff', 'kycklingpasta', 'shakshuka', 'burrito', 'kycklingpytt', 'tonfisktomat', 'nudelsoppa', 'tacobowl'],
+    'stroganoff', 'kycklingpasta', 'shakshuka', 'burrito', 'kycklingpytt', 'tonfisktomat', 'nudelsoppa', 'tacobowl', 'ugnslax', 'torskris', 'rakpasta', 'souvlaki'],
   storkok: ['ugnspasta', 'kycklingris', 'tacogratang', 'kycklingkokos', 'kottfarslimpa', 'gulasch', 'kycklingchili', 'frittata'],
-  helg: ['tacos', 'tortillapizza', 'gyros', 'burgare', 'kycklingwok', 'nudelwok', 'pannbiff', 'schnitzel', 'platmat', 'quesadilla'],
-  lunch: ['tonfiskpasta', 'kycklingsallad', 'pestosallad', 'tonfiskwrap', 'kycklingwrap', 'grekisk', 'tonfisksallad', 'linssoppa', 'tonfiskrora', 'kycklingmacka'],
-  frukost: ['aggrora', 'proteingrot', 'pannkakor', 'omelett', 'overnight', 'kvargmusli', 'smoothie', 'aggmackor'],
-  mellanmal: ['apple_mandlar', 'clementin_mandlar', 'banan_jnt', 'kvarg_mango', 'kvarg_hallon', 'riskakor', 'agg_morot'],
-  kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'chokladkvarg', 'keso_hallon', 'agg_morot', 'kvarg_musli']
+  helg: ['tacos', 'tortillapizza', 'gyros', 'burgare', 'kycklingwok', 'nudelwok', 'pannbiff', 'schnitzel', 'platmat', 'quesadilla', 'laxbowl', 'fajitas'],
+  lunch: ['tonfiskpasta', 'kycklingsallad', 'pestosallad', 'tonfiskwrap', 'kycklingwrap', 'grekisk', 'tonfisksallad', 'linssoppa', 'tonfiskrora', 'kycklingmacka',
+    'laxsallad', 'rakmackor', 'kycklingbowl', 'kalkonwrap'],
+  frukost: ['aggrora', 'proteingrot', 'pannkakor', 'omelett', 'overnight', 'kvargmusli', 'smoothie', 'aggmackor', 'havregrot', 'applegrot', 'skyrbowl', 'keso_mackor'],
+  mellanmal: ['apple_mandlar', 'clementin_mandlar', 'banan_jnt', 'kvarg_mango', 'kvarg_hallon', 'riskakor', 'agg_morot', 'skyr_hallon'],
+  kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'chokladkvarg', 'keso_hallon', 'agg_morot', 'kvarg_musli', 'skyr_hallon']
 };
 const WRITTEN = Object.keys(WEEKS).map(Number);
 const LAST_WRITTEN = WRITTEN.at(-1);
@@ -257,21 +258,30 @@ if (BASE[0].ids[1] === '<') throw new Error('Första dagen kan inte ha rester');
 const DINNERS = ['curry', 'chili', 'ugnskyckling', 'bolognese', 'kottbullar', 'linsgryta', 'lasagne', 'kycklinggryta', 'biffar', 'pestopasta', 'mexgryta', 'stroganoff',
   'tacos', 'tortillapizza', 'gyros', 'burgare', 'kycklingwok', 'nudelwok', 'pannbiff', 'schnitzel',
   'ugnspasta', 'kycklingris', 'tacogratang', 'kycklingkokos', 'kottfarslimpa', 'gulasch', 'kycklingchili', 'frittata',
-  'kycklingpasta', 'platmat', 'shakshuka', 'burrito', 'kycklingpytt', 'tonfisktomat', 'quesadilla', 'nudelsoppa', 'tacobowl'];
+  'kycklingpasta', 'platmat', 'shakshuka', 'burrito', 'kycklingpytt', 'tonfisktomat', 'quesadilla', 'nudelsoppa', 'tacobowl',
+  'ugnslax', 'torskris', 'rakpasta', 'laxbowl', 'souvlaki', 'fajitas'];
 const VEGAN_DINNERS = ['tofucurry', 'vegochili', 'vegobolognese', 'linsgryta_vegan', 'tofuwok', 'vegotacos', 'falafeltallrik', 'vegoburgare', 'tempeh',
-  'vegopytt', 'vegopizza', 'ramen', 'kikartsgryta', 'vegostroganoff', 'bonburrito', 'vegougnspasta', 'dal', 'bonchili', 'vegolasagne'];
+  'vegopytt', 'vegopizza', 'ramen', 'kikartsgryta', 'vegostroganoff', 'bonburrito', 'vegougnspasta', 'dal', 'bonchili', 'vegolasagne', 'tofuteriyaki', 'linsbolognese'];
 const SNACKS = ['apple_mandlar', 'clementin_mandlar', 'banan_jnt', 'kvarg_mango', 'kvarg_hallon', 'riskakor', 'agg_morot',
-  'edamame', 'hummus_morot', 'rostade_kikartor'];
+  'edamame', 'hummus_morot', 'rostade_kikartor', 'skyr_hallon'];
 export const POOLS = {
   frukost: ['huel', 'aggrora', 'proteingrot', 'pannkakor', 'omelett', 'overnight', 'risgrynsgrot', 'kvargmusli', 'smoothie', 'aggmackor',
-    'tofurora', 'chiapudding', 'frukostburrito', 'avokadotoast', 'bananplattar'],
+    'tofurora', 'chiapudding', 'frukostburrito', 'avokadotoast', 'bananplattar', 'havregrot', 'applegrot', 'grot_vegan', 'skyrbowl', 'keso_mackor'],
   lunch: ['tonfiskpasta', 'kycklingsallad', 'pestosallad', 'tonfiskwrap', 'kycklingwrap', 'grekisk', 'tonfisksallad', 'linssoppa', 'tonfiskrora', 'kycklingmacka',
-    'falafelwrap', 'linsquinoa', 'kikartsrora', 'edamamebowl', 'tofumacka', 'linssoppa_vegan', ...DINNERS, ...VEGAN_DINNERS],
+    'falafelwrap', 'linsquinoa', 'kikartsrora', 'edamamebowl', 'tofumacka', 'linssoppa_vegan', 'laxsallad', 'rakmackor', 'kycklingbowl', 'kalkonwrap', 'nudelsallad_tofu',
+    ...DINNERS, ...VEGAN_DINNERS],
   mellanmal: ['huel', ...SNACKS],
   middag: [...DINNERS, ...VEGAN_DINNERS],
   kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'chokladkvarg', 'keso_hallon', 'kvarg_musli',
-    'sojayoghurt_musli', 'chia_hallon', 'chokladmousse', ...SNACKS]
+    'sojayoghurt_musli', 'chia_hallon', 'chokladmousse', 'kvallsgrot', ...SNACKS]
 };
+
+// Allt du kan välja själv, i vilken måltid som helst (planen håller sig själv till rätterna i POOLS).
+export const CHOOSABLE = [...new Set(Object.values(POOLS).flat())];
+
+// Måltider som kan ha ett fast val ("gröt varje morgon"), och vilka dagar ett fast val gäller (måndag = 0).
+export const FIXABLE = ['frukost', 'lunch', 'mellanmal', 'kvallsmal'];
+export const DAYS = { alla: () => true, vardag: weekday => weekday < 5, helg: weekday => weekday >= 5 };
 
 // Det du inte äter: det du valt bort, och allt från djur om du är vegan.
 export const excludedFoods = ({ exclude = [], vegan = false } = {}) => new Set([...exclude, ...(vegan ? ANIMAL : [])].filter(food => FOODS[food]));
@@ -303,9 +313,9 @@ export function adapt(id, exclude = new Set()) {
   return { recipe: id, title, how, items, changes, blocking, touched, ok: !blocking.length, ...rounded(contents(items)), storkok: recipe.storkok || 0 };
 }
 
-// Alternativen för en måltid, närmast i kcal först.
-export function alternatives(slot, kcal, exclude = new Set(), skip = []) {
-  return POOLS[slot].filter(id => !skip.includes(id)).map(id => adapt(id, exclude)).filter(option => option.ok)
+// Alternativen för en måltid (eller bland ids), närmast i kcal först.
+export function alternatives(slot, kcal, exclude = new Set(), skip = [], ids = POOLS[slot]) {
+  return ids.filter(id => !skip.includes(id)).map(id => adapt(id, exclude)).filter(option => option.ok)
     .sort((a, b) => Math.abs(a.kcal - kcal) - Math.abs(b.kcal - kcal) || a.title.localeCompare(b.title, 'sv'));
 }
 
@@ -408,8 +418,10 @@ function scaled(meal, scale) {
 
 // Planen med dina val: exclude = livsmedel du inte äter, swaps = { "2026-11-02:middag": "lasagne" },
 // goals = dagliga mål (GOALS), fit = justera portionerna efter målen, vegan = inget från djur, ratings =
-// { recept: { r: 1 (favorit) | -1 (aldrig mer) | 0 (ångrat), at: "ÅÅÅÅ-MM-DD" } }. Matlådorna följer middagarna.
-export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false, ratings = {} } = {}) {
+// { recept: { r: 1 (favorit) | -1 (aldrig mer) | 0 (ångrat), at: "ÅÅÅÅ-MM-DD" } }, fixed = fasta val
+// { frukost: { recipe, days: "alla" | "vardag" | "helg", at } } från dagen at. Ett byte för en enskild dag går
+// före ett fast val, och båda går före matlådor och favoriter. Matlådorna följer middagarna.
+export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false, ratings = {}, fixed = {} } = {}) {
   goals = { ...GOALS, ...goals };
   const without = excludedFoods({ exclude, vegan });
   // Byten som bara beror på att du är vegan (inte på något du själv valt bort) visas som veganska.
@@ -429,7 +441,11 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
     const liked = favourites.filter(([, from]) => base.date >= from).map(([id]) => id);
     const meals = MEALS.map((slot, m) => {
       const chosen = swaps[`${base.date}:${slot.id}`];
-      const manual = POOLS[slot.id].includes(chosen) ? chosen : null;
+      const daily = CHOOSABLE.includes(chosen) ? chosen : null;
+      const standing = fixed[slot.id];
+      const always = !daily && FIXABLE.includes(slot.id) && CHOOSABLE.includes(standing?.recipe) && base.date >= standing.at
+        && DAYS[standing.days]?.(base.weekday) ? standing.recipe : null;
+      const manual = daily || always;
       const source = !manual && base.ids[m] === '<' ? leftoverSource(days, index) : null;
       if (source) {
         source.extra++;
@@ -468,7 +484,7 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
       lastUsed.set(dish.recipe, index);
       perWeek.set(`${base.week}:${dish.recipe}`, (perWeek.get(`${base.week}:${dish.recipe}`) || 0) + 1);
       if (replaced) uses.set(dish.recipe, (uses.get(dish.recipe) || 0) + 1);
-      return { ...slot, ...dish, vegan: veganOnly(dish.touched), favourite, leftover: false, swapped: Boolean(manual), planned, replaced, extra: 0 };
+      return { ...slot, ...dish, vegan: veganOnly(dish.touched), favourite, leftover: false, swapped: Boolean(daily), fixed: Boolean(always), planned, replaced, extra: 0 };
     });
     days.push({ week: base.week, weekday: base.weekday, date: base.date, note: base.note, meals });
   });

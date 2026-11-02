@@ -1,8 +1,8 @@
 // Det du bockar av och väljer: ätna måltider per datum, inköpta varor per vecka, det du inte äter,
-// måltider du bytt, om du är vegan, favoriter och rätter du inte vill ha, dina mål och färgtemat. Bara i
+// måltider du bytt, fasta val, om du är vegan, favoriter och rätter du inte vill ha, dina mål och färgtemat. Bara i
 // den här webbläsarens lokala lagring ("lovgren-matschema", listad på /cookies/), och bara när du ändrar något.
 const KEY = 'lovgren-matschema';
-const blank = () => ({ eaten: {}, have: {}, hide: false, exclude: [], swaps: {}, ratings: {} });
+const blank = () => ({ eaten: {}, have: {}, hide: false, exclude: [], swaps: {}, ratings: {}, fixed: {} });
 
 // Bara det sidan känner till, i rätt form (gäller också det som läses in från en annan enhet).
 const isObject = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -19,7 +19,9 @@ export function clean(value) {
     hide: value.hide === true,
     exclude: strings(value.exclude),
     swaps: entries(value.swaps, ([, recipe]) => typeof recipe === 'string'),
-    ratings: entries(value.ratings, ([, rating]) => isObject(rating) && [-1, 0, 1].includes(rating.r) && DATE.test(rating.at))
+    ratings: entries(value.ratings, ([, rating]) => isObject(rating) && [-1, 0, 1].includes(rating.r) && DATE.test(rating.at)),
+    fixed: entries(value.fixed, ([slot, choice]) => ['frukost', 'lunch', 'mellanmal', 'kvallsmal'].includes(slot) && isObject(choice)
+      && typeof choice.recipe === 'string' && ['alla', 'vardag', 'helg'].includes(choice.days) && DATE.test(choice.at))
   };
   const goals = entries(value.goals, ([, amount]) => Number.isFinite(amount));
   if (Object.keys(goals).length) result.goals = goals;
@@ -98,8 +100,20 @@ export function setRating(recipe, r, at) {
 }
 
 // Det planen behöver: vad du inte äter, vilka måltider du bytt, dina mål, om portionerna justeras, om du är
-// vegan och dina betyg.
-export const choices = () => ({ exclude: data.exclude, swaps: data.swaps, goals: data.goals || {}, fit: data.fit !== false, vegan: data.vegan === true, ratings: data.ratings });
+// vegan, dina betyg och dina fasta val.
+export const choices = () => ({ exclude: data.exclude, swaps: data.swaps, goals: data.goals || {}, fit: data.fit !== false, vegan: data.vegan === true, ratings: data.ratings, fixed: data.fixed });
+
+// Ett fast val för en måltid ({ recipe, days, at }) eller inget (null). Byten för enskilda dagar från och med
+// at tas bort, så att det fasta valet gäller.
+export function setFixed(meal, choice) {
+  if (choice) {
+    data.fixed[meal] = choice;
+    for (const key of Object.keys(data.swaps)) if (key.endsWith(`:${meal}`) && key.slice(0, 10) >= choice.at) delete data.swaps[key];
+  } else {
+    delete data.fixed[meal];
+  }
+  save();
+}
 
 // ---------- Synk ----------
 export const snapshot = () => structuredClone(data);

@@ -289,7 +289,18 @@ button { font: inherit; color: inherit; }
 .changed { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface); font-size: 14px; }
 .swap { display: grid; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--sand-line); }
 .swap label { font-size: 13px; font-weight: 800; color: var(--green); }
-.swap select { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 15px; }
+.swap input[type="search"] { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; }
+.swap-scope { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; border: 0; }
+.swap-scope legend { float: left; margin-right: 4px; padding: 0; font-size: 13px; font-weight: 800; color: var(--muted); }
+.swap-scope label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 14px; font-weight: 600; color: var(--text); }
+.swap-scope input { width: 18px; height: 18px; margin: 0; accent-color: var(--green); }
+.swap-results { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.swap-results:empty { display: none; }
+.swap-option { display: grid; gap: 2px; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 15px; font-weight: 700; text-align: left; cursor: pointer; }
+.swap-option small { font-size: 13px; font-weight: 500; color: var(--muted); }
+.swap-option:hover { border-color: var(--green); }
+.fixed-note { display: grid; gap: 6px; }
+.fixed-note .changed { margin: 0; }
 .swap .fine { margin: 0; }
 .button.small { min-height: 40px; padding: 6px 12px; justify-self: start; }
 .hint { margin: 16px 0 0; color: var(--muted); font-size: 13px; text-align: center; }

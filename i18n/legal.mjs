@@ -111,7 +111,7 @@ export default [
     'Din sparade ReactOS-session: hela datorn, även dess C:-disk. Sparas bara när du väljer Save.',
     'Den lagrede ReactOS-økten din: hele maskinen, også C:-disken. Lagres bare når du velger Save.'],
   ['Meal plan (/matschema/)', 'Matschemat (/matschema/)', 'Måltidsplanen (/matschema/)'],
-  [`The meals and groceries you check off in the meal plan, foods you don't eat (or that you're vegan), meals you swap, favourite and never-again dishes, your daily goals and your colour theme. Only saved when you change something.`,
+  [`The meals and groceries you check off in the meal plan, foods you don't eat (or that you're vegan), meals you swap or always want, favourite and never-again dishes, your daily goals and your colour theme. Only saved when you change something.`,
     'Måltiderna och varorna du bockar av i matschemat, det du inte äter, måltider du byter, dina dagliga mål och ditt färgtema. Sparas bara när du ändrar något.',
     'Måltidene og varene du krysser av i måltidsplanen, det du ikke spiser, måltider du bytter, de daglige målene dine og fargetemaet ditt. Lagres bare når du endrer noe.'],
   ['The offline copy of the meal plan page, so it opens without a connection', 'Kopian av matschemat som gör att det öppnas utan uppkoppling', 'Kopien av måltidsplanen som gjør at den åpnes uten nett'],

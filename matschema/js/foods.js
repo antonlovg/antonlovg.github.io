@@ -59,6 +59,9 @@ export const FOODS = {
   arter: food('Gröna ärtor (frysta)', 80, 5.5, 'Frysvaror'),
   edamame: food('Edamamebönor, skalade (frysta)', 125, 11.5, 'Frysvaror'),
   falafel: food('Falafel (frysta)', 230, 7, 'Frysvaror'),
+  lax: food('Laxfilé (fryst)', 200, 20, 'Frysvaror'),
+  torsk: food('Torskfilé (fryst)', 75, 17, 'Frysvaror'),
+  rakor: food('Räkor, skalade (frysta)', 70, 16, 'Frysvaror'),
 
   brod: food('Fullkornsbröd', 250, 9, 'Bröd'),
   knacke: food('Knäckebröd', 340, 10, 'Bröd'),
@@ -111,7 +114,7 @@ export const FOODS = {
 
 // Det som kommer från djur (kött, fisk, ägg, mejeri, äggnudlar och pesto med parmesan): bort
 // när du väljer vegan.
-export const ANIMAL = ['kyckling', 'kalkonfile', 'notfars', 'kycklingfars', 'oxfile', 'kalkon', 'tonfisk', 'agg', 'kvarg', 'skyr', 'keso',
+export const ANIMAL = ['kyckling', 'kalkonfile', 'notfars', 'kycklingfars', 'oxfile', 'kalkon', 'tonfisk', 'lax', 'torsk', 'rakor', 'agg', 'kvarg', 'skyr', 'keso',
   'ost', 'feta', 'parmesan', 'mozzarella', 'mjolk', 'creme', 'nudlar', 'pesto', 'whey'];
 
 // Kolhydrater, varav socker, fett och varav mättat fett, gram per 100 g (ungefärliga svenska värden).
@@ -134,7 +137,7 @@ export const MACROS = {
   olja: [0, 0, 100, 14],
   huel: [4.8, 0.8, 3.4, 0.7], hummus: [14, 1, 22, 2.5], whey: [7, 5, 5, 3],
   sojadryck: [0.5, 0.2, 1.8, 0.3], sojayoghurt: [2.5, 1.5, 2.8, 0.5], havrefraiche: [6, 1.5, 13, 1.2], vegost: [20, 0, 22, 19],
-  blomkal: [3, 2, 0.3, 0], edamame: [7, 2, 5, 0.6], falafel: [25, 2, 11, 1.2], gronalinser: [48, 2, 1.5, 0.2], quinoa: [64, 1, 6, 0.7],
+  blomkal: [3, 2, 0.3, 0], edamame: [7, 2, 5, 0.6], falafel: [25, 2, 11, 1.2], lax: [0, 0, 13, 2.5], torsk: [0, 0, 0.7, 0.1], rakor: [0, 0, 1, 0.2], gronalinser: [48, 2, 1.5, 0.2], quinoa: [64, 1, 6, 0.7],
   risnudlar: [80, 0.5, 0.6, 0.1], chiafron: [8, 0, 31, 3.3], naringsjast: [30, 1, 4, 0.6], tahini: [10, 0.5, 54, 7.5], svartabonor: [15, 0.3, 0.5, 0.1],
   veganprotein: [5, 1, 7, 1.5], tofu: [2, 0.7, 8.5, 1.3], sojabitar: [5, 1, 5.5, 0.6], sojafars: [4, 1, 7, 0.8], tempeh: [9, 0, 11, 2.2]
 };
@@ -144,7 +147,7 @@ export const MACROS = {
 // mängder (under 15 g) bort och annars byts hela måltiden. De veganska alternativen sist i listorna gör
 // att mejeriet byts när du är vegan, medan kött, fisk och ägg ger veganska måltider i stället.
 export const SWAPS = {
-  kyckling: 'kalkonfile', kalkonfile: 'kyckling', notfars: 'kycklingfars', kycklingfars: 'notfars', tonfisk: 'kyckling',
+  kyckling: 'kalkonfile', kalkonfile: 'kyckling', notfars: 'kycklingfars', kycklingfars: 'notfars', tonfisk: 'kyckling', lax: 'torsk', torsk: 'lax', rakor: 'torsk',
   kvarg: ['skyr', 'sojayoghurt'], skyr: ['kvarg', 'sojayoghurt'], keso: 'kvarg', creme: ['kvarg', 'havrefraiche'],
   mjolk: ['sojadryck', 'havredryck'], havredryck: ['mjolk', 'sojadryck'], sojadryck: ['havredryck', 'mjolk'], sojayoghurt: ['kvarg', 'skyr'],
   feta: ['mozzarella', 'vegost'], mozzarella: ['feta', 'vegost'], parmesan: ['ost', 'naringsjast'], ost: ['mozzarella', 'vegost'],
@@ -162,7 +165,8 @@ export const WORDS = {
   kyckling: 'kyckling', kalkonfile: 'kalkon', champinjon: 'champinjoner', zucchini: 'zucchini', tonfisk: 'tonfisk',
   keso: 'keso', kvarg: 'kvarg', skyr: 'skyr', feta: 'feta', mozzarella: 'mozzarella', banan: 'banan', apple: 'äpple',
   blabar: 'blåbär', hallon: 'hallon', mango: 'mango', clementin: 'clementiner', kidney: 'kidneybönor', kikartor: 'kikärtor',
-  sojayoghurt: 'sojayoghurt', mjolk: 'mjölk', sojadryck: 'sojadryck', havredryck: 'havredryck', tofu: 'tofu', svartabonor: 'svarta bönor'
+  sojayoghurt: 'sojayoghurt', mjolk: 'mjölk', sojadryck: 'sojadryck', havredryck: 'havredryck', tofu: 'tofu', svartabonor: 'svarta bönor',
+  lax: 'lax', torsk: 'torsk', rakor: 'räkor'
 };
 
 // Det första i bytet för ett livsmedel som du äter ("drop", ett livsmedel eller null).

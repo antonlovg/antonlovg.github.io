@@ -1,7 +1,7 @@
 // Matschemat utan nät (bara /matschema/). Allt sidan behöver sparas när den installeras. Med nät hämtas
 // filerna på nytt (så att ändringar syns direkt) men ger upp efter 3 sekunder, så att sidan öppnas
 // snabbt även med dålig täckning i butiken; då, och utan nät, används den sparade kopian.
-const CACHE = 'matschema-v5';
+const CACHE = 'matschema-v6';
 const FONT = '/assets/fonts/manrope-latin-wght.woff2';
 const PRECACHE = [
   './',

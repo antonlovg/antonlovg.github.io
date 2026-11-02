@@ -1,7 +1,7 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa (veckorna räknas vidare efter 53, så
 // vecka 54 är vecka 1 2027). #synk/… läser in det du sparat på en annan enhet. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, makePlan, alternatives, cookAmount, startDate, todayIso, weekLabel } from './plan.js';
+import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, cookAmount, startDate, todayIso, weekLabel } from './plan.js';
 import { pack, unpack, fileText, readFile } from './sync.js';
 import { RECIPES } from './recipes.js';
 import { ANIMAL, FOODS, SECTIONS, SPICES, swapFor } from './foods.js';
@@ -33,7 +33,7 @@ function refresh() {
 }
 
 // Det du själv ändrat (byten, bortval); det som bara blivit veganskt räknas inte.
-const personal = meal => !meal.leftover && Boolean(meal.swapped || (meal.replaced && !meal.replaced.vegan) || (meal.changes.length && !meal.vegan));
+const personal = meal => !meal.leftover && Boolean(meal.swapped || meal.fixed || (meal.replaced && !meal.replaced.vegan) || (meal.changes.length && !meal.vegan));
 
 // ---------- Datum ----------
 const format = (date, options) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'UTC', ...options }).format(new Date(`${date}T12:00:00Z`));
@@ -165,28 +165,79 @@ function renderTotals(day) {
       : 'Dagens plan träffar dina mål.'));
 }
 
-// Väljaren för att byta en måltid mot en annan, närmast i kcal först.
+// Sökning utan accenter, så att "grot" hittar gröt.
+const plain = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const DAY_TEXT = { alla: 'varje dag', vardag: 'alla vardagar', helg: 'alla helger' };
+const SCOPES = [['idag', 'Bara den här dagen'], ['alla', 'Varje dag'], ['vardag', 'Vardagar'], ['helg', 'Helger']];
+const SHOWN = 6;
+
+// Byt en måltid: sök bland alla rätter (på namn eller ingrediens) eller välj bland de närmast i kcal.
+// Frukost, lunch, mellanmål och kvällsmål kan också bli ett fast val från den här dagen.
 function swapper(day, meal) {
   if (meal.id === 'shake') return null;
-  const options = alternatives(meal.id, meal.kcal, plan.without, [meal.recipe, ...plan.disliked]);
-  const select = h('select', {
-    id: `swap-${meal.id}`,
-    onchange: event => {
-      if (!event.target.value) return;
-      store.setSwap(day.date, meal.id, event.target.value);
-      refresh();
-      $(`swap-${meal.id}`)?.focus();
-    }
-  }, h('option', { value: '' }, 'Välj en annan måltid…'), options.map(option => {
-    const diff = option.kcal - meal.kcal;
-    return h('option', { value: option.recipe }, `${plan.favourites.includes(option.recipe) ? '★ ' : ''}${option.title} · ${option.kcal} kcal (${diff >= 0 ? '+' : '−'}${Math.abs(diff)})`);
+  const id = `swap-${meal.id}`;
+  const options = alternatives(meal.id, meal.kcal, plan.without, [meal.recipe, ...plan.disliked], CHOOSABLE).map(option => ({
+    ...option,
+    here: POOLS[meal.id].includes(option.recipe),
+    text: plain(`${option.title} ${RECIPES[option.recipe].name} ${option.items.map(([food]) => FOODS[food].name).join(' ')}`)
   }));
+  const scope = FIXABLE.includes(meal.id) ? h('fieldset', { class: 'swap-scope' }, h('legend', {}, 'Gäller'),
+    SCOPES.map(([value, text], i) => h('label', {}, h('input', { type: 'radio', name: `${id}-scope`, value, checked: i === 0 }), text))) : null;
+  const choose = recipe => {
+    const days = scope?.querySelector('input:checked').value || 'idag';
+    if (days === 'idag') store.setSwap(day.date, meal.id, recipe);
+    else store.setFixed(meal.id, { recipe, days, at: day.date });
+    refresh();
+    $(id)?.focus();
+    $('day-status').textContent = days === 'idag' ? `${RECIPES[recipe].name} till ${lower(meal.name)}.`
+      : `${RECIPES[recipe].name} till ${lower(meal.name)} ${DAY_TEXT[days]} från och med ${dayMonth(day.date)}.`;
+  };
+  let all = false;
+  const results = h('ul', { class: 'swap-results', id: `${id}-results` });
+  const count = h('p', { class: 'fine', role: 'status' });
+  const more = h('button', { type: 'button', class: 'button quiet small', onclick: () => { all = true; show(); results.querySelector(`li:nth-child(${SHOWN + 1}) button`)?.focus(); } });
+  const search = h('input', { type: 'search', id, autocomplete: 'off', enterkeyhint: 'search', placeholder: 'T.ex. gröt, lax eller tofu', 'aria-controls': `${id}-results`, oninput: () => show() });
+  function show() {
+    const words = plain(search.value).split(/\s+/).filter(Boolean);
+    // Utan sökord: rätterna för den här måltiden. Med sökord: allt som matchar, den här måltidens rätter först.
+    const matches = options.filter(option => (words.length || option.here) && words.every(word => option.text.includes(word)))
+      .sort((a, b) => b.here - a.here);
+    const shown = words.length || all ? matches : matches.slice(0, SHOWN);
+    results.replaceChildren(...shown.map(option => {
+      const diff = option.kcal - meal.kcal;
+      const usual = option.here ? null : [MEALS[3], ...MEALS].find(slot => POOLS[slot.id]?.includes(option.recipe));
+      return h('li', {}, h('button', { type: 'button', class: 'swap-option', onclick: () => choose(option.recipe) },
+        h('span', {}, `${plan.favourites.includes(option.recipe) ? '★ ' : ''}${option.title}`),
+        h('small', {}, `${option.kcal} kcal (${diff >= 0 ? '+' : '−'}${Math.abs(diff)}) · ${option.protein} g protein${usual ? ` · brukar vara ${lower(usual.name)}` : ''}`)));
+    }));
+    more.hidden = Boolean(words.length) || all || matches.length <= SHOWN;
+    more.textContent = `Visa alla ${matches.length}`;
+    count.textContent = !words.length ? '' : matches.length ? `${matches.length} ${matches.length === 1 ? 'rätt' : 'rätter'}.` : 'Ingen rätt matchar. Prova ett annat ord.';
+  }
+  show();
   return h('div', { class: 'swap' },
-    h('label', { for: `swap-${meal.id}` }, 'Byt måltid'),
-    select,
+    h('label', { for: id }, 'Byt måltid: sök eller välj'),
+    search,
+    scope,
+    count,
+    results,
+    more,
     meal.leftover ? h('p', { class: 'fine' }, 'Byter du matlådan lagas gårdagens middag i enkel sats.') : null,
     meal.swapped ? h('button', { type: 'button', class: 'button quiet small', onclick: () => { store.setSwap(day.date, meal.id, null); refresh(); $(`swap-${meal.id}`)?.focus(); } },
       `Ångra bytet (${RECIPES[meal.planned].name})`) : null);
+}
+
+// Ett fast val: vad det gäller och en knapp för att sluta med det.
+function fixedNote(meal) {
+  const choice = store.choices().fixed[meal.id];
+  return h('div', { class: 'fixed-note' },
+    h('p', { class: 'changed' }, `Fast val: ${lower(RECIPES[choice.recipe].name)} till ${lower(meal.name)} ${DAY_TEXT[choice.days]} från och med ${dayMonth(choice.at)}.`),
+    h('button', { type: 'button', class: 'button quiet small', onclick: () => {
+      store.setFixed(meal.id, null);
+      refresh();
+      $('day-status').textContent = `Det fasta valet för ${lower(meal.name)} är borttaget.`;
+      $(`swap-${meal.id}`)?.focus();
+    } }, 'Sluta med det fasta valet'));
 }
 
 // Allt som ska lagas till en middag och matlådorna från den (de kan ha olika portionsstorlek).
@@ -218,14 +269,14 @@ function mealCard(day, meal, isNow) {
   const from = meal.leftover ? plan.day(meal.from) : null;
   const fed = meal.id === 'middag' ? lunchesFrom(day.date) : [];
   const changed = meal.swapped || (meal.replaced && !meal.leftover);
-  const vegan = !meal.swapped && !meal.leftover && (meal.replaced ? meal.replaced.vegan : meal.vegan);
+  const vegan = !meal.swapped && !meal.fixed && !meal.leftover && (meal.replaced ? meal.replaced.vegan : meal.vegan);
   const favourite = meal.id !== 'shake' && store.rating(meal.recipe) === 1;
   const tags = [
     favourite ? h('span', { class: 'tag tag-fav' }, '★ Favorit') : null,
     isNow ? h('span', { class: 'tag tag-now' }, 'Nu') : null,
     from ? h('span', { class: 'tag' }, 'Matlåda') : null,
     fed.length ? h('span', { class: 'tag tag-batch' }, fed.length > 1 ? 'Storkok' : 'Dubbel sats') : null,
-    vegan ? h('span', { class: 'tag tag-vegan' }, 'Vegansk') : changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null,
+    meal.fixed ? h('span', { class: 'tag tag-changed' }, 'Fast val') : vegan ? h('span', { class: 'tag tag-vegan' }, 'Vegansk') : changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null,
     meal.scale !== 1 ? h('span', { class: 'tag' }, `${Math.round(meal.scale * 100)} %`) : null
   ];
   const name = `${meal.title}${from ? ' (rester)' : ''}`;
@@ -247,6 +298,7 @@ function mealCard(day, meal, isNow) {
         ? `Veganskt i stället för ${lower(RECIPES[meal.replaced.from].name)}.`
         : `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
       meal.changes.length ? h('p', { class: 'changed' }, `${meal.changes.join('. ')}.`) : null,
+      meal.fixed ? fixedNote(meal) : null,
       meal.scale !== 1 ? h('p', { class: 'fine' }, `Portionen är ${Math.round(meal.scale * 100)} % av receptet, för att dagen ska träffa dina mål.`) : null,
       h('ul', { class: 'ingredients' }, meal.items.map(([, , text]) => h('li', {}, text))),
       fed.length === 1 ? h('p', { class: 'batch' }, h('b', {}, 'Laga dubbel sats: '), `hälften blir lunch på ${weekdayName(fed[0].date).toLowerCase()}.`) : null,
@@ -422,6 +474,13 @@ function renderChoices() {
   $('ratings').replaceChildren(
     h('h4', {}, 'Favoriter'), liked.length ? chips(liked, 'favoriterna') : h('p', { class: 'fine' }, 'Inga favoriter än.'),
     h('h4', {}, 'Aldrig mer'), never.length ? chips(never, 'aldrig mer') : h('p', { class: 'fine' }, 'Inga rätter bortvalda.'));
+
+  const fixed = Object.entries(store.choices().fixed).filter(([, choice]) => RECIPES[choice.recipe]);
+  $('fixed').replaceChildren(fixed.length ? h('ul', { class: 'chips' }, fixed.map(([slot, choice]) => {
+    const name = MEALS.find(meal => meal.id === slot).name;
+    return h('li', {}, h('button', { type: 'button', class: 'chip', 'aria-label': `Ta bort det fasta valet för ${lower(name)}`, onclick: () => { store.setFixed(slot, null); refresh(); $('fixed-title').focus(); } },
+      `${name}: ${RECIPES[choice.recipe].name} (${DAY_TEXT[choice.days]})`, h('span', { 'aria-hidden': 'true' }, ' ×')));
+  })) : h('p', { class: 'fine' }, 'Inga fasta val. Välj "Varje dag", "Vardagar" eller "Helger" när du byter frukost, lunch, mellanmål eller kvällsmål.'));
 
   const swaps = Object.keys(store.choices().swaps).length;
   $('swaps').textContent = swaps ? `Du har bytt ${swaps} ${swaps === 1 ? 'måltid' : 'måltider'} för hand.` : 'Du har inte bytt några måltider. Det gör du under en måltid på dagens sida.';
