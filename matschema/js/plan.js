@@ -1,10 +1,19 @@
 // Veckorna, från vecka 45 till årets sista vecka. En dag är fem recept i måltidsordning; "<" i lunchen
-// betyder resterna av gårdagens middag (den lagas då i dubbel sats). makePlan lägger på dina val (det du
-// inte äter, måltider du bytt) och räknar fram dagarnas kcal och protein och veckans inköpslista.
-import { FOODS, SECTIONS, SWAPS, WORDS } from './foods.js';
+// betyder en matlåda (rester). makePlan lägger på dina val (det du inte äter, måltider du bytt), justerar
+// portionerna och proteinshaken efter dina dagliga mål och räknar fram näringen och inköpslistan.
+import { FOODS, MACROS, SECTIONS, SWAPS, WORDS } from './foods.js';
 import { RECIPES } from './recipes.js';
 
-export const TARGET = { kcal: 2100, protein: 90 };
+// Dagliga mål. Socker och mättat fett är tak; resten försöker dagarna träffa.
+export const GOALS = { kcal: 2228, protein: 167, carbs: 201, fat: 84, sugar: 56, satfat: 25 };
+export const NUTRIENTS = [
+  { id: 'kcal', name: 'Energi', unit: 'kcal' },
+  { id: 'protein', name: 'Protein', unit: 'g' },
+  { id: 'carbs', name: 'Kolhydrater', unit: 'g' },
+  { id: 'fat', name: 'Fett', unit: 'g' },
+  { id: 'sugar', name: 'Socker', unit: 'g', max: true },
+  { id: 'satfat', name: 'Mättat fett', unit: 'g', max: true }
+];
 export const MEALS = [
   { id: 'frukost', name: 'Frukost', until: 10 },
   { id: 'lunch', name: 'Lunch', until: 14 },
@@ -102,17 +111,25 @@ export const iso = time => new Date(time).toISOString().slice(0, 10);
 export const parseIso = text => Date.UTC(+text.slice(0, 4), +text.slice(5, 7) - 1, +text.slice(8, 10));
 export const todayIso = (now = new Date()) => iso(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
+// Näringen i några ingredienser ([livsmedel, gram, …]), oavrundad.
+export function contents(items) {
+  const sum = { kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, satfat: 0 };
+  for (const [food, grams] of items) {
+    const item = FOODS[food];
+    if (!item) throw new Error(`Okänt livsmedel: ${food}`);
+    const [carbs, sugar, fat, satfat] = MACROS[food];
+    const part = grams / 100;
+    sum.kcal += item.kcal * part; sum.protein += item.protein * part;
+    sum.carbs += carbs * part; sum.sugar += sugar * part; sum.fat += fat * part; sum.satfat += satfat * part;
+  }
+  return sum;
+}
+const rounded = sum => Object.fromEntries(Object.entries(sum).map(([key, value]) => [key, Math.round(value)]));
+
 export function nutrition(id) {
   const recipe = RECIPES[id];
   if (!recipe) throw new Error(`Okänt recept: ${id}`);
-  let kcal = 0, protein = 0;
-  for (const [food, grams] of recipe.items) {
-    const item = FOODS[food];
-    if (!item) throw new Error(`Okänt livsmedel i ${id}: ${food}`);
-    kcal += item.kcal * grams / 100;
-    protein += item.protein * grams / 100;
-  }
-  return { kcal: Math.round(kcal), protein: Math.round(protein) };
+  return rounded(contents(recipe.items));
 }
 
 // Planen som den är skriven: varje dag med fem recept-id ("<" = gårdagens middag).
@@ -162,12 +179,7 @@ export function adapt(id, exclude = new Set()) {
       blocking.push(food);
     }
   }
-  let kcal = 0, protein = 0;
-  for (const [food, grams] of items) {
-    kcal += FOODS[food].kcal * grams / 100;
-    protein += FOODS[food].protein * grams / 100;
-  }
-  return { recipe: id, title, how, items, changes, blocking, ok: !blocking.length, kcal: Math.round(kcal), protein: Math.round(protein), storkok: recipe.storkok || 0 };
+  return { recipe: id, title, how, items, changes, blocking, ok: !blocking.length, ...rounded(contents(items)), storkok: recipe.storkok || 0 };
 }
 
 // Alternativen för en måltid, närmast i kcal först.
@@ -187,9 +199,87 @@ function leftoverSource(days, index) {
   return yesterday && !yesterday.storkok && yesterday.extra < 1 ? yesterday : null;
 }
 
-// Planen med dina val: exclude = livsmedel du inte äter, swaps = { "2026-11-02:middag": "lasagne" }.
-// Matlådorna följer middagarna som de blev.
-export function makePlan({ exclude = [], swaps = {} } = {}) {
+// ---------- Portionerna efter målen ----------
+// Varje måltid utom Huel får en portionsstorlek (70–140 % av receptet), dagen en
+// proteinshake (0–80 g pulver) och lite extra olivolja till middagen (0–6 tsk), valda så att dagen kommer
+// så nära målen för kcal, protein, kolhydrater och fett som möjligt, utan att gå över taken för socker och
+// mättat fett. Det är minsta kvadrat-anpassning med gränser, löst med koordinatsökning (en liten
+// konvex optimering, så den hittar alltid samma bästa svar). Små avvikelser från receptet kostar lite
+// extra, så portionerna bara ändras när det behövs.
+const FIT = ['kcal', 'protein', 'carbs', 'fat'];
+const WEIGHT = { kcal: 6, protein: 4, carbs: 1, fat: 1 };
+const SCALE = [0.7, 1.4];
+const SHAKE = [0, 8]; // i 10 g pulver
+const OIL = [0, 6]; // i teskedar (4,5 g)
+const CAPS = ['sugar', 'satfat'];
+const CAP = 8; // att gå över ett tak väger tyngre än att missa ett mål
+const MARGIN = 0.95; // och lösaren siktar lite under taken, så att avrundningen inte tar dem över
+const KEEP = 0.04; // hur mycket det kostar att ändra en portion från receptet
+
+function fitDay(day, goals, shake, oil) {
+  const free = day.meals.map((meal, m) => m).filter(m => day.meals[m].recipe !== 'huel');
+  const fixed = contents(day.meals.filter(meal => meal.recipe === 'huel').flatMap(meal => meal.items));
+  const parts = [...free.map(m => contents(day.meals[m].items)), contents([['whey', 10]]), contents([['olja', 4.5]])];
+  const n = free.length;
+  const bounds = [...free.map(() => SCALE), shake ? SHAKE : [0, 0], oil ? OIL : [0, 0]];
+  const start = [...free.map(() => 1), 0, 0];
+  const x = [...start];
+  const total = (key, at = x) => fixed[key] + at.reduce((sum, value, j) => sum + value * parts[j][key], 0);
+  // Hur långt från målen (och över taken) dagen hamnar, plus en liten kostnad för att ändra recepten.
+  const loss = at => FIT.reduce((sum, key) => sum + WEIGHT[key] * ((total(key, at) - goals[key]) / goals[key]) ** 2, 0)
+    + CAPS.reduce((sum, key) => sum + CAP * Math.max(0, (total(key, at) - goals[key] * MARGIN) / goals[key]) ** 2, 0)
+    + at.reduce((sum, value, j) => sum + (j < n ? KEEP : KEEP / 100) * (value - start[j]) ** 2 / 2, 0);
+  for (let round = 0; round < 200; round++) {
+    for (let j = 0; j < x.length; j++) {
+      let gradient = 0, curve = 0;
+      for (const key of FIT) {
+        const c = WEIGHT[key] / goals[key] ** 2;
+        gradient += c * (total(key) - goals[key]) * parts[j][key];
+        curve += c * parts[j][key] ** 2;
+      }
+      for (const key of CAPS) {
+        if (total(key) <= goals[key] * MARGIN) continue;
+        const c = CAP / goals[key] ** 2;
+        gradient += c * (total(key) - goals[key] * MARGIN) * parts[j][key];
+        curve += c * parts[j][key] ** 2;
+      }
+      const keep = j < n ? KEEP : KEEP / 100;
+      gradient += keep * (x[j] - start[j]);
+      curve += keep;
+      if (curve > 0) x[j] = Math.min(bounds[j][1], Math.max(bounds[j][0], x[j] - gradient / curve));
+    }
+  }
+  // Avrunda till steg man kan laga efter (5 % portion, 5 g pulver, 1 tsk olja) och putsa sedan ett steg i
+  // taget så länge det kommer närmare målen.
+  const steps = [...free.map(() => 0.05), 0.5, 1];
+  const grid = x.map((value, j) => Math.round(value / steps[j]) * steps[j]);
+  for (let improved = true; improved;) {
+    improved = false;
+    for (let j = 0; j < grid.length; j++) {
+      for (const step of [-steps[j], steps[j]]) {
+        const next = grid.with(j, Math.round((grid[j] + step) * 100) / 100);
+        if (next[j] < bounds[j][0] - 1e-9 || next[j] > bounds[j][1] + 1e-9 || loss(next) >= loss(grid) - 1e-12) continue;
+        grid[j] = next[j];
+        improved = true;
+      }
+    }
+  }
+  const scales = day.meals.map(() => 1);
+  free.forEach((m, j) => { scales[m] = Math.round(grid[j] * 100) / 100; });
+  return { scales, shake: Math.round(grid[n] * 10), oil: Math.round(grid[n + 1]) };
+}
+
+// En måltid i en annan storlek: gram och näring räknas om; texterna byts mot mängder när det skiljer.
+function scaled(meal, scale) {
+  if (scale === 1) return { ...meal, scale };
+  const items = meal.items.map(([food, grams, text]) => [food, grams * scale, `${cookAmount(food, grams * scale)} ${lower(FOODS[food].name)}`, text]);
+  return { ...meal, items, scale, ...rounded(contents(items)) };
+}
+
+// Planen med dina val: exclude = livsmedel du inte äter, swaps = { "2026-11-02:middag": "lasagne" },
+// goals = dagliga mål (GOALS), fit = justera portionerna efter målen. Matlådorna följer middagarna.
+export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true } = {}) {
+  goals = { ...GOALS, ...goals };
   const without = new Set(exclude.filter(food => FOODS[food]));
   const days = [];
   const lastUsed = new Map();
@@ -224,8 +314,24 @@ export function makePlan({ exclude = [], swaps = {} } = {}) {
     const dinner = day.meals[3];
     dinner.portions = 1 + dinner.extra;
     dinner.batch = dinner.extra > 0;
-    day.kcal = day.meals.reduce((sum, meal) => sum + meal.kcal, 0);
-    day.protein = day.meals.reduce((sum, meal) => sum + meal.protein, 0);
+    if (fit) {
+      const { scales, shake, oil } = fitDay(day, goals, !without.has('whey'), !without.has('olja'));
+      day.meals = day.meals.map((meal, m) => scaled(meal, scales[m]));
+      if (oil) {
+        const dinner = day.meals[3];
+        const items = [...dinner.items, ['olja', oil * 4.5, `${oil} tsk olivolja extra (ringla över eller stek i)`]];
+        day.meals[3] = { ...dinner, items, oil, ...rounded(contents(items)) };
+      }
+      if (shake) {
+        const dish = adapt('shake');
+        const items = [['whey', shake, `${shake} g proteinpulver (ca ${half(Math.max(0.5, Math.round(shake / 15) / 2))} skopa à 30 g)`]];
+        day.meals.push({ id: 'shake', name: 'Proteinshake', until: 24, ...dish, title: 'Proteinshake med Star Nutrition Banana', items, ...rounded(contents(items)), leftover: false, swapped: false, scale: 1 });
+      }
+    }
+    Object.assign(day, rounded(day.meals.reduce((sum, meal) => {
+      for (const key of Object.keys(sum)) sum[key] += meal[key];
+      return sum;
+    }, { kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, satfat: 0 })));
   });
   return {
     days,

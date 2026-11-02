@@ -1,4 +1,4 @@
-// Livsmedlen: namn, kcal och protein per 100 g (ungefärliga svenska värden; råvikt för kött, torrvikt
+// Livsmedlen: namn, kcal och protein per 100 g (kolhydrater, socker, fett och mättat fett i MACROS) (ungefärliga svenska värden; råvikt för kött, torrvikt
 // för ris, pasta och gryn), avdelning i butiken och hur de köps. Recepten anger alltid gram.
 //   each: gram per styck → inköpslistan räknar i hela styck (unit: ental/flertal)
 //   pack: gram per förpackning → listan räknar i paket
@@ -90,7 +90,29 @@ export const FOODS = {
   olja: food('Olivolja', 900, 0, 'Skafferi', { pantry: true, spoon: 13.5 }),
 
   huel: food('Huel Black Edition Strawberry Banana', 80, 7, 'Kyl/övrigt', st(500, 'flaska', 'flaskor')),
+  whey: food('Proteinpulver Star Nutrition Whey Banana', 375, 75, 'Kyl/övrigt', { pantry: true }),
   hummus: food('Hummus', 280, 7, 'Kyl/övrigt')
+};
+
+// Kolhydrater, varav socker, fett och varav mättat fett, gram per 100 g (ungefärliga svenska värden).
+export const MACROS = {
+  kyckling: [0, 0, 1.5, 0.4], kalkonfile: [0, 0, 1, 0.3], notfars: [0, 0, 10, 4.3], kycklingfars: [0, 0, 7, 2], oxfile: [0, 0, 5, 2],
+  kalkon: [2, 1, 1.5, 0.5], agg: [0.7, 0.4, 10, 2.8], kvarg: [3.5, 3.5, 0.2, 0.1], skyr: [4, 4, 0.2, 0.1], keso: [3, 3, 1.5, 1],
+  ost: [0, 0, 17, 11], feta: [1, 1, 21, 14], parmesan: [0, 0, 28, 18], mozzarella: [1, 1, 10, 6.5], mjolk: [4.8, 4.8, 1.5, 0.9],
+  havredryck: [6.5, 4, 1.5, 0.2], creme: [3.5, 3.5, 15, 10],
+  banan: [21, 17, 0.3, 0.1], apple: [11, 10, 0.2, 0], clementin: [10, 9, 0.2, 0], avokado: [2, 0.5, 15, 2.1], broccoli: [3.5, 1.5, 0.4, 0.1],
+  brysselkal: [5, 2, 0.3, 0], champinjon: [1, 0.5, 0.3, 0], gurka: [2, 1.7, 0.1, 0], lok: [7, 5, 0.1, 0], rodlok: [7, 5, 0.1, 0],
+  morot: [7, 5, 0.2, 0], paprika: [5, 4, 0.3, 0], potatis: [16, 0.6, 0.1, 0], sotpotatis: [18, 5, 0.1, 0], sallad: [1.5, 1, 0.2, 0],
+  spenat: [1, 0.4, 0.4, 0.1], tomat: [3, 2.6, 0.2, 0], zucchini: [2.5, 2, 0.3, 0],
+  blabar: [10, 8, 0.4, 0], hallon: [5, 4.5, 0.5, 0], mango: [14, 13, 0.3, 0.1], wok: [5, 3, 0.3, 0], arter: [10, 4, 0.5, 0.1],
+  brod: [42, 4, 3.5, 0.6], knacke: [60, 1.5, 2, 0.3], tortilla: [48, 3, 7, 2.5], burgerbrod: [45, 5, 4.5, 1], lussekatt: [50, 14, 10, 5],
+  pasta: [64, 3, 2.5, 0.5], lasagne: [70, 2, 1.5, 0.3], ris: [77, 0.3, 1, 0.2], grotris: [78, 0, 0.6, 0.1], nudlar: [70, 2, 4, 1],
+  bulgur: [70, 0.5, 1.5, 0.2], linser: [50, 2, 1.5, 0.2], havre: [58, 1, 7, 1.2], musli: [60, 12, 7, 1.5], riskaka: [80, 0.5, 3, 0.6],
+  kakao: [12, 1, 21, 13], vetemjol: [70, 0.5, 1.5, 0.2], strobrod: [72, 4, 4, 1], tonfisk: [0, 0, 1, 0.3], krossade: [4, 3.5, 0.2, 0],
+  kokos: [3, 2, 8, 7], kidney: [15, 0.5, 0.5, 0.1], kikartor: [16, 0.5, 2.5, 0.3], majs: [15, 4, 1.2, 0.2], salsa: [7, 5, 0.2, 0],
+  rodkal: [11, 10, 0.1, 0], lingon: [43, 40, 0.3, 0], pesto: [4, 2, 45, 7], mandlar: [7, 4, 50, 3.8], jordnot: [13, 5, 50, 10],
+  honung: [80, 80, 0, 0], choklad: [34, 28, 42, 25], pepparkakor: [70, 30, 18, 8], olja: [0, 0, 100, 14],
+  huel: [4.8, 0.8, 3.4, 0.7], hummus: [14, 1, 22, 2.5], whey: [7, 5, 5, 3]
 };
 
 // Om du inte äter något byts det i recepten mot det här (samma vikt), "drop" tar bort det. Byten görs

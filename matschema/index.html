@@ -24,7 +24,7 @@
         <h1 class="top-title" id="title">Matschema</h1>
         <p class="top-sub" id="subtitle"></p>
       </div>
-      <p class="top-goal"><b>2100 kcal</b><span>minst 90 g protein / dag</span></p>
+      <p class="top-goal"><b id="goal-kcal">2228 kcal</b><span id="goal-rest">167 g protein · 201 g kolh · 84 g fett</span></p>
     </div>
   </header>
 
@@ -108,6 +108,20 @@
         </fieldset>
       </form>
 
+      <h2 class="section-title section-gap" id="goals-title">Dina dagliga mål</h2>
+      <p>Schemat justerar portionerna (70–140 % av recepten), en proteinshake och lite extra olivolja dag för dag så att du hamnar så nära målen som möjligt. Socker och mättat fett är tak. Ändra ett värde så räknas hela schemat om.</p>
+      <form class="goals" id="goals" novalidate>
+        <label><span>Energi</span><input type="number" inputmode="numeric" name="kcal" min="1200" max="4500" step="1"><small>kcal</small></label>
+        <label><span>Protein</span><input type="number" inputmode="numeric" name="protein" min="40" max="350" step="1"><small>g</small></label>
+        <label><span>Kolhydrater</span><input type="number" inputmode="numeric" name="carbs" min="50" max="600" step="1"><small>g</small></label>
+        <label><span>Fett</span><input type="number" inputmode="numeric" name="fat" min="20" max="250" step="1"><small>g</small></label>
+        <label><span>Socker, högst</span><input type="number" inputmode="numeric" name="sugar" min="0" max="200" step="1"><small>g</small></label>
+        <label><span>Mättat fett, högst</span><input type="number" inputmode="numeric" name="satfat" min="0" max="100" step="1"><small>g</small></label>
+        <label class="goals-fit"><input type="checkbox" name="fit"> Justera portionerna efter målen</label>
+      </form>
+      <p class="fine" id="goals-status" role="status"></p>
+      <button type="button" class="button quiet" id="goals-reset">Återställ målen</button>
+
       <h2 class="section-title section-gap">Det här äter jag inte</h2>
       <p>Välj bort det du inte gillar. Det byts mot något liknande i recepten (champinjoner blir zucchini, kyckling blir kalkon), och går inte det byts måltiden mot en annan med ungefär lika mycket kcal. Matlådor och inköpslistor följer med.</p>
       <div id="excluded" aria-live="polite"></div>
@@ -121,7 +135,7 @@
       <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, tonfisk, ägg och kvarg (ingen annan fisk). Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag.</p>
       <div class="boxes">
         <div class="box box-sand"><h3>Matlådeflödet</h3><p>Måndagens middag blir tisdagens lunch, och så vidare till fredag. Måndagens lunch förbereder du på söndagen.</p></div>
-        <div class="box box-rose"><h3>Protein utan stress</h3><p>Dagarna landar på 140–180 g protein, gott och väl över målet på 90 g. Kvarg, kyckling och Huel gör det mesta av jobbet.</p></div>
+        <div class="box box-rose"><h3>Efter dina mål</h3><p>Varje dag räknas mot dina mål för energi, protein, kolhydrater och fett. Portionerna, proteinshaken (Star Nutrition Banana) och lite olivolja justeras så att dagen hamnar rätt.</p></div>
         <div class="box box-mint"><h3>Byt fritt</h3><p>Byt måltider under varje måltid på dagens sida: alternativen närmast i kcal står först. Kryddor, vitlök, soja och citron räknas inte och kan användas fritt.</p></div>
       </div>
 
@@ -133,7 +147,7 @@
       <button type="button" class="button quiet" id="forget">Radera allt jag sparat</button>
       <p class="fine" id="forget-status" role="status"></p>
       <h3 class="section-sub">Om näringsvärdena</h3>
-      <p class="fine">Näringsvärdena är ungefärliga och räknas fram ur vanliga svenska livsmedel (råvikt för kött, torrvikt för ris, pasta och gryn). Huel Black Edition Strawberry Banana, 500 ml = 400 kcal och 35 g protein. Mängderna i inköpslistan gäller en person och är avrundade uppåt; kolla skafferiet först.</p>
+      <p class="fine">Näringsvärdena är ungefärliga och räknas fram ur vanliga svenska livsmedel (råvikt för kött, torrvikt för ris, pasta och gryn). Huel Black Edition Strawberry Banana, 500 ml = 400 kcal och 35 g protein. Proteinpulvret räknas som Star Nutrition Whey Banana, ca 375 kcal och 75 g protein per 100 g; kolla din förpackning. Mängderna i inköpslistan gäller en person och är avrundade uppåt; kolla skafferiet först.</p>
     </section>
   </main>
 

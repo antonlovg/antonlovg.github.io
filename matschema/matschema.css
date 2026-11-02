@@ -211,9 +211,25 @@ button { font: inherit; color: inherit; }
 .total-label { display: flex; justify-content: space-between; margin: 0 0 4px; font-size: 14px; color: var(--muted); }
 .total-label b { color: var(--text); }
 .meter { position: relative; height: 10px; border-radius: 99px; background: var(--sand-line); }
-.meter-fill { height: 100%; width: 0; border-radius: inherit; background: var(--check); transition: width 0.3s; }
+.meter-plan { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--mint); outline: 1px solid var(--sand-line); }
+.meter-fill { position: relative; height: 100%; width: 0; border-radius: inherit; background: var(--check); transition: width 0.3s; }
+.total-label small { margin-left: 6px; font-size: 12px; color: var(--muted); }
+.total.is-off .total-label > span:last-child { color: var(--now); font-weight: 700; }
+.total.is-off .total-label > span:last-child b { color: var(--now); }
+.plan-note { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
+.plan-note.goal-met { color: var(--green); font-weight: 700; }
+.totals { gap: 8px; }
+.meter { height: 8px; }
+.goals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 8px 0; }
+@media (min-width: 560px) { .goals { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.goals label { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 6px; padding: 8px 10px; border-radius: 10px; background: var(--sand); }
+.goals label span { grid-column: 1 / -1; font-size: 13px; font-weight: 800; color: var(--green); }
+.goals input[type="number"] { width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 17px; font-weight: 700; }
+.goals small { color: var(--muted); }
+.goals .goals-fit { grid-column: 1 / -1; display: flex; gap: 10px; min-height: 48px; background: none; padding: 0; font-weight: 600; }
+.goals .goals-fit input { width: 22px; height: 22px; accent-color: var(--check); }
 .meter-goal { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--accent); }
-.goal-met { margin: 0; color: var(--green); font-weight: 700; font-size: 14px; }
+
 
 .meals { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .meal {

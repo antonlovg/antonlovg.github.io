@@ -1,5 +1,5 @@
-// Det du bockar av och väljer: ätna måltider per datum, inköpta varor per vecka, det du inte äter och
-// måltider du bytt. Bara i den här webbläsarens lokala lagring ("lovgren-matschema", listad på
+// Det du bockar av och väljer: ätna måltider per datum, inköpta varor per vecka, det du inte äter,
+// måltider du bytt, dina mål och färgtemat. Bara i den här webbläsarens lokala lagring ("lovgren-matschema", listad på
 // /cookies/), och bara när du ändrar något.
 const KEY = 'lovgren-matschema';
 const blank = () => ({ eaten: {}, have: {}, hide: false, exclude: [], swaps: {} });
@@ -47,8 +47,19 @@ export function setTheme(value) {
   save();
 }
 
-// Det planen behöver: vad du inte äter och vilka måltider du bytt.
-export const choices = () => ({ exclude: data.exclude, swaps: data.swaps });
+// Dina dagliga mål (bara de du ändrat; resten är standard) och om portionerna ska justeras efter dem.
+export function setGoals(goals) {
+  if (goals && Object.keys(goals).length) data.goals = goals; else delete data.goals;
+  save();
+}
+
+export function setFit(fit) {
+  if (fit) delete data.fit; else data.fit = false;
+  save();
+}
+
+// Det planen behöver: vad du inte äter, vilka måltider du bytt, dina mål och om portionerna justeras.
+export const choices = () => ({ exclude: data.exclude, swaps: data.swaps, goals: data.goals || {}, fit: data.fit !== false });
 
 export function setExcluded(food, excluded) {
   data.exclude = excluded ? [...new Set([...data.exclude, food])] : data.exclude.filter(item => item !== food);

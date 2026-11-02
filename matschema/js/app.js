@@ -1,6 +1,6 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, TARGET, makePlan, alternatives, cookAmount, startDate, todayIso } from './plan.js';
+import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, makePlan, alternatives, cookAmount, startDate, todayIso } from './plan.js';
 import { RECIPES } from './recipes.js';
 import { FOODS, SECTIONS, SPICES, SWAPS } from './foods.js';
 import * as store from './store.js';
@@ -25,6 +25,7 @@ const list = items => items.length < 2 ? items.join('') : `${items.slice(0, -1).
 // ---------- Planen, med det du inte äter och det du bytt ----------
 let plan = makePlan(store.choices());
 const excluded = () => new Set(store.choices().exclude);
+const goals = () => ({ ...GOALS, ...store.choices().goals });
 function refresh() {
   plan = makePlan(store.choices());
   render();
@@ -71,6 +72,9 @@ function route() {
 const go = hash => { if (location.hash !== hash) location.hash = hash; else route(); };
 
 function render() {
+  const target = goals();
+  $('goal-kcal').textContent = `${number(target.kcal)} kcal`;
+  $('goal-rest').textContent = `${target.protein} g protein · ${target.carbs} g kolh · ${target.fat} g fett`;
   for (const view of VIEWS) $(`view-${view}`).hidden = view !== state.view;
   for (const tab of document.querySelectorAll('.tabs a')) {
     const view = tab.dataset.view;
@@ -103,9 +107,9 @@ function renderDay() {
     return h('li', {},
       h('a', {
         href: `#dag/${other.date}`,
-        class: classes('strip-day', other.date === today && 'is-today', eaten === MEALS.length && 'is-done'),
+        class: classes('strip-day', other.date === today && 'is-today', eaten === other.meals.length && 'is-done'),
         'aria-current': other.date === state.date ? 'date' : false,
-        'aria-label': `${weekdayName(other.date)} ${dayMonth(other.date)}${other.date === today ? ', idag' : ''}${eaten ? `, ${eaten} av ${MEALS.length} måltider ätna` : ''}`
+        'aria-label': `${weekdayName(other.date)} ${dayMonth(other.date)}${other.date === today ? ', idag' : ''}${eaten ? `, ${eaten} av ${other.meals.length} måltider ätna` : ''}`
       }, h('span', { class: 'strip-name' }, shortDay(other.date)), h('span', { class: 'strip-num' }, format(other.date, { day: 'numeric' })),
       h('span', { class: 'strip-dots', 'aria-hidden': 'true' }, other.meals.map(meal => h('i', { class: store.isEaten(other.date, meal.id) ? 'on' : '' })))));
   }));
@@ -121,30 +125,38 @@ function renderDay() {
   $('meals').replaceChildren(...day.meals.map(meal => mealCard(day, meal, meal.id === now)));
 }
 
-function bar(label, eaten, planned, unit, goal) {
-  const pct = planned ? Math.min(100, eaten / planned * 100) : 0;
-  const node = h('div', { class: 'total' },
-    h('p', { class: 'total-label' }, h('span', {}, label), h('span', {}, h('b', {}, number(eaten)), ` av ${number(planned)} ${unit}`)),
-    h('div', { class: 'meter', role: 'img', 'aria-label': `${label}: ${number(eaten)} av ${number(planned)} ${unit}${goal ? `, mål minst ${goal} ${unit}` : ''}` },
-      h('div', { class: 'meter-fill' }), goal ? h('div', { class: 'meter-goal', title: `Mål: minst ${goal} ${unit}` }) : null));
-  node.querySelector('.meter-fill').style.width = `${pct}%`;
-  if (goal) node.querySelector('.meter-goal').style.left = `${Math.min(100, goal / planned * 100)}%`;
+// Hur långt från målet dagens plan är: inom 5 % räknas som träff, och taken får inte passeras.
+const missed = (nutrient, planned, goal) => (nutrient.max ? planned > goal : Math.abs(planned - goal) > goal * 0.05);
+
+// En rad per näringsämne: hur mycket du ätit av dagens plan, med målet (eller taket) markerat.
+function bar(nutrient, eaten, planned, goal) {
+  const { name, unit } = nutrient;
+  const scale = Math.max(planned, goal) || 1;
+  const node = h('div', { class: classes('total', missed(nutrient, planned, goal) && 'is-off') },
+    h('p', { class: 'total-label' }, h('span', {}, name, h('small', {}, `${nutrient.max ? 'högst' : 'mål'} ${number(goal)} ${unit}`)),
+      h('span', {}, h('b', {}, number(eaten)), ` av ${number(planned)} ${unit}`)),
+    h('div', { class: 'meter', role: 'img', 'aria-label': `${name}: ${number(eaten)} av ${number(planned)} ${unit} ätet, ${nutrient.max ? 'högst' : 'mål'} ${number(goal)} ${unit}` },
+      h('div', { class: 'meter-plan' }), h('div', { class: 'meter-fill' }), h('div', { class: 'meter-goal' })));
+  node.querySelector('.meter-plan').style.width = `${planned / scale * 100}%`;
+  node.querySelector('.meter-fill').style.width = `${Math.min(eaten, planned) / scale * 100}%`;
+  node.querySelector('.meter-goal').style.left = `${goal / scale * 100}%`;
   return node;
 }
 
 function renderTotals(day) {
+  const target = goals();
   const eaten = day.meals.filter(meal => store.isEaten(day.date, meal.id));
-  const kcal = eaten.reduce((sum, meal) => sum + meal.kcal, 0);
-  const protein = eaten.reduce((sum, meal) => sum + meal.protein, 0);
-  $('totals').replaceChildren(...[
-    bar('Ätit', kcal, day.kcal, 'kcal'),
-    bar('Protein', protein, day.protein, 'g', TARGET.protein),
-    protein >= TARGET.protein ? h('p', { class: 'goal-met' }, 'Proteinmålet på 90 g är nått.') : null
-  ].filter(Boolean));
+  const off = NUTRIENTS.filter(nutrient => missed(nutrient, day[nutrient.id], target[nutrient.id]));
+  $('totals').replaceChildren(
+    ...NUTRIENTS.map(nutrient => bar(nutrient, eaten.reduce((sum, meal) => sum + meal[nutrient.id], 0), day[nutrient.id], target[nutrient.id])),
+    h('p', { class: classes('plan-note', !off.length && 'goal-met') }, off.length
+      ? `Dagens plan missar ${list(off.map(nutrient => `${lower(nutrient.name)} (${number(day[nutrient.id])} ${nutrient.unit})`))}. Byt en måltid för att komma närmare.`
+      : 'Dagens plan träffar dina mål.'));
 }
 
 // Väljaren för att byta en måltid mot en annan, närmast i kcal först.
 function swapper(day, meal) {
+  if (meal.id === 'shake') return null;
   const options = alternatives(meal.id, meal.kcal, excluded(), [meal.recipe]);
   const select = h('select', {
     id: `swap-${meal.id}`,
@@ -166,6 +178,13 @@ function swapper(day, meal) {
       `Ångra bytet (${RECIPES[meal.planned].name})`) : null);
 }
 
+// Allt som ska lagas till en middag och matlådorna från den (de kan ha olika portionsstorlek).
+function wholeBatch(meal, fed) {
+  const grams = new Map();
+  for (const part of [meal, ...fed.map(other => other.meals[1])]) for (const [food, g] of part.items) grams.set(food, (grams.get(food) || 0) + g);
+  return grams;
+}
+
 function mealCard(day, meal, isNow) {
   const key = `${day.date}:${meal.id}`;
   const eaten = store.isEaten(day.date, meal.id);
@@ -176,7 +195,8 @@ function mealCard(day, meal, isNow) {
     isNow ? h('span', { class: 'tag tag-now' }, 'Nu') : null,
     from ? h('span', { class: 'tag' }, 'Matlåda') : null,
     fed.length ? h('span', { class: 'tag tag-batch' }, fed.length > 1 ? 'Storkok' : 'Dubbel sats') : null,
-    changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null
+    changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null,
+    meal.scale !== 1 ? h('span', { class: 'tag' }, `${Math.round(meal.scale * 100)} %`) : null
   ];
   const name = `${meal.title}${from ? ' (rester)' : ''}`;
   const check = h('button', {
@@ -189,15 +209,16 @@ function mealCard(day, meal, isNow) {
     h('summary', {},
       h('span', { class: 'meal-label' }, meal.name, ...tags),
       h('span', { class: 'meal-name' }, name),
-      h('span', { class: 'meal-numbers' }, h('b', {}, `${meal.kcal} kcal`), ` · ${meal.protein} g protein`)),
+      h('span', { class: 'meal-numbers' }, h('b', {}, `${meal.kcal} kcal`), ` · ${meal.protein} g protein · ${meal.carbs} g kolh · ${meal.fat} g fett`)),
     h('div', { class: 'meal-body' },
       meal.replaced && !meal.leftover ? h('p', { class: 'changed' }, `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
       meal.changes.length ? h('p', { class: 'changed' }, `${meal.changes.join('. ')}.`) : null,
+      meal.scale !== 1 ? h('p', { class: 'fine' }, `Portionen är ${Math.round(meal.scale * 100)} % av receptet, för att dagen ska träffa dina mål.`) : null,
       h('ul', { class: 'ingredients' }, meal.items.map(([, , text]) => h('li', {}, text))),
       fed.length === 1 ? h('p', { class: 'batch' }, h('b', {}, 'Laga dubbel sats: '), `hälften blir lunch på ${weekdayName(fed[0].date).toLowerCase()}.`) : null,
       fed.length > 1 ? h('p', { class: 'batch' }, h('b', {}, `Storkok, ${meal.portions} portioner: `), `middag idag och matlåda ${list(fed.map(other => weekdayName(other.date).toLowerCase()))}.`) : null,
       fed.length ? h('div', { class: 'whole' }, h('p', {}, h('b', {}, `Hela satsen (${meal.portions} portioner)`)),
-        h('ul', { class: 'ingredients' }, meal.items.map(([food, grams]) => h('li', {}, `${cookAmount(food, grams * meal.portions)} ${lower(FOODS[food].name)}`)))) : null,
+        h('ul', { class: 'ingredients' }, [...wholeBatch(meal, fed)].map(([food, grams]) => h('li', {}, `${cookAmount(food, grams)} ${lower(FOODS[food].name)}`)))) : null,
       from ? h('p', { class: 'how' }, `Matlådan från ${weekdayName(from.date).toLowerCase()}ens middag.`) : meal.how ? h('p', { class: 'how' }, meal.how) : null,
       swapper(day, meal)));
 
@@ -231,7 +252,7 @@ function renderWeek() {
     h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Dag'), MEALS.map(meal => h('th', { scope: 'col' }, meal.name)), h('th', { scope: 'col' }, 'kcal / protein'))),
     h('tbody', {}, days.map(day => {
       const eaten = day.meals.filter(meal => store.isEaten(day.date, meal.id)).length;
-      return h('tr', { class: classes(day.date === today && 'is-today', eaten === MEALS.length && 'is-done') },
+      return h('tr', { class: classes(day.date === today && 'is-today', eaten === day.meals.length && 'is-done') },
         h('th', { scope: 'row' }, h('a', { href: `#dag/${day.date}` }, weekdayName(day.date), h('small', {}, dayMonth(day.date)), day.note ? h('small', { class: 'note' }, day.note) : null)),
         day.meals.map(meal => {
           const changed = meal.swapped || meal.replaced || meal.changes.length;
@@ -313,6 +334,7 @@ async function shareShop() {
 const USED = new Set(Object.values(RECIPES).flatMap(recipe => recipe.items.map(([food]) => food)));
 
 function consequence(food, without) {
+  if (food === 'whey') return 'ingen proteinshake';
   const swap = SWAPS[food];
   if (swap === 'drop') return 'tas bort ur recepten';
   if (swap && !without.has(swap)) return `byts mot ${lower(FOODS[swap].name)}`;
@@ -342,6 +364,13 @@ function renderChoices() {
         h('span', {}, FOODS[food].name, h('small', {}, consequence(food, without))))))));
   }));
 
+  const target = goals();
+  for (const input of $('goals').elements) {
+    if (input.name === 'fit') input.checked = store.choices().fit;
+    else if (document.activeElement !== input) input.value = target[input.name];
+  }
+  $('goals-reset').hidden = !Object.keys(store.choices().goals).length;
+
   const { palette = 'skog', mode = 'auto' } = store.theme();
   for (const input of $('looks').elements) input.checked = input.value === (input.name === 'palette' ? palette : mode);
 
@@ -369,6 +398,26 @@ $('looks').addEventListener('change', () => {
   globalThis.matschemaTheme?.apply(store.theme());
 });
 $('looks').addEventListener('submit', event => event.preventDefault());
+$('goals').addEventListener('submit', event => event.preventDefault());
+$('goals').addEventListener('change', event => {
+  const input = event.target;
+  if (input.name === 'fit') {
+    store.setFit(input.checked);
+    $('goals-status').textContent = input.checked ? 'Portionerna justeras efter dina mål.' : 'Recepten används som de är skrivna.';
+  } else {
+    const value = Math.round(Number(input.value));
+    if (!input.value || !Number.isFinite(value) || value < Number(input.min) || value > Number(input.max)) {
+      $('goals-status').textContent = `Skriv ett tal mellan ${input.min} och ${input.max}.`;
+      input.value = goals()[input.name];
+      return;
+    }
+    const changed = Object.fromEntries(Object.entries({ ...store.choices().goals, [input.name]: value }).filter(([key, amount]) => amount !== GOALS[key]));
+    store.setGoals(changed);
+    $('goals-status').textContent = 'Schemat är omräknat efter dina mål.';
+  }
+  refresh();
+});
+$('goals-reset').addEventListener('click', () => { store.setGoals(null); $('goals-status').textContent = 'Målen är återställda.'; refresh(); $('goals-title').scrollIntoView(); });
 $('clear-swaps').addEventListener('click', () => { store.clearSwaps(); refresh(); $('swaps').focus(); });
 $('forget').addEventListener('click', () => { store.forget(); globalThis.matschemaTheme?.apply(); refresh(); $('forget-status').textContent = 'Allt du sparat är raderat.'; });
 

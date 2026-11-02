@@ -135,6 +135,7 @@ export const RECIPES = {
   aggmackor: r('Äggmackor med keso & kalkon', [['brod', 80, '2 skivor bröd'], ['agg', 120, '2 kokta ägg'], ['keso', 50, '50 g keso'], ['kalkon', 30, 'kalkonpålägg'], ['tomat', 60, 'tomat']]),
 
   // ---------- Mellanmål och kvällsmål ----------
+  shake: r('Proteinshake', [['whey', 30, 'proteinpulver']], 'Skaka med 3 dl kallt vatten (eller mjölk). Passar efter träningen eller som ett extra mellanmål.'),
   apple_mandlar: r('Äpple + mandlar', [['apple', 150, '1 äpple'], ['mandlar', 30, '30 g mandlar (en näve)']]),
   clementin_mandlar: r('Clementiner + mandlar', [['clementin', 140, '2 clementiner'], ['mandlar', 30, '30 g mandlar (en näve)']]),
   banan_jnt: r('Banan + jordnötssmör', [['banan', 120, '1 banan'], ['jordnot', 15, '1 msk jordnötssmör']]),

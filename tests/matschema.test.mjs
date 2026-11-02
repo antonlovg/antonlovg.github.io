@@ -4,13 +4,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
-import { WEEK_NUMBERS, TARGET, POOLS, makePlan, nutrition, startDate } from '../matschema/js/plan.js';
+import { WEEK_NUMBERS, GOALS, POOLS, makePlan, nutrition, startDate } from '../matschema/js/plan.js';
 import { RECIPES } from '../matschema/js/recipes.js';
 import { FOODS, SWAPS } from '../matschema/js/foods.js';
 
 const root = new URL('../', import.meta.url);
 const read = file => readFile(new URL(file, root), 'utf8');
-const { days, shopping } = makePlan();
+const { days, shopping } = makePlan({ fit: false }); // the recipes as written
 
 test('the plan runs from week 45 to the last day of the year, a week at a time', () => {
   assert.equal(days[0].date, '2026-11-02');
@@ -21,15 +21,45 @@ test('the plan runs from week 45 to the last day of the year, a week at a time',
   assert.equal(startDate('2027-06-01'), '2027-01-03');
 });
 
-test('every day has 2000–2200 kcal, at least 90 g protein and one Huel', async () => {
-  const about = await read('matschema/index.html');
-  const [, low, high] = about.match(/landar på (\d+)–(\d+) g protein/).map(Number);
+test('as written, every day has 2000–2200 kcal, at least 140 g protein and one Huel', () => {
   for (const day of days) {
     assert.ok(day.kcal >= 2000 && day.kcal <= 2200, `${day.date}: ${day.kcal} kcal`);
-    assert.ok(day.protein >= TARGET.protein, `${day.date}: ${day.protein} g protein`);
-    assert.ok(day.protein >= low && day.protein <= high, `${day.date}: ${day.protein} g, but the page says ${low}–${high} g`);
+    assert.ok(day.protein >= 140, `${day.date}: ${day.protein} g protein`);
     assert.equal(day.meals.filter(meal => meal.recipe === 'huel').length, 1, `${day.date}: Huel`);
   }
+});
+
+// How far each day lands from the goals, as fractions: [median, worst].
+const spread = (plan, goals, key) => {
+  const errors = plan.days.map(day => Math.abs(day[key] - goals[key]) / goals[key]).sort((a, b) => a - b);
+  return [errors[Math.floor(errors.length / 2)], errors.at(-1)];
+};
+
+test('portions, a protein shake and a little oil bring each day to the goals', () => {
+  const plan = makePlan();
+  const [kcal, kcalWorst] = spread(plan, GOALS, 'kcal');
+  const [protein, proteinWorst] = spread(plan, GOALS, 'protein');
+  assert.ok(kcal < 0.025 && kcalWorst < 0.1, `kcal: median ${kcal}, worst ${kcalWorst}`);
+  assert.ok(protein < 0.02 && proteinWorst < 0.08, `protein: median ${protein}, worst ${proteinWorst}`);
+  assert.ok(spread(plan, GOALS, 'carbs')[0] < 0.06 && spread(plan, GOALS, 'fat')[0] < 0.07, 'carbs and fat, median');
+  for (const key of ['sugar', 'satfat']) assert.ok(plan.days.filter(day => day[key] > GOALS[key]).length <= 6 && plan.days.every(day => day[key] <= GOALS[key] * 1.2), key);
+  for (const day of plan.days) {
+    for (const meal of day.meals) assert.ok(meal.scale >= 0.7 && meal.scale <= 1.4, `${day.date} ${meal.id}: ${meal.scale}`);
+    assert.equal(day.meals.find(meal => meal.recipe === 'huel').scale, 1, 'Huel comes in bottles');
+    const shake = day.meals.find(meal => meal.id === 'shake');
+    assert.ok(!shake || (shake.items[0][1] > 0 && shake.items[0][1] <= 80), `${day.date}: shake`);
+  }
+  checkLeftovers(plan);
+});
+
+test('other goals move the whole plan, and without protein powder there is no shake', () => {
+  const goals = { kcal: 2600, protein: 190, carbs: 260, fat: 90, sugar: 60, satfat: 28 };
+  const plan = makePlan({ goals });
+  assert.ok(spread(plan, goals, 'kcal')[0] < 0.03, 'kcal');
+  assert.ok(spread(plan, goals, 'protein')[0] < 0.03, 'protein');
+  const without = makePlan({ exclude: ['whey'] });
+  assert.ok(without.days.every(day => !day.meals.some(meal => meal.id === 'shake')));
+  for (const week of WEEK_NUMBERS) for (const group of without.shopping(week)) assert.ok(!group.items.some(item => item.food === 'whey'));
 });
 
 // Every lunchbox comes from a dinner one to three days before, which is cooked for exactly the portions
@@ -46,7 +76,8 @@ const checkLeftovers = plan => plan.days.forEach((day, index) => {
   const back = index - plan.days.indexOf(source);
   assert.ok(back >= 1 && back <= (source.meals[3].storkok ? 3 : 1), `${day.date}: lunch from ${lunch.from}`);
   assert.equal(lunch.recipe, source.meals[3].recipe, day.date);
-  assert.deepEqual(lunch.items, source.meals[3].items, day.date);
+  // Same dish and ingredients (each meal has its own portion size; the dinner may have a little extra oil).
+  assert.deepEqual(lunch.items.map(([food]) => food), source.meals[3].items.filter(item => !item[2].includes('extra')).map(([food]) => food), day.date);
 });
 
 test('lunchboxes come from a double batch or a storkok, cooked for the portions eaten', () => {
@@ -77,7 +108,7 @@ test('recipes use known foods, swaps lead to known foods, and the numbers match 
   }
   for (const [food, swap] of Object.entries(SWAPS)) assert.ok(FOODS[food] && (swap === 'drop' || FOODS[swap]), food);
   for (const ids of Object.values(POOLS)) for (const id of ids) assert.ok(RECIPES[id], id);
-  assert.deepEqual(nutrition('huel'), { kcal: 400, protein: 35 });
+  assert.deepEqual([nutrition('huel').kcal, nutrition('huel').protein], [400, 35]);
   const pdf = [2082, 2122, 2085, 2100, 2071, 2124, 2073];
   days.slice(0, 7).forEach((day, i) => assert.ok(Math.abs(day.kcal - pdf[i]) <= 60, `${day.date}: ${day.kcal} vs ${pdf[i]}`));
 });
@@ -92,12 +123,12 @@ test('the shopping list adds up the week', () => {
 
 test('foods you don\'t eat are swapped or their meals replaced, everywhere', () => {
   const exclude = ['kyckling', 'champinjon', 'tonfisk', 'mandlar', 'lok', 'mjolk'];
-  const plan = makePlan({ exclude });
+  const plan = makePlan({ exclude, fit: false });
   for (const day of plan.days) {
     for (const meal of day.meals) {
       for (const [food] of meal.items) assert.ok(!exclude.includes(food), `${day.date} ${meal.id}: ${meal.recipe} has ${food}`);
     }
-    assert.ok(day.protein >= TARGET.protein, `${day.date}: ${day.protein} g protein`);
+    assert.ok(day.protein >= 90, `${day.date}: ${day.protein} g protein`);
     assert.ok(day.kcal > 1800 && day.kcal < 2500, `${day.date}: ${day.kcal} kcal`);
   }
   for (const week of WEEK_NUMBERS) for (const group of plan.shopping(week)) for (const item of group.items) assert.ok(!exclude.includes(item.food), `week ${week}: ${item.food}`);
