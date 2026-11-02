@@ -27,6 +27,10 @@ export const FOODS = {
   mjolk: food('Mjölk 1,5 %', 46, 3.5, 'Mejeri & ägg', { dl: 100 }),
   havredryck: food('Havredryck', 45, 1, 'Mejeri & ägg', { dl: 100 }),
   creme: food('Crème fraiche lätt', 165, 3, 'Mejeri & ägg'),
+  sojadryck: food('Sojadryck osötad', 33, 3.3, 'Mejeri & ägg', { dl: 100 }),
+  sojayoghurt: food('Sojayoghurt naturell, proteinrik', 60, 6, 'Mejeri & ägg'),
+  havrefraiche: food('Havrefraiche (vegansk crème fraiche)', 150, 1, 'Mejeri & ägg'),
+  vegost: food('Vegansk ost', 280, 1, 'Mejeri & ägg'),
 
   banan: food('Banan', 95, 1.1, 'Frukt & grönt', st(120)),
   apple: food('Äpple', 52, 0.3, 'Frukt & grönt', st(150)),
@@ -46,12 +50,15 @@ export const FOODS = {
   spenat: food('Spenat (färsk)', 23, 2.9, 'Frukt & grönt'),
   tomat: food('Tomater', 20, 0.9, 'Frukt & grönt'),
   zucchini: food('Zucchini', 17, 1.2, 'Frukt & grönt', st(250)),
+  blomkal: food('Blomkål', 25, 2, 'Frukt & grönt'),
 
   blabar: food('Blåbär (frysta)', 50, 0.7, 'Frysvaror'),
   hallon: food('Hallon (frysta)', 40, 1.2, 'Frysvaror'),
   mango: food('Mango (fryst)', 65, 0.6, 'Frysvaror'),
   wok: food('Wokgrönsaker (frysta)', 35, 2, 'Frysvaror'),
   arter: food('Gröna ärtor (frysta)', 80, 5.5, 'Frysvaror'),
+  edamame: food('Edamamebönor, skalade (frysta)', 125, 11.5, 'Frysvaror'),
+  falafel: food('Falafel (frysta)', 230, 7, 'Frysvaror'),
 
   brod: food('Fullkornsbröd', 250, 9, 'Bröd'),
   knacke: food('Knäckebröd', 340, 10, 'Bröd'),
@@ -66,6 +73,12 @@ export const FOODS = {
   nudlar: food('Äggnudlar (torra)', 380, 13, 'Skafferi', { pantry: true }),
   bulgur: food('Bulgur (torr)', 350, 12, 'Skafferi', { pantry: true }),
   linser: food('Röda linser (torra)', 340, 24, 'Skafferi', { pantry: true }),
+  gronalinser: food('Gröna linser (torra)', 330, 25, 'Skafferi', { pantry: true }),
+  quinoa: food('Quinoa (torr)', 370, 14, 'Skafferi', { pantry: true }),
+  risnudlar: food('Risnudlar (torra)', 360, 6, 'Skafferi', { pantry: true }),
+  chiafron: food('Chiafrön', 490, 17, 'Skafferi', { pantry: true }),
+  naringsjast: food('Näringsjäst', 360, 45, 'Skafferi', { pantry: true }),
+  tahini: food('Tahini', 600, 18, 'Skafferi'),
   havre: food('Havregryn', 370, 13, 'Skafferi', { pantry: true }),
   musli: food('Müsli utan tillsatt socker', 370, 10, 'Skafferi'),
   riskaka: food('Riskakor', 380, 8, 'Skafferi'),
@@ -77,6 +90,7 @@ export const FOODS = {
   kokos: food('Kokosmjölk lätt', 90, 1, 'Skafferi', { pack: 400, packName: ['burk', 'burkar'] }),
   kidney: food('Kidneybönor (kokta)', 110, 8, 'Skafferi', { pack: 380 }),
   kikartor: food('Kikärtor (kokta)', 120, 7, 'Skafferi', { pack: 380 }),
+  svartabonor: food('Svarta bönor (kokta)', 115, 8, 'Skafferi', { pack: 380 }),
   majs: food('Majs', 90, 3, 'Skafferi'),
   salsa: food('Salsa', 40, 1.5, 'Skafferi'),
   rodkal: food('Rödkål (inlagd)', 50, 1, 'Skafferi'),
@@ -91,8 +105,18 @@ export const FOODS = {
 
   huel: food('Huel Black Edition Strawberry Banana', 80, 7, 'Kyl/övrigt', st(500, 'flaska', 'flaskor')),
   whey: food('Proteinpulver Star Nutrition Whey Banana', 375, 75, 'Kyl/övrigt', { pantry: true }),
-  hummus: food('Hummus', 280, 7, 'Kyl/övrigt')
+  veganprotein: food('Veganskt proteinpulver (ärt/ris)', 380, 75, 'Kyl/övrigt', { pantry: true }),
+  hummus: food('Hummus', 280, 7, 'Kyl/övrigt'),
+  tofu: food('Tofu, fast', 145, 15, 'Kyl/övrigt'),
+  sojabitar: food('Vegobitar av soja (kylda)', 150, 18, 'Kyl/övrigt'),
+  sojafars: food('Vegofärs av soja', 160, 18, 'Kyl/övrigt'),
+  tempeh: food('Tempeh', 200, 19, 'Kyl/övrigt')
 };
+
+// Det som kommer från djur (kött, fisk, ägg, mejeri, honung och bakverk med mjölk eller smör): bort
+// när du väljer vegan.
+export const ANIMAL = ['kyckling', 'kalkonfile', 'notfars', 'kycklingfars', 'oxfile', 'kalkon', 'tonfisk', 'agg', 'kvarg', 'skyr', 'keso',
+  'ost', 'feta', 'parmesan', 'mozzarella', 'mjolk', 'creme', 'nudlar', 'lussekatt', 'pesto', 'honung', 'whey'];
 
 // Kolhydrater, varav socker, fett och varav mättat fett, gram per 100 g (ungefärliga svenska värden).
 export const MACROS = {
@@ -112,16 +136,24 @@ export const MACROS = {
   kokos: [3, 2, 8, 7], kidney: [15, 0.5, 0.5, 0.1], kikartor: [16, 0.5, 2.5, 0.3], majs: [15, 4, 1.2, 0.2], salsa: [7, 5, 0.2, 0],
   rodkal: [11, 10, 0.1, 0], lingon: [43, 40, 0.3, 0], pesto: [4, 2, 45, 7], mandlar: [7, 4, 50, 3.8], jordnot: [13, 5, 50, 10],
   honung: [80, 80, 0, 0], choklad: [34, 28, 42, 25], pepparkakor: [70, 30, 18, 8], olja: [0, 0, 100, 14],
-  huel: [4.8, 0.8, 3.4, 0.7], hummus: [14, 1, 22, 2.5], whey: [7, 5, 5, 3]
+  huel: [4.8, 0.8, 3.4, 0.7], hummus: [14, 1, 22, 2.5], whey: [7, 5, 5, 3],
+  sojadryck: [0.5, 0.2, 1.8, 0.3], sojayoghurt: [2.5, 1.5, 2.8, 0.5], havrefraiche: [6, 1.5, 13, 1.2], vegost: [20, 0, 22, 19],
+  blomkal: [3, 2, 0.3, 0], edamame: [7, 2, 5, 0.6], falafel: [25, 2, 11, 1.2], gronalinser: [48, 2, 1.5, 0.2], quinoa: [64, 1, 6, 0.7],
+  risnudlar: [80, 0.5, 0.6, 0.1], chiafron: [8, 0, 31, 3.3], naringsjast: [30, 1, 4, 0.6], tahini: [10, 0.5, 54, 7.5], svartabonor: [15, 0.3, 0.5, 0.1],
+  veganprotein: [5, 1, 7, 1.5], tofu: [2, 0.7, 8.5, 1.3], sojabitar: [5, 1, 5.5, 0.6], sojafars: [4, 1, 7, 0.8], tempeh: [9, 0, 11, 2.2]
 };
 
-// Om du inte äter något byts det i recepten mot det här (samma vikt), "drop" tar bort det. Byten görs
-// ett steg: äter du inte heller ersättningen, eller saknas den, tas små mängder (under 15 g) bort och
-// annars byts hela måltiden.
+// Om du inte äter något byts det i recepten mot det här (samma vikt; i en lista det första du äter),
+// "drop" tar bort det. Byten görs ett steg: äter du inte heller ersättningen, eller saknas den, tas små
+// mängder (under 15 g) bort och annars byts hela måltiden. De veganska alternativen sist i listorna gör
+// att mejeriet byts när du är vegan, medan kött, fisk och ägg ger veganska måltider i stället.
 export const SWAPS = {
   kyckling: 'kalkonfile', kalkonfile: 'kyckling', notfars: 'kycklingfars', kycklingfars: 'notfars', tonfisk: 'kyckling',
-  kvarg: 'skyr', skyr: 'kvarg', keso: 'kvarg', creme: 'kvarg', mjolk: 'havredryck', havredryck: 'mjolk',
-  feta: 'mozzarella', mozzarella: 'feta', parmesan: 'ost', ost: 'mozzarella',
+  kvarg: ['skyr', 'sojayoghurt'], skyr: ['kvarg', 'sojayoghurt'], keso: 'kvarg', creme: ['kvarg', 'havrefraiche'],
+  mjolk: ['sojadryck', 'havredryck'], havredryck: ['mjolk', 'sojadryck'], sojadryck: ['havredryck', 'mjolk'], sojayoghurt: ['kvarg', 'skyr'],
+  feta: ['mozzarella', 'vegost'], mozzarella: ['feta', 'vegost'], parmesan: ['ost', 'naringsjast'], ost: ['mozzarella', 'vegost'],
+  tofu: 'sojabitar', sojabitar: 'tofu', sojafars: 'sojabitar', tempeh: 'tofu', edamame: 'arter', svartabonor: 'kidney', gronalinser: 'linser',
+  quinoa: 'bulgur', risnudlar: 'ris', blomkal: 'broccoli', falafel: 'kikartor', tahini: 'jordnot', chiafron: 'drop', naringsjast: 'drop', havrefraiche: 'kokos',
   champinjon: 'zucchini', zucchini: 'paprika', paprika: 'zucchini', tomat: 'gurka', gurka: 'tomat', sallad: 'spenat', spenat: 'sallad',
   broccoli: 'arter', arter: 'broccoli', brysselkal: 'broccoli', majs: 'arter', potatis: 'sotpotatis', sotpotatis: 'potatis',
   blabar: 'hallon', hallon: 'blabar', mango: 'blabar', banan: 'apple', apple: 'clementin', clementin: 'apple',
@@ -133,8 +165,12 @@ export const SWAPS = {
 export const WORDS = {
   kyckling: 'kyckling', kalkonfile: 'kalkon', champinjon: 'champinjoner', zucchini: 'zucchini', tonfisk: 'tonfisk',
   keso: 'keso', kvarg: 'kvarg', skyr: 'skyr', feta: 'feta', mozzarella: 'mozzarella', banan: 'banan', apple: 'äpple',
-  blabar: 'blåbär', hallon: 'hallon', mango: 'mango', clementin: 'clementiner', kidney: 'kidneybönor', kikartor: 'kikärtor'
+  blabar: 'blåbär', hallon: 'hallon', mango: 'mango', clementin: 'clementiner', kidney: 'kidneybönor', kikartor: 'kikärtor',
+  sojayoghurt: 'sojayoghurt', mjolk: 'mjölk', sojadryck: 'sojadryck', havredryck: 'havredryck', tofu: 'tofu', svartabonor: 'svarta bönor'
 };
+
+// Det första i bytet för ett livsmedel som du äter ("drop", ett livsmedel eller null).
+export const swapFor = (food, without) => [].concat(SWAPS[food] ?? []).find(swap => swap === 'drop' || (FOODS[swap] && !without.has(swap))) ?? null;
 
 // Behöver inte köpas in efter vikt och räknas inte: används fritt.
 export const SPICES = 'Currypulver/currypasta, chilikrydda, spiskummin, tacokrydda, oregano, paprikapulver, kanel, vitlök, ingefära, soja, senap, citron, buljong, salt & peppar.';

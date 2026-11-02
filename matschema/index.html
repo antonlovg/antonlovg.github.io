@@ -123,6 +123,9 @@
       <button type="button" class="button quiet" id="goals-reset">Återställ målen</button>
 
       <h2 class="section-title section-gap">Det här äter jag inte</h2>
+      <label class="goals-fit vegan-choice"><input type="checkbox" id="vegan"> Jag är vegan</label>
+      <p class="fine">Inget kött, ingen fisk, inga ägg, inget mejeri och ingen honung. Mjölk, kvarg, ost och crème fraiche byts mot sojadryck, sojayoghurt, vegansk ost och havrefraiche, och rätter med kött, fisk eller ägg byts mot veganska rätter med tofu, tempeh, vegofärs, bönor och linser (storkok mot storkok). Proteinshaken görs på veganskt proteinpulver.</p>
+      <p class="fine" id="vegan-status" role="status"></p>
       <p>Välj bort det du inte gillar. Det byts mot något liknande i recepten (champinjoner blir zucchini, kyckling blir kalkon), och går inte det byts måltiden mot en annan med ungefär lika mycket kcal. Matlådor och inköpslistor följer med.</p>
       <div id="excluded" aria-live="polite"></div>
       <div class="foods" id="foods"></div>
@@ -132,7 +135,7 @@
       <button type="button" class="button quiet" id="clear-swaps" hidden>Ångra alla byten</button>
 
       <h3 class="section-sub">Så funkar schemat</h3>
-      <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, tonfisk, ägg och kvarg (ingen annan fisk). Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag.</p>
+      <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, tonfisk, ägg och kvarg (ingen annan fisk), eller helt veganskt med tofu, tempeh, vegofärs, bönor och linser om du bockar i <b>Jag är vegan</b>. Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag.</p>
       <div class="boxes">
         <div class="box box-sand"><h3>Matlådeflödet</h3><p>Måndagens middag blir tisdagens lunch, och så vidare till fredag. Måndagens lunch förbereder du på söndagen.</p></div>
         <div class="box box-rose"><h3>Efter dina mål</h3><p>Varje dag räknas mot dina mål för energi, protein, kolhydrater och fett. Portionerna, proteinshaken (Star Nutrition Banana) och lite olivolja justeras så att dagen hamnar rätt.</p></div>

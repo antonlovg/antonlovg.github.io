@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { WEEK_NUMBERS, GOALS, POOLS, makePlan, nutrition, startDate } from '../matschema/js/plan.js';
 import { RECIPES } from '../matschema/js/recipes.js';
-import { FOODS, SWAPS } from '../matschema/js/foods.js';
+import { ANIMAL, FOODS, SWAPS } from '../matschema/js/foods.js';
 
 const root = new URL('../', import.meta.url);
 const read = file => readFile(new URL(file, root), 'utf8');
@@ -106,7 +106,7 @@ test('recipes use known foods, swaps lead to known foods, and the numbers match 
       assert.ok(grams > 0 && text, `${id}: ${food}`);
     }
   }
-  for (const [food, swap] of Object.entries(SWAPS)) assert.ok(FOODS[food] && (swap === 'drop' || FOODS[swap]), food);
+  for (const [food, swap] of Object.entries(SWAPS)) assert.ok(FOODS[food] && [].concat(swap).every(to => to === 'drop' || FOODS[to]), food);
   for (const ids of Object.values(POOLS)) for (const id of ids) assert.ok(RECIPES[id], id);
   assert.deepEqual([nutrition('huel').kcal, nutrition('huel').protein], [400, 35]);
   const pdf = [2082, 2122, 2085, 2100, 2071, 2124, 2073];
@@ -138,6 +138,35 @@ test('foods you don\'t eat are swapped or their meals replaced, everywhere', () 
   assert.ok(monday[3].items.some(([food]) => food === 'kalkonfile'));
   assert.notEqual(monday[1].recipe, 'tonfiskpasta');
   assert.equal(monday[1].replaced.from, 'tonfiskpasta');
+});
+
+test('vegan: nothing from animals, dairy swapped, a vegan shake, storkok kept, and the goals still met', () => {
+  const plan = makePlan({ vegan: true });
+  for (const day of plan.days) {
+    for (const meal of day.meals) for (const [food] of meal.items) assert.ok(!ANIMAL.includes(food), `${day.date} ${meal.id}: ${meal.recipe} has ${food}`);
+    const shake = day.meals.find(meal => meal.id === 'shake');
+    assert.ok(!shake || shake.items[0][0] === 'veganprotein', `${day.date}: shake`);
+  }
+  for (const week of WEEK_NUMBERS) for (const group of plan.shopping(week)) for (const item of group.items) assert.ok(!ANIMAL.includes(item.food), `week ${week}: ${item.food}`);
+  checkLeftovers(plan);
+  assert.ok(plan.days.filter(day => day.meals[3].storkok).length >= 4, 'storkok');
+  const [kcal, kcalWorst] = spread(plan, GOALS, 'kcal');
+  const [protein, proteinWorst] = spread(plan, GOALS, 'protein');
+  assert.ok(kcal < 0.03 && kcalWorst < 0.12, `kcal: median ${kcal}, worst ${kcalWorst}`);
+  assert.ok(protein < 0.04 && proteinWorst < 0.1, `protein: median ${protein}, worst ${proteinWorst}`);
+  // Mejeri byts i recepten (overnight oats blir med sojayoghurt och sojadryck), kött ger veganska rätter.
+  const overnight = plan.days.flatMap(day => day.meals).find(meal => meal.recipe === 'overnight');
+  assert.match(overnight.title, /sojayoghurt/);
+  assert.ok(overnight.vegan && overnight.items.some(([food]) => food === 'sojadryck'));
+  const monday = plan.days[0].meals[3];
+  assert.equal(monday.replaced.from, 'curry');
+  assert.ok(monday.replaced.vegan);
+  // Ditt eget bortval räknas inte som veganskt, och utan proteinpulver blir det ingen shake.
+  const mine = makePlan({ vegan: true, exclude: ['tofu', 'whey'] });
+  assert.ok(mine.days.every(day => day.meals.every(meal => meal.id !== 'shake' && meal.items.every(([food]) => food !== 'tofu'))));
+  assert.ok(mine.days.flatMap(day => day.meals).some(meal => meal.changes.includes('Vegobitar av soja (kylda) i stället för tofu, fast') && !meal.vegan));
+  // Utan vegan är planen som förut.
+  assert.deepEqual(makePlan().days.map(day => day.meals.map(meal => meal.recipe)), makePlan({ vegan: false }).days.map(day => day.meals.map(meal => meal.recipe)));
 });
 
 test('a swapped meal sticks, and the next day\'s lunchbox follows the swapped dinner', () => {

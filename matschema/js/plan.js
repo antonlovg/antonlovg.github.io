@@ -1,7 +1,7 @@
 // Veckorna, från vecka 45 till årets sista vecka. En dag är fem recept i måltidsordning; "<" i lunchen
 // betyder en matlåda (rester). makePlan lägger på dina val (det du inte äter, måltider du bytt), justerar
 // portionerna och proteinshaken efter dina dagliga mål och räknar fram näringen och inköpslistan.
-import { FOODS, MACROS, SECTIONS, SWAPS, WORDS } from './foods.js';
+import { ANIMAL, FOODS, MACROS, SECTIONS, WORDS, swapFor } from './foods.js';
 import { RECIPES } from './recipes.js';
 
 // Dagliga mål. Socker och mättat fett är tak; resten försöker dagarna träffa.
@@ -147,14 +147,25 @@ const DINNERS = ['curry', 'chili', 'ugnskyckling', 'bolognese', 'kottbullar', 'l
   'tacos', 'tortillapizza', 'gyros', 'burgare', 'kycklingwok', 'nudelwok', 'pannbiff', 'schnitzel',
   'ugnspasta', 'kycklingris', 'tacogratang', 'kycklingkokos', 'kottfarslimpa', 'gulasch', 'kycklingchili', 'frittata',
   'kycklingpasta', 'platmat', 'shakshuka', 'burrito', 'kycklingpytt', 'tonfisktomat', 'quesadilla', 'nudelsoppa', 'tacobowl'];
-const SNACKS = ['apple_mandlar', 'clementin_mandlar', 'banan_jnt', 'kvarg_mango', 'kvarg_hallon', 'riskakor', 'agg_morot'];
+const VEGAN_DINNERS = ['tofucurry', 'vegochili', 'vegobolognese', 'linsgryta_vegan', 'tofuwok', 'vegotacos', 'falafeltallrik', 'vegoburgare', 'tempeh',
+  'vegopytt', 'vegopizza', 'ramen', 'kikartsgryta', 'vegostroganoff', 'bonburrito', 'vegougnspasta', 'dal', 'bonchili', 'vegolasagne'];
+const SNACKS = ['apple_mandlar', 'clementin_mandlar', 'banan_jnt', 'kvarg_mango', 'kvarg_hallon', 'riskakor', 'agg_morot',
+  'edamame', 'hummus_morot', 'rostade_kikartor'];
 export const POOLS = {
-  frukost: ['huel', 'aggrora', 'proteingrot', 'pannkakor', 'omelett', 'overnight', 'risgrynsgrot', 'kvargmusli', 'smoothie', 'aggmackor'],
-  lunch: ['tonfiskpasta', 'kycklingsallad', 'pestosallad', 'tonfiskwrap', 'kycklingwrap', 'grekisk', 'tonfisksallad', 'linssoppa', 'tonfiskrora', 'kycklingmacka', ...DINNERS],
+  frukost: ['huel', 'aggrora', 'proteingrot', 'pannkakor', 'omelett', 'overnight', 'risgrynsgrot', 'kvargmusli', 'smoothie', 'aggmackor',
+    'tofurora', 'chiapudding', 'frukostburrito', 'avokadotoast', 'bananplattar'],
+  lunch: ['tonfiskpasta', 'kycklingsallad', 'pestosallad', 'tonfiskwrap', 'kycklingwrap', 'grekisk', 'tonfisksallad', 'linssoppa', 'tonfiskrora', 'kycklingmacka',
+    'falafelwrap', 'linsquinoa', 'kikartsrora', 'edamamebowl', 'tofumacka', 'linssoppa_vegan', ...DINNERS, ...VEGAN_DINNERS],
   mellanmal: ['huel', ...SNACKS],
-  middag: DINNERS,
-  kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'choklad', 'pepparkakor', 'chokladkvarg', 'keso_hallon', ...SNACKS]
+  middag: [...DINNERS, ...VEGAN_DINNERS],
+  kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'choklad', 'pepparkakor', 'chokladkvarg', 'keso_hallon',
+    'sojayoghurt_musli', 'chia_hallon', 'chokladmousse', ...SNACKS]
 };
+
+const TREATS = ['choklad', 'julgodis', 'pepparkakor', 'lussekatt', 'nyarsdessert'];
+
+// Det du inte äter: det du valt bort, och allt från djur om du är vegan.
+export const excludedFoods = ({ exclude = [], vegan = false } = {}) => new Set([...exclude, ...(vegan ? ANIMAL : [])].filter(food => FOODS[food]));
 
 const lower = text => text[0].toLowerCase() + text.slice(1);
 // Byter ett ord i en rätts namn och behåller stor bokstav: ("Kycklingwok", "kyckling", "kalkon") → "Kalkonwok".
@@ -164,12 +175,13 @@ const renamed = (title, from, to) => title.replace(new RegExp(from, 'gi'), match
 // är receptet inte ok (då byts hela måltiden).
 export function adapt(id, exclude = new Set()) {
   const recipe = RECIPES[id];
-  const items = [], changes = [], blocking = [];
+  const items = [], changes = [], blocking = [], touched = [];
   let title = recipe.name, how = recipe.how;
   for (const [food, grams, text] of recipe.items) {
     if (!exclude.has(food)) { items.push([food, grams, text]); continue; }
-    const swap = SWAPS[food];
-    if (swap && swap !== 'drop' && !exclude.has(swap)) {
+    touched.push(food);
+    const swap = swapFor(food, exclude);
+    if (swap && swap !== 'drop') {
       if (WORDS[food] && WORDS[swap]) [title, how] = [title, how].map(text => renamed(text, WORDS[food], WORDS[swap]));
       items.push([swap, grams, `${Math.round(grams)} g ${lower(FOODS[swap].name)}`]);
       changes.push(`${FOODS[swap].name} i stället för ${lower(FOODS[food].name)}`);
@@ -179,7 +191,7 @@ export function adapt(id, exclude = new Set()) {
       blocking.push(food);
     }
   }
-  return { recipe: id, title, how, items, changes, blocking, ok: !blocking.length, ...rounded(contents(items)), storkok: recipe.storkok || 0 };
+  return { recipe: id, title, how, items, changes, blocking, touched, ok: !blocking.length, ...rounded(contents(items)), storkok: recipe.storkok || 0 };
 }
 
 // Alternativen för en måltid, närmast i kcal först.
@@ -216,10 +228,10 @@ const CAP = 8; // att gå över ett tak väger tyngre än att missa ett mål
 const MARGIN = 0.95; // och lösaren siktar lite under taken, så att avrundningen inte tar dem över
 const KEEP = 0.04; // hur mycket det kostar att ändra en portion från receptet
 
-function fitDay(day, goals, shake, oil) {
+function fitDay(day, goals, shake, oil, powder) {
   const free = day.meals.map((meal, m) => m).filter(m => day.meals[m].recipe !== 'huel');
   const fixed = contents(day.meals.filter(meal => meal.recipe === 'huel').flatMap(meal => meal.items));
-  const parts = [...free.map(m => contents(day.meals[m].items)), contents([['whey', 10]]), contents([['olja', 4.5]])];
+  const parts = [...free.map(m => contents(day.meals[m].items)), contents([[powder || 'whey', 10]]), contents([['olja', 4.5]])];
   const n = free.length;
   const bounds = [...free.map(() => SCALE), shake ? SHAKE : [0, 0], oil ? OIL : [0, 0]];
   const start = [...free.map(() => 1), 0, 0];
@@ -277,12 +289,16 @@ function scaled(meal, scale) {
 }
 
 // Planen med dina val: exclude = livsmedel du inte äter, swaps = { "2026-11-02:middag": "lasagne" },
-// goals = dagliga mål (GOALS), fit = justera portionerna efter målen. Matlådorna följer middagarna.
-export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true } = {}) {
+// goals = dagliga mål (GOALS), fit = justera portionerna efter målen, vegan = inget från djur. Matlådorna
+// följer middagarna.
+export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false } = {}) {
   goals = { ...GOALS, ...goals };
-  const without = new Set(exclude.filter(food => FOODS[food]));
+  const without = excludedFoods({ exclude, vegan });
+  // Byten som bara beror på att du är vegan (inte på något du själv valt bort) visas som veganska.
+  const mine = new Set(exclude);
+  const veganOnly = foods => vegan && foods.length > 0 && foods.every(food => ANIMAL.includes(food) && !mine.has(food));
   const days = [];
-  const lastUsed = new Map();
+  const lastUsed = new Map(), uses = new Map();
   BASE.forEach((base, index) => {
     const meals = MEALS.map((slot, m) => {
       const chosen = swaps[`${base.date}:${slot.id}`];
@@ -301,21 +317,29 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true }
       if (!dish.ok) {
         // Närmast i kcal, men inte samma rätt som de senaste dagarna: annars blir det samma ersättning överallt.
         const target = adapt(wanted).kcal;
-        const score = option => Math.abs(option.kcal - target) + (index - (lastUsed.get(option.recipe) ?? -99) < 4 ? 400 : 0);
+        // Ett storkok ersätts helst av ett annat storkok, så att matlådorna räcker som planerat.
+        const storkok = Boolean(RECIPES[wanted].storkok);
+        // Godis bara där det var godis förut, och rätter som redan valts många gånger lite längre bak i kön.
+        const treat = TREATS.includes(wanted);
+        const score = option => Math.abs(option.kcal - target) + (index - (lastUsed.get(option.recipe) ?? -99) < 4 ? 400 : 0)
+          + (Boolean(option.storkok) !== storkok ? 250 : 0) + (TREATS.includes(option.recipe) !== treat ? 300 : 0) + 30 * (uses.get(option.recipe) || 0);
         const pick = alternatives(slot.id, target, without, base.ids).sort((a, b) => score(a) - score(b))[0];
-        if (pick) { replaced = { from: wanted, because: dish.blocking }; dish = pick; }
+        if (pick) { replaced = { from: wanted, because: dish.blocking, vegan: veganOnly(dish.blocking) }; dish = pick; }
       }
       lastUsed.set(dish.recipe, index);
-      return { ...slot, ...dish, leftover: false, swapped: Boolean(manual), planned, replaced, extra: 0 };
+      if (replaced) uses.set(dish.recipe, (uses.get(dish.recipe) || 0) + 1);
+      return { ...slot, ...dish, vegan: veganOnly(dish.touched), leftover: false, swapped: Boolean(manual), planned, replaced, extra: 0 };
     });
     days.push({ week: base.week, weekday: base.weekday, date: base.date, note: base.note, meals });
   });
+  // Proteinpulvret: whey, eller veganskt om du är vegan. Väljer du bort proteinpulver blir det ingen shake.
+  const powder = mine.has('whey') ? null : vegan ? 'veganprotein' : 'whey';
   days.forEach(day => {
     const dinner = day.meals[3];
     dinner.portions = 1 + dinner.extra;
     dinner.batch = dinner.extra > 0;
     if (fit) {
-      const { scales, shake, oil } = fitDay(day, goals, !without.has('whey'), !without.has('olja'));
+      const { scales, shake, oil } = fitDay(day, goals, powder && !without.has(powder), !without.has('olja'), powder);
       day.meals = day.meals.map((meal, m) => scaled(meal, scales[m]));
       if (oil) {
         const dinner = day.meals[3];
@@ -323,9 +347,9 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true }
         day.meals[3] = { ...dinner, items, oil, ...rounded(contents(items)) };
       }
       if (shake) {
-        const dish = adapt('shake');
-        const items = [['whey', shake, `${shake} g proteinpulver (ca ${half(Math.max(0.5, Math.round(shake / 15) / 2))} skopa à 30 g)`]];
-        day.meals.push({ id: 'shake', name: 'Proteinshake', until: 24, ...dish, title: 'Proteinshake med Star Nutrition Banana', items, ...rounded(contents(items)), leftover: false, swapped: false, scale: 1 });
+        const dish = adapt(vegan ? 'veganshake' : 'shake');
+        const items = [[powder, shake, `${shake} g ${vegan ? 'veganskt ' : ''}proteinpulver (ca ${half(Math.max(0.5, Math.round(shake / 15) / 2))} skopa à 30 g)`]];
+        day.meals.push({ id: 'shake', name: 'Proteinshake', until: 24, ...dish, title: vegan ? 'Proteinshake (veganskt pulver)' : 'Proteinshake med Star Nutrition Banana', items, ...rounded(contents(items)), leftover: false, swapped: false, scale: 1 });
       }
     }
     Object.assign(day, rounded(day.meals.reduce((sum, meal) => {
@@ -335,6 +359,8 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true }
   });
   return {
     days,
+    without,
+    vegan,
     day: date => days.find(day => day.date === date),
     week: week => days.filter(day => day.week === week),
     shopping: week => shoppingList(days, week)

@@ -2,7 +2,7 @@
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa. Utan adress öppnas dagens dag.
 import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, makePlan, alternatives, cookAmount, startDate, todayIso } from './plan.js';
 import { RECIPES } from './recipes.js';
-import { FOODS, SECTIONS, SPICES, SWAPS } from './foods.js';
+import { ANIMAL, FOODS, SECTIONS, SPICES, swapFor } from './foods.js';
 import * as store from './store.js';
 
 const $ = id => document.getElementById(id);
@@ -24,12 +24,14 @@ const list = items => items.length < 2 ? items.join('') : `${items.slice(0, -1).
 
 // ---------- Planen, med det du inte äter och det du bytt ----------
 let plan = makePlan(store.choices());
-const excluded = () => new Set(store.choices().exclude);
 const goals = () => ({ ...GOALS, ...store.choices().goals });
 function refresh() {
   plan = makePlan(store.choices());
   render();
 }
+
+// Det du själv ändrat (byten, bortval); det som bara blivit veganskt räknas inte.
+const personal = meal => !meal.leftover && Boolean(meal.swapped || (meal.replaced && !meal.replaced.vegan) || (meal.changes.length && !meal.vegan));
 
 // ---------- Datum ----------
 const format = (date, options) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'UTC', ...options }).format(new Date(`${date}T12:00:00Z`));
@@ -157,7 +159,7 @@ function renderTotals(day) {
 // Väljaren för att byta en måltid mot en annan, närmast i kcal först.
 function swapper(day, meal) {
   if (meal.id === 'shake') return null;
-  const options = alternatives(meal.id, meal.kcal, excluded(), [meal.recipe]);
+  const options = alternatives(meal.id, meal.kcal, plan.without, [meal.recipe]);
   const select = h('select', {
     id: `swap-${meal.id}`,
     onchange: event => {
@@ -191,11 +193,12 @@ function mealCard(day, meal, isNow) {
   const from = meal.leftover ? plan.day(meal.from) : null;
   const fed = meal.id === 'middag' ? lunchesFrom(day.date) : [];
   const changed = meal.swapped || (meal.replaced && !meal.leftover);
+  const vegan = !meal.swapped && !meal.leftover && (meal.replaced ? meal.replaced.vegan : meal.vegan);
   const tags = [
     isNow ? h('span', { class: 'tag tag-now' }, 'Nu') : null,
     from ? h('span', { class: 'tag' }, 'Matlåda') : null,
     fed.length ? h('span', { class: 'tag tag-batch' }, fed.length > 1 ? 'Storkok' : 'Dubbel sats') : null,
-    changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null,
+    vegan ? h('span', { class: 'tag tag-vegan' }, 'Vegansk') : changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null,
     meal.scale !== 1 ? h('span', { class: 'tag' }, `${Math.round(meal.scale * 100)} %`) : null
   ];
   const name = `${meal.title}${from ? ' (rester)' : ''}`;
@@ -211,7 +214,9 @@ function mealCard(day, meal, isNow) {
       h('span', { class: 'meal-name' }, name),
       h('span', { class: 'meal-numbers' }, h('b', {}, `${meal.kcal} kcal`), ` · ${meal.protein} g protein · ${meal.carbs} g kolh · ${meal.fat} g fett`)),
     h('div', { class: 'meal-body' },
-      meal.replaced && !meal.leftover ? h('p', { class: 'changed' }, `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
+      meal.replaced && !meal.leftover ? h('p', { class: 'changed' }, meal.replaced.vegan
+        ? `Veganskt i stället för ${lower(RECIPES[meal.replaced.from].name)}.`
+        : `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
       meal.changes.length ? h('p', { class: 'changed' }, `${meal.changes.join('. ')}.`) : null,
       meal.scale !== 1 ? h('p', { class: 'fine' }, `Portionen är ${Math.round(meal.scale * 100)} % av receptet, för att dagen ska träffa dina mål.`) : null,
       h('ul', { class: 'ingredients' }, meal.items.map(([, , text]) => h('li', {}, text))),
@@ -255,7 +260,7 @@ function renderWeek() {
       return h('tr', { class: classes(day.date === today && 'is-today', eaten === day.meals.length && 'is-done') },
         h('th', { scope: 'row' }, h('a', { href: `#dag/${day.date}` }, weekdayName(day.date), h('small', {}, dayMonth(day.date)), day.note ? h('small', { class: 'note' }, day.note) : null)),
         day.meals.map(meal => {
-          const changed = meal.swapped || meal.replaced || meal.changes.length;
+          const changed = personal(meal);
           return h('td', { 'data-label': meal.name, class: classes(store.isEaten(day.date, meal.id) && 'is-eaten', changed && 'is-changed') },
             h('span', {}, `${meal.title}${meal.leftover ? ' (rester)' : ''}`, changed ? h('span', { class: 'visually-hidden' }, ' (bytt eller anpassad)') : null));
         }),
@@ -265,7 +270,7 @@ function renderWeek() {
 
   const flow = days.filter(day => day.meals[3].batch).map(day => h('li', {}, h('b', {}, `${shortDay(day.date)}:`), ` ${day.meals[3].title} → ${lunchesFrom(day.date).map(other => shortDay(other.date)).join(', ')} lunch`));
   const kcal = days.map(day => day.kcal), protein = days.map(day => day.protein);
-  const changes = days.flatMap(day => day.meals).filter(meal => !meal.leftover && (meal.swapped || meal.replaced || meal.changes.length)).length;
+  const changes = days.flatMap(day => day.meals).filter(personal).length;
   $('week-boxes').replaceChildren(...[
     flow.length ? h('div', { class: 'box box-sand' }, h('h3', {}, 'Matlådeflödet'), h('ul', {}, flow)) : null,
     h('div', { class: 'box box-rose' }, h('h3', {}, 'Veckan i siffror'),
@@ -334,25 +339,29 @@ async function shareShop() {
 const USED = new Set(Object.values(RECIPES).flatMap(recipe => recipe.items.map(([food]) => food)));
 
 function consequence(food, without) {
-  if (food === 'whey') return 'ingen proteinshake';
-  const swap = SWAPS[food];
+  if (food === 'whey' || food === 'veganprotein') return 'ingen proteinshake';
+  const swap = swapFor(food, without);
   if (swap === 'drop') return 'tas bort ur recepten';
-  if (swap && !without.has(swap)) return `byts mot ${lower(FOODS[swap].name)}`;
+  if (swap) return `byts mot ${lower(FOODS[swap].name)}`;
   return 'måltiderna byts mot andra';
 }
 
 function renderChoices() {
   $('title').textContent = 'Anpassa';
   $('subtitle').textContent = `Vecka ${WEEK_NUMBERS[0]}–${WEEK_NUMBERS.at(-1)} · ${number(plan.days.length)} dagar`;
-  const without = excluded();
-  const affected = plan.days.flatMap(day => day.meals).filter(meal => !meal.leftover && !meal.swapped && (meal.replaced || meal.changes.length)).length;
+  const { exclude, vegan } = store.choices();
+  const mine = new Set(exclude.filter(food => FOODS[food]));
+  const without = plan.without;
+  const veganOnly = food => vegan && ANIMAL.includes(food) && !mine.has(food);
+  const affected = plan.days.flatMap(day => day.meals).filter(meal => personal(meal) && !meal.swapped).length;
+  $('vegan').checked = vegan;
   const toggle = (food, on) => { store.setExcluded(food, on); refresh(); document.querySelector(`#foods input[data-food="${food}"]`)?.focus(); };
 
-  $('excluded').replaceChildren(...(without.size
-    ? [h('ul', { class: 'chips' }, [...without].filter(food => FOODS[food]).sort((a, b) => FOODS[a].name.localeCompare(FOODS[b].name, 'sv')).map(food =>
+  $('excluded').replaceChildren(...(mine.size
+    ? [h('ul', { class: 'chips' }, [...mine].sort((a, b) => FOODS[a].name.localeCompare(FOODS[b].name, 'sv')).map(food =>
       h('li', {}, h('button', { type: 'button', class: 'chip', 'aria-label': `Ta bort ${FOODS[food].name} från listan`, onclick: () => { store.setExcluded(food, false); refresh(); } }, FOODS[food].name, h('span', { 'aria-hidden': 'true' }, ' ×'))))),
-    h('p', { class: 'fine' }, `Det ändrar ${affected} måltider i schemat. Dagarna kan då hamna lite över eller under 2100 kcal; siffrorna räknas om.`)]
-    : [h('p', { class: 'fine' }, 'Du äter allt just nu.')]));
+    h('p', { class: 'fine' }, `Det ändrar ${affected} måltider i schemat. Portionerna räknas om så att dagarna ändå träffar dina mål.`)]
+    : [h('p', { class: 'fine' }, vegan ? 'Utöver det veganska äter du allt.' : 'Du äter allt just nu.')]));
 
   $('foods').replaceChildren(...SECTIONS.map(section => {
     const foods = [...USED].filter(food => FOODS[food].section === section).sort((a, b) => FOODS[a].name.localeCompare(FOODS[b].name, 'sv'));
@@ -360,8 +369,8 @@ function renderChoices() {
     return h('details', { class: 'food-group', open: open.has(`foods:${section}`), ontoggle: event => { if (event.target.open) open.add(`foods:${section}`); else open.delete(`foods:${section}`); } },
       h('summary', {}, section, chosen ? h('span', { class: 'count' }, ` (${chosen} bortvalda)`) : null),
       h('ul', {}, foods.map(food => h('li', {}, h('label', {},
-        h('input', { type: 'checkbox', checked: without.has(food), 'data-food': food, onchange: event => toggle(food, event.target.checked) }),
-        h('span', {}, FOODS[food].name, h('small', {}, consequence(food, without))))))));
+        h('input', { type: 'checkbox', checked: without.has(food), disabled: veganOnly(food), 'data-food': food, onchange: event => toggle(food, event.target.checked) }),
+        h('span', {}, FOODS[food].name, h('small', {}, veganOnly(food) ? `inte veganskt, ${consequence(food, without)}` : consequence(food, without))))))));
   }));
 
   const target = goals();
@@ -418,6 +427,13 @@ $('goals').addEventListener('change', event => {
   refresh();
 });
 $('goals-reset').addEventListener('click', () => { store.setGoals(null); $('goals-status').textContent = 'Målen är återställda.'; refresh(); $('goals-title').scrollIntoView(); });
+$('vegan').addEventListener('change', event => {
+  store.setVegan(event.target.checked);
+  refresh();
+  $('vegan-status').textContent = event.target.checked
+    ? 'Schemat är veganskt: kött, fisk, ägg och mejeri är bytta mot veganska rätter och alternativ.'
+    : 'Schemat är som vanligt igen.';
+});
 $('clear-swaps').addEventListener('click', () => { store.clearSwaps(); refresh(); $('swaps').focus(); });
 $('forget').addEventListener('click', () => { store.forget(); globalThis.matschemaTheme?.apply(); refresh(); $('forget-status').textContent = 'Allt du sparat är raderat.'; });
 
