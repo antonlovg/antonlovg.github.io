@@ -1,7 +1,7 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa (veckorna räknas vidare efter 53, så
 // vecka 54 är vecka 1 2027). #synk/… läser in det du sparat på en annan enhet. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, cookAmount, startDate, todayIso, weekLabel } from './plan.js';
+import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, cookAmount, startDate, todayIso, traits, weekLabel } from './plan.js';
 import { pack, unpack, fileText, readFile } from './sync.js';
 import { RECIPES } from './recipes.js';
 import { ANIMAL, FOODS, SECTIONS, SPICES, swapFor } from './foods.js';
@@ -154,30 +154,89 @@ function bar(nutrient, eaten, planned, goal) {
   return node;
 }
 
+// Energi och protein syns alltid; resten när du fäller ut dem, eller när dagens plan missar dem.
+let allTotals = false;
+
 function renderTotals(day) {
   const target = goals();
   const eaten = day.meals.filter(meal => store.isEaten(day.date, meal.id));
   const off = NUTRIENTS.filter(nutrient => missed(nutrient, day[nutrient.id], target[nutrient.id]));
+  const shown = NUTRIENTS.filter(nutrient => allTotals || ['kcal', 'protein'].includes(nutrient.id) || off.includes(nutrient));
+  const toggle = h('button', { type: 'button', class: 'totals-toggle', 'aria-expanded': String(allTotals), onclick: () => {
+    allTotals = !allTotals;
+    renderTotals(day);
+    $('totals').querySelector('.totals-toggle').focus();
+  } }, allTotals ? 'Visa färre' : 'Alla näringsvärden');
   $('totals').replaceChildren(
-    ...NUTRIENTS.map(nutrient => bar(nutrient, eaten.reduce((sum, meal) => sum + meal[nutrient.id], 0), day[nutrient.id], target[nutrient.id])),
-    h('p', { class: classes('plan-note', !off.length && 'goal-met') }, off.length
-      ? `Dagens plan missar ${list(off.map(nutrient => `${lower(nutrient.name)} (${number(day[nutrient.id])} ${nutrient.unit})`))}. Byt en måltid för att komma närmare.`
-      : 'Dagens plan träffar dina mål.'));
+    ...shown.map(nutrient => bar(nutrient, eaten.reduce((sum, meal) => sum + meal[nutrient.id], 0), day[nutrient.id], target[nutrient.id])),
+    h('div', { class: 'totals-foot' },
+      h('p', { class: classes('plan-note', !off.length && 'goal-met') }, off.length
+        ? `Planen missar ${list(off.map(nutrient => lower(nutrient.name)))}. Byt en måltid för att komma närmare.`
+        : '✓ Planen träffar dina mål.'),
+      shown.length < NUTRIENTS.length || allTotals ? toggle : null));
+}
+
+// ---------- Bladet: en dialog som glider upp underifrån på mobilen (byt, laga, flytta, välkommen) ----------
+const sheet = $('sheet');
+let sheetBack = null; // ger det som ska få fokus när bladet stängs
+let onSheetClose = null;
+let wakeLock = null;
+
+function openSheet(title, body, { cook = false, back = null, onClose = null } = {}) {
+  sheetBack = back;
+  onSheetClose = onClose;
+  sheet.className = classes('sheet', cook && 'sheet-cook');
+  $('sheet-title').textContent = title;
+  $('sheet-body').replaceChildren(...[body].flat().filter(Boolean));
+  $('sheet-body').scrollTop = 0;
+  if (!sheet.open) sheet.showModal();
+  $('sheet-close').focus();
+}
+const closeSheet = () => { if (sheet.open) sheet.close(); };
+
+sheet.addEventListener('close', () => {
+  releaseWake();
+  const [back, done] = [sheetBack, onSheetClose];
+  sheetBack = onSheetClose = null;
+  done?.();
+  back?.()?.focus();
+});
+// Ett tryck utanför bladet (på bakgrunden) stänger det.
+sheet.addEventListener('click', event => { if (event.target === sheet) closeSheet(); });
+$('sheet-close').addEventListener('click', closeSheet);
+
+// Skärmen hålls tänd medan du lagar (där webbläsaren kan), och tänds igen när du kommer tillbaka till fliken.
+async function keepAwake() {
+  try { wakeLock = await navigator.wakeLock?.request('screen') ?? null; } catch { wakeLock = null; }
+  const note = $('cook-awake');
+  if (note) note.textContent = wakeLock ? 'Skärmen hålls tänd medan du lagar.' : '';
+}
+function releaseWake() {
+  wakeLock?.release().catch(() => {});
+  wakeLock = null;
 }
 
 // Sökning utan accenter, så att "grot" hittar gröt.
-const plain = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const plain = text => text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const DAY_TEXT = { alla: 'varje dag', vardag: 'alla vardagar', helg: 'alla helger' };
 const SCOPES = [['idag', 'Bara den här dagen'], ['alla', 'Varje dag'], ['vardag', 'Vardagar'], ['helg', 'Helger']];
 const SHOWN = 6;
+const FILTERS = [
+  ['snabb', 'Snabb', option => option.quick],
+  ['protein', 'Mycket protein', option => option.protein * 4 >= option.kcal * 0.3],
+  ['vegan', 'Vegansk', option => option.items.every(([food]) => !ANIMAL.includes(food))],
+  ['storkok', 'Storkok', option => option.storkok > 0],
+  ['kall', 'Utan spis', option => option.cold]
+];
+const swapButton = meal => () => document.querySelector(`[data-meal="${meal.id}"] [data-action="swap"]`);
 
-// Byt en måltid: sök bland alla rätter (på namn eller ingrediens) eller välj bland de närmast i kcal.
-// Frukost, lunch, mellanmål och kvällsmål kan också bli ett fast val från den här dagen.
-function swapper(day, meal) {
-  if (meal.id === 'shake') return null;
+// Byt en måltid: sök bland alla rätter (på namn eller ingrediens), filtrera, eller välj bland de närmast i
+// kcal. Frukost, lunch, mellanmål och kvällsmål kan också bli ett fast val från den här dagen.
+function openSwap(day, meal) {
   const id = `swap-${meal.id}`;
   const options = alternatives(meal.id, meal.kcal, plan.without, [meal.recipe, ...plan.disliked], CHOOSABLE).map(option => ({
     ...option,
+    ...traits(option.recipe),
     here: POOLS[meal.id].includes(option.recipe),
     text: plain(`${option.title} ${RECIPES[option.recipe].name} ${option.items.map(([food]) => FOODS[food].name).join(' ')}`)
   }));
@@ -188,21 +247,31 @@ function swapper(day, meal) {
     if (days === 'idag') store.setSwap(day.date, meal.id, recipe);
     else store.setFixed(meal.id, { recipe, days, at: day.date });
     refresh();
-    $(id)?.focus();
+    closeSheet();
     $('day-status').textContent = days === 'idag' ? `${RECIPES[recipe].name} till ${lower(meal.name)}.`
       : `${RECIPES[recipe].name} till ${lower(meal.name)} ${DAY_TEXT[days]} från och med ${dayMonth(day.date)}.`;
   };
   let all = false;
+  const active = new Set();
   const results = h('ul', { class: 'swap-results', id: `${id}-results` });
   const count = h('p', { class: 'fine', role: 'status' });
   const more = h('button', { type: 'button', class: 'button quiet small', onclick: () => { all = true; show(); results.querySelector(`li:nth-child(${SHOWN + 1}) button`)?.focus(); } });
   const search = h('input', { type: 'search', id, autocomplete: 'off', enterkeyhint: 'search', placeholder: 'T.ex. gröt, lax eller tofu', 'aria-controls': `${id}-results`, oninput: () => show() });
+  const filters = h('div', { class: 'filters', role: 'group', 'aria-label': 'Filter' }, FILTERS.map(([key, text]) =>
+    h('button', { type: 'button', class: 'filter', 'aria-pressed': 'false', onclick: event => {
+      if (active.has(key)) active.delete(key); else active.add(key);
+      event.currentTarget.setAttribute('aria-pressed', String(active.has(key)));
+      all = false;
+      show();
+    } }, text)));
   function show() {
     const words = plain(search.value).split(/\s+/).filter(Boolean);
-    // Utan sökord: rätterna för den här måltiden. Med sökord: allt som matchar, den här måltidens rätter först.
-    const matches = options.filter(option => (words.length || option.here) && words.every(word => option.text.includes(word)))
+    const narrowed = words.length > 0 || active.size > 0;
+    const tests = FILTERS.filter(([key]) => active.has(key)).map(([, , test]) => test);
+    // Utan sökord och filter: rätterna för den här måltiden. Annars allt som matchar, den här måltidens rätter först.
+    const matches = options.filter(option => (narrowed || option.here) && words.every(word => option.text.includes(word)) && tests.every(test => test(option)))
       .sort((a, b) => b.here - a.here);
-    const shown = words.length || all ? matches : matches.slice(0, SHOWN);
+    const shown = narrowed || all ? matches : matches.slice(0, SHOWN);
     results.replaceChildren(...shown.map(option => {
       const diff = option.kcal - meal.kcal;
       const usual = option.here ? null : [MEALS[3], ...MEALS].find(slot => POOLS[slot.id]?.includes(option.recipe));
@@ -210,22 +279,53 @@ function swapper(day, meal) {
         h('span', {}, `${plan.favourites.includes(option.recipe) ? '★ ' : ''}${option.title}`),
         h('small', {}, `${option.kcal} kcal (${diff >= 0 ? '+' : '−'}${Math.abs(diff)}) · ${option.protein} g protein${usual ? ` · brukar vara ${lower(usual.name)}` : ''}`)));
     }));
-    more.hidden = Boolean(words.length) || all || matches.length <= SHOWN;
+    more.hidden = narrowed || all || matches.length <= SHOWN;
     more.textContent = `Visa alla ${matches.length}`;
-    count.textContent = !words.length ? '' : matches.length ? `${matches.length} ${matches.length === 1 ? 'rätt' : 'rätter'}.` : 'Ingen rätt matchar. Prova ett annat ord.';
+    count.textContent = !narrowed ? '' : matches.length ? `${matches.length} ${matches.length === 1 ? 'rätt' : 'rätter'}.` : 'Ingen rätt matchar. Prova ett annat ord eller färre filter.';
   }
   show();
-  return h('div', { class: 'swap' },
-    h('label', { for: id }, 'Byt måltid: sök eller välj'),
-    search,
-    scope,
-    count,
-    results,
-    more,
-    meal.leftover ? h('p', { class: 'fine' }, 'Byter du matlådan lagas gårdagens middag i enkel sats.') : null,
-    meal.swapped ? h('button', { type: 'button', class: 'button quiet small', onclick: () => { store.setSwap(day.date, meal.id, null); refresh(); $(`swap-${meal.id}`)?.focus(); } },
-      `Ångra bytet (${RECIPES[meal.planned].name})`) : null);
+  openSheet(`Byt ${lower(meal.name)}`, [
+    h('p', { class: 'fine sheet-now' }, `Nu: ${meal.title} · ${meal.kcal} kcal`),
+    h('div', { class: 'swap' },
+      h('label', { for: id }, 'Sök på rätt eller ingrediens'),
+      search,
+      filters,
+      scope,
+      count,
+      results,
+      more,
+      meal.leftover ? h('p', { class: 'fine' }, 'Byter du matlådan lagas gårdagens middag i enkel sats.') : null,
+      meal.swapped ? h('button', { type: 'button', class: 'button quiet small', onclick: () => { store.setSwap(day.date, meal.id, null); refresh(); closeSheet(); } },
+        `Ångra bytet (${RECIPES[meal.planned].name})`) : null)
+  ], { back: swapButton(meal) });
+  if (matchMedia('(pointer: fine)').matches) search.focus();
 }
+
+// Laga: receptet i stor text, steg för steg (tryck på ett steg när det är klart), med skärmen tänd.
+function openCook(day, meal) {
+  const fed = meal.id === 'middag' ? lunchesFrom(day.date) : [];
+  const ingredients = fed.length
+    ? [...wholeBatch(meal, fed)].map(([food, grams]) => `${cookAmount(food, grams)} ${lower(FOODS[food].name)}`)
+    : meal.items.map(([, , text]) => text);
+  const steps = meal.how.split(/(?<=[.!])\s+/).filter(Boolean);
+  const tick = event => {
+    const button = event.currentTarget;
+    button.setAttribute('aria-pressed', String(button.getAttribute('aria-pressed') !== 'true'));
+  };
+  openSheet(meal.title, [
+    h('p', { class: 'fine', id: 'cook-awake', role: 'status' }),
+    fed.length ? h('p', { class: 'batch' }, h('b', {}, `${fed.length > 1 ? 'Storkok' : 'Dubbel sats'}, ${meal.portions} portioner: `),
+      `middag idag och matlåda ${list(fed.map(other => weekdayName(other.date).toLowerCase()))}.`) : null,
+    h('h3', { class: 'cook-head' }, 'Ingredienser'),
+    h('ul', { class: 'cook-list' }, ingredients.map(text => h('li', {}, text))),
+    h('h3', { class: 'cook-head' }, 'Gör så här'),
+    h('ol', { class: 'cook-steps' }, steps.map((text, i) => h('li', {},
+      h('button', { type: 'button', 'aria-pressed': 'false', onclick: tick }, h('span', { class: 'cook-num', 'aria-hidden': 'true' }, i + 1), h('span', {}, text))))),
+    h('p', { class: 'fine' }, `Kryddor att ha hemma: ${SPICES}`)
+  ], { cook: true, back: () => document.querySelector(`[data-meal="${meal.id}"] [data-action="cook"]`) });
+  keepAwake();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sheet.open && sheet.classList.contains('sheet-cook')) keepAwake(); });
 
 // Ett fast val: vad det gäller och en knapp för att sluta med det.
 function fixedNote(meal) {
@@ -236,7 +336,7 @@ function fixedNote(meal) {
       store.setFixed(meal.id, null);
       refresh();
       $('day-status').textContent = `Det fasta valet för ${lower(meal.name)} är borttaget.`;
-      $(`swap-${meal.id}`)?.focus();
+      swapButton(meal)()?.focus();
     } }, 'Sluta med det fasta valet'));
 }
 
@@ -247,8 +347,9 @@ function wholeBatch(meal, fed) {
   return grams;
 }
 
-// Favorit eller aldrig mer, för rätten (en matlåda betygsätts som middagen den kommer från).
-function rater(meal) {
+// Knapparna överst i en måltid: laga, byt, favorit och aldrig mer (en matlåda betygsätts som middagen den
+// kommer från).
+function actions(day, meal, from) {
   if (meal.id === 'shake') return null;
   const value = store.rating(meal.recipe);
   const rate = next => {
@@ -256,9 +357,11 @@ function rater(meal) {
     refresh();
     $('day-status').textContent = next === 1 ? `${RECIPES[meal.recipe].name} är en favorit. Den kommer oftare från nästa vecka.`
       : next === -1 ? `${RECIPES[meal.recipe].name} kommer inte tillbaka. Den byts ut från idag.` : 'Betyget är borttaget.';
-    document.querySelector(`[data-meal="${meal.id}"] .rate button[data-rate="${next || value}"]`)?.focus();
+    document.querySelector(`[data-meal="${meal.id}"] .actions button[data-rate="${next || value}"]`)?.focus();
   };
-  return h('div', { class: 'rate' },
+  return h('div', { class: 'actions' },
+    !from && meal.how && meal.recipe !== 'huel' ? h('button', { type: 'button', class: 'button small', 'data-action': 'cook', 'aria-haspopup': 'dialog', onclick: () => openCook(day, meal) }, 'Laga') : null,
+    h('button', { type: 'button', class: 'button quiet small', 'data-action': 'swap', 'aria-haspopup': 'dialog', onclick: () => openSwap(day, meal) }, 'Byt…'),
     h('button', { type: 'button', class: 'button quiet small', 'data-rate': '1', 'aria-pressed': String(value === 1), onclick: () => rate(value === 1 ? 0 : 1) }, value === 1 ? '★ Favorit' : '☆ Favorit'),
     h('button', { type: 'button', class: 'button quiet small', 'data-rate': '-1', 'aria-pressed': String(value === -1), onclick: () => rate(value === -1 ? 0 : -1) }, 'Aldrig mer'));
 }
@@ -292,6 +395,7 @@ function mealCard(day, meal, isNow) {
       h('span', { class: 'meal-name' }, name),
       h('span', { class: 'meal-numbers' }, h('b', {}, `${meal.kcal} kcal`), ` · ${meal.protein} g protein · ${meal.carbs} g kolh · ${meal.fat} g fett`)),
     h('div', { class: 'meal-body' },
+      actions(day, meal, from),
       meal.replaced && !meal.leftover ? h('p', { class: 'changed' }, meal.replaced.disliked
         ? `I stället för ${lower(RECIPES[meal.replaced.from].name)}, som du inte vill ha mer.`
         : meal.replaced.vegan
@@ -305,9 +409,7 @@ function mealCard(day, meal, isNow) {
       fed.length > 1 ? h('p', { class: 'batch' }, h('b', {}, `Storkok, ${meal.portions} portioner: `), `middag idag och matlåda ${list(fed.map(other => weekdayName(other.date).toLowerCase()))}.`) : null,
       fed.length ? h('div', { class: 'whole' }, h('p', {}, h('b', {}, `Hela satsen (${meal.portions} portioner)`)),
         h('ul', { class: 'ingredients' }, [...wholeBatch(meal, fed)].map(([food, grams]) => h('li', {}, `${cookAmount(food, grams)} ${lower(FOODS[food].name)}`)))) : null,
-      from ? h('p', { class: 'how' }, `Matlådan från ${weekdayName(from.date).toLowerCase()}ens middag.`) : meal.how ? h('p', { class: 'how' }, meal.how) : null,
-      rater(meal),
-      swapper(day, meal)));
+      from ? h('p', { class: 'how' }, `Matlådan från ${weekdayName(from.date).toLowerCase()}ens middag.`) : meal.how ? h('p', { class: 'how' }, meal.how) : null));
 
   return h('li', { class: classes('meal', meal.recipe === 'huel' && 'is-huel', eaten && 'is-eaten', isNow && 'is-now'), 'data-meal': meal.id }, details, check);
 }
@@ -339,12 +441,13 @@ function renderWeek() {
     h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Dag'), MEALS.map(meal => h('th', { scope: 'col' }, meal.name)), h('th', { scope: 'col' }, 'kcal / protein'))),
     h('tbody', {}, days.map(day => {
       const eaten = day.meals.filter(meal => store.isEaten(day.date, meal.id)).length;
-      return h('tr', { class: classes(day.date === today && 'is-today', eaten === day.meals.length && 'is-done') },
+      return h('tr', { 'data-date': day.date, class: classes(day.date === today && 'is-today', eaten === day.meals.length && 'is-done') },
         h('th', { scope: 'row' }, h('a', { href: `#dag/${day.date}` }, weekdayName(day.date), h('small', {}, dayMonth(day.date)), day.note ? h('small', { class: 'note' }, day.note) : null)),
         day.meals.map(meal => {
           const changed = personal(meal);
           return h('td', { 'data-label': meal.name, class: classes(store.isEaten(day.date, meal.id) && 'is-eaten', changed && 'is-changed') },
-            h('span', {}, `${meal.title}${meal.leftover ? ' (rester)' : ''}`, changed ? h('span', { class: 'visually-hidden' }, ' (bytt eller anpassad)') : null));
+            h('span', {}, `${meal.title}${meal.leftover ? ' (rester)' : ''}`, changed ? h('span', { class: 'visually-hidden' }, ' (bytt eller anpassad)') : null,
+              meal.id === 'middag' && movable(day) ? h('button', { type: 'button', class: 'move', 'aria-haspopup': 'dialog', 'aria-label': `Flytta ${lower(meal.title)} till en annan dag`, onclick: () => openMove(day) }, 'Flytta') : null));
         }),
         h('td', { class: 'week-total', 'data-label': 'Totalt' }, h('span', {}, h('b', {}, `${number(day.kcal)} kcal`), h('span', {}, `${day.protein} g protein`))));
     })));
@@ -361,6 +464,89 @@ function renderWeek() {
     h('div', { class: 'box box-mint' }, h('h3', {}, 'Handla'),
       h('p', {}, 'Allt till veckan på en lista. '), h('a', { href: `#handla/${state.week}` }, `Inköpslista ${weekName(state.week).toLowerCase()}`))
   ].filter(Boolean));
+}
+
+// Flytta en middag: den byter plats med middagen en annan dag samma vecka. Matlådorna och inköpslistan följer
+// med, eftersom det blir två vanliga byten. Högtidsrätterna står kvar.
+const movable = day => CHOOSABLE.includes(day.meals[3].recipe);
+
+function openMove(day) {
+  const dinner = day.meals[3];
+  const back = () => document.querySelector(`.week-table tr[data-date="${day.date}"] .move`);
+  const others = plan.week(day.week).filter(other => other.date !== day.date && movable(other));
+  const move = other => {
+    const set = (target, recipe) => store.setSwap(target.date, 'middag', recipe === target.meals[3].planned ? null : recipe);
+    const [mine, theirs] = [dinner.recipe, other.meals[3].recipe];
+    set(day, theirs);
+    set(other, mine);
+    refresh();
+    closeSheet();
+    $('week-status').textContent = `${dinner.title} flyttad till ${weekdayName(other.date).toLowerCase()}, och ${lower(other.meals[3].title)} till ${weekdayName(day.date).toLowerCase()}.`;
+  };
+  openSheet(`Flytta ${lower(dinner.title)}`, [
+    h('p', { class: 'fine' }, `Middagen på ${weekdayName(day.date).toLowerCase()} byter plats med den dag du väljer. Matlådorna och inköpslistan följer med.`),
+    h('ul', { class: 'swap-results' }, others.map(other => h('li', {},
+      h('button', { type: 'button', class: 'swap-option', onclick: () => move(other) },
+        h('span', {}, `${weekdayName(other.date)} ${format(other.date, { day: 'numeric', month: 'short' })}`),
+        h('small', {}, `${other.meals[3].title} · ${other.meals[3].kcal} kcal`)))))
+  ], { back });
+}
+
+// ---------- Välkommen: tre steg första gången (mål, vegan, frukost på vardagar) ----------
+const BREAKFASTS = [['huel', 'Huel, som i schemat'], ['havregrot', 'Havregrynsgröt med blåbär & kvarg'], ['overnight', 'Overnight oats med kvarg & blåbär'], ['aggrora', 'Äggröra på bröd']];
+const VEGAN_BREAKFAST = { havregrot: 'grot_vegan', aggrora: 'tofurora' };
+
+function openIntro() {
+  let step = 0;
+  const field = (name, label, unit, min, max) => h('label', {}, h('span', {}, label),
+    h('input', { type: 'number', inputmode: 'numeric', name, min, max, step: 1, value: GOALS[name] }), h('small', {}, unit));
+  const goalsForm = h('div', { class: 'goals intro-goals' }, field('kcal', 'Energi', 'kcal', 1200, 4500), field('protein', 'Protein', 'g', 40, 350));
+  const vegan = h('input', { type: 'checkbox', id: 'intro-vegan' });
+  const breakfast = h('fieldset', { class: 'intro-choices' }, h('legend', { class: 'visually-hidden' }, 'Frukost på vardagar'),
+    BREAKFASTS.map(([value, text], i) => h('label', {}, h('input', { type: 'radio', name: 'intro-breakfast', value, checked: i === 0 }), text)));
+  const steps = [
+    ['Dina mål', [h('p', {}, 'Schemat räknar portionerna mot ett dagligt mål. Standard är 2 228 kcal och 167 g protein. Kolhydrater, fett och taken för socker och mättat fett ändrar du under Anpassa.'), goalsForm]],
+    ['Det här äter du', [h('label', { class: 'goals-fit vegan-choice' }, vegan, ' Jag är vegan'),
+      h('p', { class: 'fine' }, 'Annat du inte äter, till exempel champinjoner eller fisk, väljer du bort under Anpassa. Det byts då mot något liknande.')]],
+    ['Frukost på vardagar', [h('p', {}, 'Vardagarna börjar med en Huel, men du kan välja något annat. Det blir ett fast val som du kan ändra när du vill.'), breakfast]]
+  ];
+  const heading = h('h3', { class: 'intro-step', tabindex: '-1' });
+  const body = h('div', { class: 'intro-body' });
+  const back = h('button', { type: 'button', class: 'button quiet', onclick: () => turn(-1) }, 'Tillbaka');
+  const next = h('button', { type: 'button', class: 'button', onclick: () => (step < steps.length - 1 ? turn(1) : finish()) });
+  const status = h('p', { class: 'fine', role: 'status' });
+  const draw = () => {
+    heading.textContent = `${steps[step][0]} (${step + 1} av ${steps.length})`;
+    body.replaceChildren(...steps[step][1]);
+    back.hidden = step === 0;
+    next.textContent = step < steps.length - 1 ? 'Nästa' : 'Klart';
+  };
+  const turn = by => {
+    if (by > 0 && !validGoals()) return;
+    step += by;
+    status.textContent = '';
+    draw();
+    heading.focus();
+  };
+  const validGoals = () => {
+    const bad = [...goalsForm.querySelectorAll('input')].find(input => !(Number(input.value) >= Number(input.min) && Number(input.value) <= Number(input.max)));
+    status.textContent = bad ? `Skriv ett tal mellan ${bad.min} och ${bad.max}.` : '';
+    bad?.focus();
+    return !bad;
+  };
+  const finish = () => {
+    const changed = Object.fromEntries([...goalsForm.querySelectorAll('input')].map(input => [input.name, Math.round(Number(input.value))]).filter(([key, value]) => value !== GOALS[key]));
+    if (Object.keys(changed).length) store.setGoals({ ...store.choices().goals, ...changed });
+    store.setVegan(vegan.checked);
+    const chosen = breakfast.querySelector('input:checked').value;
+    if (chosen !== 'huel') store.setFixed('frukost', { recipe: (vegan.checked && VEGAN_BREAKFAST[chosen]) || chosen, days: 'vardag', at: startDate(today) });
+    refresh();
+    closeSheet();
+    $('day-status').textContent = 'Klart! Schemat är anpassat. Allt kan ändras under Anpassa.';
+  };
+  draw();
+  openSheet('Välkommen till matschemat', [heading, body, status, h('div', { class: 'intro-nav' }, back, next)],
+    { back: () => $('main'), onClose: () => store.setIntro() });
 }
 
 // ---------- Handla ----------
@@ -646,4 +832,6 @@ window.addEventListener('hashchange', route);
 // Sparar sidan på enheten så att den öppnas utan nät (sw.js, bara /matschema/).
 navigator.serviceWorker?.register('sw.js').then(() => navigator.serviceWorker.ready).then(() => { if (state.view === 'anpassa') renderChoices(); }).catch(() => {});
 
+const firstVisit = store.isNew() && !location.hash.startsWith('#synk/');
 route();
+if (firstVisit) openIntro();

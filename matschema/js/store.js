@@ -1,6 +1,7 @@
 // Det du bockar av och väljer: ätna måltider per datum, inköpta varor per vecka, det du inte äter,
 // måltider du bytt, fasta val, om du är vegan, favoriter och rätter du inte vill ha, dina mål och färgtemat. Bara i
-// den här webbläsarens lokala lagring ("lovgren-matschema", listad på /cookies/), och bara när du ändrar något.
+// den här webbläsarens lokala lagring ("lovgren-matschema", listad på /cookies/), och bara när du ändrar något
+// (eller stänger välkomstrutan, som då inte visas igen).
 const KEY = 'lovgren-matschema';
 const blank = () => ({ eaten: {}, have: {}, hide: false, exclude: [], swaps: {}, ratings: {}, fixed: {} });
 
@@ -27,6 +28,7 @@ export function clean(value) {
   if (Object.keys(goals).length) result.goals = goals;
   if (value.fit === false) result.fit = false;
   if (value.vegan === true) result.vegan = true;
+  if (value.intro === true) result.intro = true;
   const theme = entries(value.theme, ([key, text]) => ['palette', 'mode'].includes(key) && typeof text === 'string');
   if (Object.keys(theme).length) result.theme = theme;
   return result;
@@ -81,6 +83,16 @@ export function setGoals(goals) {
 
 export function setFit(fit) {
   if (fit) delete data.fit; else data.fit = false;
+  save();
+}
+
+// Första besöket: inget sparat alls.
+export function isNew() {
+  try { return localStorage.getItem(KEY) === null; } catch { return false; }
+}
+
+export function setIntro() {
+  data.intro = true;
   save();
 }
 

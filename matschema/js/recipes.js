@@ -202,12 +202,12 @@ export const RECIPES = {
     'Gör en färssås av färs, lök, morot och tomat. Varva med plattor, spenat och havrefraiche, toppa med ost. 200 °C ca 35 min.', { storkok: 4 }),
 
   // ---------- Fler: gröt och frukost ----------
-  havregrot: r('Havregrynsgröt med blåbär & kvarg', [['havre', 70, '70 g havregryn (1¾ dl)'], ['mjolk', 200, '2 dl mjölk'], ['kvarg', 150, '150 g kvarg (rörs ner efteråt)'], ['blabar', 80, '80 g blåbär'], ['mandlar', 10, 'några hackade mandlar']],
-    'Koka gryn, mjölk och 1 dl vatten under omrörning ca 3 min. Rör ner kvargen och toppa med blåbär, mandlar och kanel.'),
-  applegrot: r('Havregrynsgröt med äpple, kanel & jordnötssmör', [['havre', 70, '70 g havregryn (1¾ dl)'], ['mjolk', 200, '2 dl mjölk'], ['kvarg', 100, '100 g kvarg (rörs ner efteråt)'], ['apple', 150, '1 riven äpple'], ['jordnot', 15, '1 msk jordnötssmör']],
-    'Koka gröten med det rivna äpplet och en nypa kanel. Rör ner kvargen och toppa med jordnötssmöret.'),
-  grot_vegan: r('Havregrynsgröt med sojadryck, banan & chiafrön', [['havre', 70, '70 g havregryn (1¾ dl)'], ['sojadryck', 250, '2½ dl sojadryck'], ['veganprotein', 20, '20 g veganskt proteinpulver (rörs ner efteråt)'], ['banan', 120, '1 banan'], ['chiafron', 10, '1 msk chiafrön']],
-    'Koka gryn och chiafrön i sojadrycken ca 3 min. Rör ner proteinpulvret med en skvätt vatten och toppa med skivad banan.'),
+  havregrot: r('Havregrynsgröt med blåbär & kvarg', [['havre', 70, '70 g havregryn (1¾ dl)'], ['mjolk', 100, '1 dl mjölk + 2 dl vatten'], ['kvarg', 150, '150 g kvarg (rörs ner efteråt)'], ['blabar', 40, '40 g blåbär'], ['mandlar', 15, '15 g hackade mandlar']],
+    'Koka gryn, mjölk och vatten under omrörning ca 3 min. Rör ner kvargen och toppa med blåbär, mandlar och kanel.'),
+  applegrot: r('Havregrynsgröt med äpple, kanel & jordnötssmör', [['havre', 70, '70 g havregryn (1¾ dl)'], ['mjolk', 100, '1 dl mjölk + 2 dl vatten'], ['kvarg', 100, '100 g kvarg (rörs ner efteråt)'], ['apple', 75, '½ rivet äpple'], ['jordnot', 15, '1 msk jordnötssmör']],
+    'Koka gröten på mjölk och vatten med det rivna äpplet och en nypa kanel. Rör ner kvargen och toppa med jordnötssmöret.'),
+  grot_vegan: r('Havregrynsgröt med sojadryck, banan & chiafrön', [['havre', 70, '70 g havregryn (1¾ dl)'], ['sojadryck', 250, '2½ dl sojadryck'], ['veganprotein', 20, '20 g veganskt proteinpulver (rörs ner efteråt)'], ['banan', 60, '½ banan'], ['chiafron', 10, '1 msk chiafrön']],
+    'Koka gryn och chiafrön i sojadrycken ca 3 min. Rör ner proteinpulvret med en skvätt vatten och toppa med skivad banan och kanel.'),
   skyrbowl: r('Skyrbowl med müsli, hallon & mandlar', [['skyr', 250, '250 g skyr'], ['musli', 40, '40 g müsli'], ['hallon', 80, '80 g hallon'], ['mandlar', 15, '15 g mandlar']]),
   keso_mackor: r('Frukostmackor med ägg & keso', [['brod', 80, '2 skivor fullkornsbröd'], ['agg', 120, '2 kokta ägg'], ['keso', 100, '100 g keso'], ['tomat', 60, 'tomat'], ['spenat', 15, 'lite spenat']]),
 
@@ -241,8 +241,8 @@ export const RECIPES = {
     'Bryn färsen med lök och morot, tillsätt linser, tomat, oregano och 3 dl vatten och sjud ca 25 min tills linserna är mjuka. Toppa med näringsjäst.'),
 
   // ---------- Mellanmål och kvällsmål ----------
-  kvallsgrot: r('Liten havregrynsgröt med kvarg & blåbär', [['havre', 40, '40 g havregryn (1 dl)'], ['mjolk', 200, '2 dl mjölk'], ['kvarg', 100, '100 g kvarg'], ['blabar', 50, '50 g blåbär']],
-    'Koka gröten på mjölken, rör ner kvargen och toppa med blåbär och kanel.'),
+  kvallsgrot: r('Liten havregrynsgröt med kvarg & blåbär', [['havre', 40, '40 g havregryn (1 dl)'], ['mjolk', 100, '1 dl mjölk + 1 dl vatten'], ['kvarg', 100, '100 g kvarg'], ['blabar', 40, '40 g blåbär']],
+    'Koka gröten på mjölk och vatten, rör ner kvargen och toppa med blåbär och kanel.'),
   skyr_hallon: r('Skyr med hallon', [['skyr', 200, '200 g skyr'], ['hallon', 80, '80 g hallon']]),
   shake: r('Proteinshake', [['whey', 30, 'proteinpulver']], 'Skaka med 3 dl kallt vatten (eller mjölk). Passar efter träningen eller som ett extra mellanmål.'),
   veganshake: r('Proteinshake', [['veganprotein', 30, 'veganskt proteinpulver']], 'Skaka med 3 dl kallt vatten (eller sojadryck). Passar efter träningen eller som ett extra mellanmål.'),

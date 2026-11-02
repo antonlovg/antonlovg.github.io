@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
-import { WEEK_NUMBERS, GOALS, POOLS, makePlan, nutrition, startDate, weekLabel } from '../matschema/js/plan.js';
+import { WEEK_NUMBERS, GOALS, POOLS, CHOOSABLE, makePlan, nutrition, startDate, traits, weekLabel } from '../matschema/js/plan.js';
 import { pack, unpack, fileText, readFile as readSyncFile } from '../matschema/js/sync.js';
 import * as store from '../matschema/js/store.js';
 import { RECIPES } from '../matschema/js/recipes.js';
@@ -271,6 +271,28 @@ test('a fixed choice ("porridge every weekday") holds from its day, and a swap f
   store.setFixed('frukost', null);
   assert.deepEqual(store.choices().fixed, {});
   store.forget();
+});
+
+test('moving a dinner to another day swaps the two, and the lunchboxes follow', () => {
+  const base = makePlan();
+  const [monday, thursday] = [base.day('2026-11-16'), base.day('2026-11-19')];
+  const swaps = { '2026-11-16:middag': thursday.meals[3].recipe, '2026-11-19:middag': monday.meals[3].recipe };
+  const plan = makePlan({ swaps });
+  assert.equal(plan.day('2026-11-16').meals[3].recipe, thursday.meals[3].recipe);
+  assert.equal(plan.day('2026-11-19').meals[3].recipe, monday.meals[3].recipe);
+  assert.equal(plan.day('2026-11-17').meals[1].recipe, thursday.meals[3].recipe, 'Tuesday\'s lunchbox follows Monday\'s new dinner');
+  checkLeftovers(plan);
+});
+
+test('the filters: quick and no-cook come from the recipe text', () => {
+  const t = id => traits(id);
+  for (const id of ['havregrot', 'proteingrot', 'pannkakor', 'kvarg_blabar', 'overnight']) assert.ok(t(id).quick, `${id} quick`);
+  for (const id of ['lasagne', 'ugnslax', 'curry', 'bolognese', 'ugnspasta', 'kottfarslimpa']) assert.ok(!t(id).quick, `${id} not quick`);
+  for (const id of ['overnight', 'kvarg_blabar', 'knacke_ost', 'chiapudding']) assert.ok(t(id).cold, `${id} cold`);
+  for (const id of ['omelett', 'havregrot', 'pannkakor', 'knacke_agg']) assert.ok(!t(id).cold, `${id} needs the stove`);
+  const quick = CHOOSABLE.filter(id => traits(id).quick).length;
+  assert.ok(quick > 30 && quick < CHOOSABLE.length * 0.7, `${quick} quick`);
+  assert.equal(store.clean({ intro: true }).intro, true, 'the welcome is remembered');
 });
 
 test('the offline copy has every file the page loads', async () => {

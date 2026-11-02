@@ -313,6 +313,20 @@ export function adapt(id, exclude = new Set()) {
   return { recipe: id, title, how, items, changes, blocking, touched, ok: !blocking.length, ...rounded(contents(items)), storkok: recipe.storkok || 0 };
 }
 
+// Ur receptets text: utan spis (ingen kokning, stekning, panna eller ugn) och snabb (ca 15 minuter eller
+// mindre: minuterna i receptet, 5 minuter per steg vid spisen och 10 för att koka ris, pasta, potatis
+// och liknande, och ingen ugn).
+const HEAT = /kok|stek|ugn|fräs|wok|bryn|grill|sjud|värm|bak|puttr|panna|°C|mikro/i;
+const BOIL = ['ris', 'grotris', 'pasta', 'lasagne', 'nudlar', 'risnudlar', 'bulgur', 'quinoa', 'linser', 'gronalinser', 'potatis', 'sotpotatis'];
+export function traits(id) {
+  const { how = '', items, storkok } = RECIPES[id];
+  const cold = !HEAT.test(`${how} ${items.map(([, , text]) => text).join(' ')}`);
+  const steps = how.split(/(?<=[.!])\s+/).filter(step => HEAT.test(step)).length;
+  const minutes = [...how.matchAll(/(\d+)\s*min/g)].reduce((sum, match) => sum + Number(match[1]), 0)
+    + 5 * steps + (items.some(([food]) => BOIL.includes(food)) ? 10 : 0);
+  return { cold, quick: cold || (!storkok && minutes <= 15 && !/ugn|°C/i.test(how)) };
+}
+
 // Alternativen för en måltid (eller bland ids), närmast i kcal först.
 export function alternatives(slot, kcal, exclude = new Set(), skip = [], ids = POOLS[slot]) {
   return ids.filter(id => !skip.includes(id)).map(id => adapt(id, exclude)).filter(option => option.ok)

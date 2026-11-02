@@ -50,10 +50,10 @@
         </div>
         <button type="button" class="today" id="go-today" hidden>Idag</button>
       </div>
-      <div class="totals" id="totals" aria-live="polite"></div>
+      <div class="totals" id="totals"></div>
       <ol class="meals" id="meals"></ol>
       <p class="fine" id="day-status" role="status"></p>
-      <p class="hint">Tryck på en måltid för recept, och bocka av när du ätit. Svep åt sidan för att byta dag.</p>
+      <p class="hint">Tryck på en måltid för recept, Laga och Byt, och bocka av när du ätit. Svep åt sidan för att byta dag.</p>
     </section>
 
     <!-- Vecka -->
@@ -64,6 +64,7 @@
         <button type="button" class="step" id="week-next" aria-label="Nästa vecka">›</button>
       </div>
       <div class="week" id="week"></div>
+      <p class="fine" id="week-status" role="status"></p>
       <div class="boxes" id="week-boxes"></div>
     </section>
 
@@ -163,11 +164,11 @@
       <p class="fine">Länken innehåller allt du sparat, men efter #, så den skickas aldrig till webbservern. Skickar du den i en chatt eller ett mejl kan den tjänsten se den.</p>
 
       <h3 class="section-sub">Så funkar schemat</h3>
-      <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, tonfisk, ägg och kvarg (ingen annan fisk), eller helt veganskt med tofu, tempeh, vegofärs, bönor och linser om du bockar i <b>Jag är vegan</b>. Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag. Vecka 45–53 är handskrivna; sedan bygger schemat nya veckor efter samma mönster (varannan vecka ett storkok), året ut 2027 och alltid minst åtta veckor framåt. Inget godis och så lite socker som möjligt.</p>
+      <p>Ett enkelt, hälsosamt schema byggt på kyckling, nötfärs, fisk, ägg och kvarg, eller helt veganskt med tofu, tempeh, vegofärs, bönor och linser om du bockar i <b>Jag är vegan</b>. Varje vardag börjar med en <b>Huel Strawberry Banana</b> (400 kcal, 35 g protein), och på helgen blir den mellanmål. Middagarna mån–tors lagas i <b>dubbel sats</b> så att resten blir nästa dags lunchlåda: du lagar bara middag en gång per dag. Vecka 45–53 är handskrivna; sedan bygger schemat nya veckor efter samma mönster (varannan vecka ett storkok), året ut 2027 och alltid minst åtta veckor framåt. Inget godis och så lite socker som möjligt.</p>
       <div class="boxes">
         <div class="box box-sand"><h3>Matlådeflödet</h3><p>Måndagens middag blir tisdagens lunch, och så vidare till fredag. Måndagens lunch förbereder du på söndagen.</p></div>
         <div class="box box-rose"><h3>Efter dina mål</h3><p>Varje dag räknas mot dina mål för energi, protein, kolhydrater och fett. Portionerna, proteinshaken (Star Nutrition Banana) och lite olivolja justeras så att dagen hamnar rätt.</p></div>
-        <div class="box box-mint"><h3>Byt fritt</h3><p>Byt måltider under varje måltid på dagens sida: sök på en rätt eller ingrediens ("gröt", "lax") bland alla rätter, eller välj bland dem närmast i kcal. Vill du ha något varje dag gör du det till ett fast val. Kryddor, vitlök, soja och citron räknas inte och kan användas fritt.</p></div>
+        <div class="box box-mint"><h3>Byt fritt</h3><p>Tryck på <b>Byt</b> i en måltid: sök på en rätt eller ingrediens ("gröt", "lax") bland alla rätter, filtrera på snabbt, mycket protein, veganskt, storkok eller utan spis, eller välj bland dem närmast i kcal. I veckan kan du flytta en middag till en annan dag. Vill du ha något varje dag gör du det till ett fast val. Kryddor, vitlök, soja och citron räknas inte och kan användas fritt.</p></div>
       </div>
 
       <h3 class="section-sub">Utan nät</h3>
@@ -181,6 +182,14 @@
       <p class="fine">Näringsvärdena är ungefärliga och räknas fram ur vanliga svenska livsmedel (råvikt för kött, torrvikt för ris, pasta och gryn). Huel Black Edition Strawberry Banana, 500 ml = 400 kcal och 35 g protein. Proteinpulvret räknas som Star Nutrition Whey Banana, ca 375 kcal och 75 g protein per 100 g; kolla din förpackning. Mängderna i inköpslistan gäller en person och är avrundade uppåt; kolla skafferiet först.</p>
     </section>
   </main>
+
+  <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+    <div class="sheet-head">
+      <h2 id="sheet-title"></h2>
+      <button type="button" class="sheet-close" id="sheet-close" aria-label="Stäng">×</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </dialog>
 
 </body>
 </html>
