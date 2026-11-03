@@ -4,7 +4,7 @@
 import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, cookLine, startDate, todayIso, traits, weekLabel } from './plan.js';
 import { pack, unpack, fileText, readFile } from './sync.js';
 import { RECIPES } from './recipes.js';
-import { ANIMAL, FOODS, SECTIONS, SPICES, swapFor } from './foods.js';
+import { ANIMAL, FOODS, SECTIONS, SPICES, STORES, searchTerm, swapFor } from './foods.js';
 import * as store from './store.js';
 
 const $ = id => document.getElementById(id);
@@ -562,7 +562,9 @@ function renderShop() {
   $('shop-next').disabled = week === WEEK_NUMBERS.at(-1);
   $('shop-count').textContent = done === items.length ? `Allt klart: ${items.length} varor` : `${done} av ${items.length} avbockade`;
   $('shop-hide').checked = store.hideHave();
+  $('shop-store').value = store.shop();
   $('shop').classList.toggle('hide-done', store.hideHave());
+  const [storeName, searchUrl] = STORES[store.shop()] || [];
   $('shop').replaceChildren(...groups.map(group => h('section', { class: 'shop-group' },
     h('h3', {}, group.section),
     h('ul', {}, group.items.map(item => {
@@ -571,7 +573,8 @@ function renderShop() {
         h('label', {},
           h('input', { type: 'checkbox', checked, onchange: () => { store.toggleHave(week, item.food); renderShop(); document.querySelector(`#shop input[data-food="${item.food}"]`)?.focus(); }, 'data-food': item.food }),
           h('span', { class: 'shop-name' }, item.name, item.pantry ? h('small', {}, 'kolla skafferiet') : null),
-          h('span', { class: 'shop-amount' }, item.amount)));
+          h('span', { class: 'shop-amount' }, item.amount)),
+        searchUrl ? h('a', { class: 'shop-search', href: searchUrl(searchTerm(item.food)), target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Sök ${searchTerm(item.food)} på ${storeName} (ny flik)` }, 'Sök') : null);
     })))),
   h('section', { class: 'shop-group' }, h('h3', {}, 'Kryddor & smaksättare'), h('p', { class: 'fine' }, SPICES)));
 }
@@ -683,6 +686,11 @@ $('week-next').addEventListener('click', () => moveWeek(1, 'vecka'));
 $('shop-prev').addEventListener('click', () => moveWeek(-1, 'handla'));
 $('shop-next').addEventListener('click', () => moveWeek(1, 'handla'));
 $('shop-hide').addEventListener('change', event => { store.setHide(event.target.checked); renderShop(); });
+$('shop-store').addEventListener('change', event => {
+  store.setShop(event.target.value);
+  renderShop();
+  $('shop-status').textContent = event.target.value ? `Tryck på Sök vid en vara för att hitta den på ${STORES[event.target.value][0]}.` : '';
+});
 $('shop-share').addEventListener('click', shareShop);
 $('shop-clear').addEventListener('click', () => { store.clearHave(state.week); $('shop-status').textContent = 'Alla varor är avmarkerade.'; renderShop(); });
 $('looks').addEventListener('change', () => {

@@ -194,5 +194,22 @@ export const PIECES = {
   tomat: [100, 'tomat', 'tomater'], champinjon: [20, 'champinjon', 'champinjoner']
 };
 
+// Butikerna som inköpslistan kan söka i: varje vara öppnar butikens egen sökning i en ny flik.
+export const STORES = {
+  willys: ['Willys', term => `https://www.willys.se/sok?q=${encodeURIComponent(term)}`],
+  coop: ['Coop', term => `https://www.coop.se/handla/sok/?q=${encodeURIComponent(term)}`],
+  citygross: ['City Gross', term => `https://www.citygross.se/sok?Q=${encodeURIComponent(term)}`]
+};
+
+// Det man söker på i butiken: namnet utan det inom parentes, efter kommatecken och fetthalten, utom där ett
+// annat ord ger bättre träffar.
+const SEARCH = {
+  mjolk: 'mellanmjölk', ris: 'basmatiris', sallad: 'sallad', pasta: 'fullkornspasta', musli: 'müsli osötad',
+  tonfisk: 'tonfisk i vatten', burgerbrod: 'hamburgerbröd fullkorn', huel: 'huel', whey: 'star nutrition whey',
+  veganprotein: 'veganskt proteinpulver', sojabitar: 'vegobitar', sojafars: 'vegofärs', vegost: 'vegansk ost', kokos: 'kokosmjölk lätt',
+  blabar: 'frysta blåbär', hallon: 'frysta hallon', mango: 'fryst mango'
+};
+export const searchTerm = food => SEARCH[food] || FOODS[food].name.replace(/\s*\(.*?\)/g, '').replace(/,.*$/, '').replace(/\s*\d+(,\d+)?\s*%/, '').trim().toLowerCase();
+
 // Behöver inte köpas in efter vikt och räknas inte: används fritt.
 export const SPICES = 'Currypulver/currypasta, chilikrydda, spiskummin, tacokrydda, oregano, paprikapulver, kanel, vitlök, ingefära, soja, senap, citron, buljong, salt & peppar.';

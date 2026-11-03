@@ -155,6 +155,16 @@ test('ingredients get a kitchen measure next to the grams', async () => {
   assert.deepEqual(porridge.items.map(([, , text]) => text).slice(0, 3), ['70 g havregryn (1¾ dl)', '1 dl mjölk + 2 dl vatten', 'ca 1½ dl · 150 g kvarg (rörs ner efteråt)']);
 });
 
+test('every grocery item can be searched for in a store', async () => {
+  const { STORES, searchTerm } = await import('../matschema/js/foods.js');
+  for (const food of Object.keys(FOODS)) assert.match(searchTerm(food), /^[a-zåäöéèü ]+$/, food);
+  assert.equal(searchTerm('notfars'), 'nötfärs');
+  assert.equal(searchTerm('sojayoghurt'), 'sojayoghurt naturell');
+  assert.equal(STORES.willys[1]('gul lök'), 'https://www.willys.se/sok?q=gul%20l%C3%B6k');
+  assert.equal(store.clean({ shop: 'coop' }).shop, 'coop');
+  assert.equal(store.clean({ shop: 'ica' }).shop, undefined);
+});
+
 test('the shopping list adds up the week', () => {
   const items = Object.fromEntries(shopping(45).flatMap(group => group.items).map(item => [item.food, item.amount]));
   assert.equal(items.huel, '7 flaskor');

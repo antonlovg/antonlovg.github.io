@@ -1,5 +1,6 @@
 // Det du bockar av och väljer: ätna måltider per datum, inköpta varor per vecka, det du inte äter,
-// måltider du bytt, fasta val, om du är vegan, favoriter och rätter du inte vill ha, dina mål och färgtemat. Bara i
+// måltider du bytt, fasta val, om du är vegan, favoriter och rätter du inte vill ha, dina mål, butiken du söker
+// varor i och färgtemat. Bara i
 // den här webbläsarens lokala lagring ("lovgren-matschema", listad på /cookies/), och bara när du ändrar något
 // (eller stänger välkomstrutan, som då inte visas igen).
 const KEY = 'lovgren-matschema';
@@ -29,6 +30,7 @@ export function clean(value) {
   if (value.fit === false) result.fit = false;
   if (value.vegan === true) result.vegan = true;
   if (value.intro === true) result.intro = true;
+  if (['willys', 'coop', 'citygross'].includes(value.shop)) result.shop = value.shop;
   const theme = entries(value.theme, ([key, text]) => ['palette', 'mode'].includes(key) && typeof text === 'string');
   if (Object.keys(theme).length) result.theme = theme;
   return result;
@@ -61,6 +63,14 @@ export const toggleEaten = (date, meal) => toggle(data.eaten, date, meal);
 export const has = (week, food) => Boolean(data.have[week]?.includes(food));
 export const toggleHave = (week, food) => toggle(data.have, week, food);
 export const hideHave = () => data.hide;
+
+// Butiken inköpslistan söker i (willys, coop, citygross) eller ingen.
+export const shop = () => data.shop || '';
+
+export function setShop(name) {
+  if (name) data.shop = name; else delete data.shop;
+  save();
+}
 
 export function setHide(hide) {
   data.hide = hide;
