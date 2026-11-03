@@ -1,7 +1,7 @@
 // Veckorna: vecka 45–53 handskrivna, sedan byggda av sig själva (se generateWeek). En dag är fem recept i
 // måltidsordning; "<" i lunchen betyder en matlåda (rester). makePlan lägger på dina val (det du inte äter, måltider du bytt), justerar
 // portionerna och proteinshaken efter dina dagliga mål och räknar fram näringen och inköpslistan.
-import { ANIMAL, FOODS, MACROS, SECTIONS, WORDS, swapFor } from './foods.js';
+import { ANIMAL, FOODS, MACROS, PER_DL, PIECES, SECTIONS, WORDS, swapFor } from './foods.js';
 import { RECIPES } from './recipes.js';
 
 // Dagliga mål. Socker och mättat fett är tak; resten försöker dagarna träffa.
@@ -297,12 +297,12 @@ export function adapt(id, exclude = new Set()) {
   const items = [], changes = [], blocking = [], touched = [];
   let title = recipe.name, how = recipe.how;
   for (const [food, grams, text] of recipe.items) {
-    if (!exclude.has(food)) { items.push([food, grams, text]); continue; }
+    if (!exclude.has(food)) { items.push([food, grams, measured(food, grams, text)]); continue; }
     touched.push(food);
     const swap = swapFor(food, exclude);
     if (swap && swap !== 'drop') {
       if (WORDS[food] && WORDS[swap]) [title, how] = [title, how].map(text => renamed(text, WORDS[food], WORDS[swap]));
-      items.push([swap, grams, `${Math.round(grams)} g ${lower(FOODS[swap].name)}`]);
+      items.push([swap, grams, cookLine(swap, grams)]);
       changes.push(`${FOODS[swap].name} i stället för ${lower(FOODS[food].name)}`);
     } else if (swap === 'drop' || grams < 15) {
       changes.push(`Utan ${lower(FOODS[food].name)}`);
@@ -426,7 +426,7 @@ function fitDay(day, goals, shake, oil, powder) {
 // En måltid i en annan storlek: gram och näring räknas om; texterna byts mot mängder när det skiljer.
 function scaled(meal, scale) {
   if (scale === 1) return { ...meal, scale };
-  const items = meal.items.map(([food, grams, text]) => [food, grams * scale, `${cookAmount(food, grams * scale)} ${lower(FOODS[food].name)}`, text]);
+  const items = meal.items.map(([food, grams, text]) => [food, grams * scale, cookLine(food, grams * scale), text]);
   return { ...meal, items, scale, ...rounded(contents(items)) };
 }
 
@@ -584,6 +584,42 @@ export function cookAmount(food, grams) {
   if (item.dl) return `${half(Math.max(0.5, Math.round(grams / item.dl * 2) / 2))} dl`;
   if (item.spoon) return `${half(Math.max(0.5, Math.round(grams / item.spoon * 2) / 2))} msk`;
   return grams >= 1000 ? `${decimal((Math.round(grams / 50) * 50 / 1000).toString())} kg` : `${Math.round(grams / 5) * 5} g`;
+}
+
+// Ett mått i stället för en våg: dl i fjärdedelar från en halv deciliter, annars msk, tsk eller krm i halvor.
+const FRACTION = { 0: '', 0.25: '¼', 0.5: '½', 0.75: '¾' };
+const part = (value, step) => {
+  const rounded = Math.max(step, Math.round(value / step) * step);
+  const whole = Math.floor(rounded);
+  return `${whole || ''}${FRACTION[Math.round((rounded - whole) * 4) / 4]}`;
+};
+export function measure(food, grams) {
+  if (PIECES[food]) {
+    const [each, one, many] = PIECES[food];
+    const count = Math.max(0.5, Math.round(grams / each * 2) / 2);
+    return `${part(count, 0.5)} ${count > 1 ? many : one}`;
+  }
+  if (!PER_DL[food]) return null;
+  const ml = grams / PER_DL[food] * 100;
+  if (ml >= 50) return `${part(ml / 100, 0.25)} dl`;
+  if (ml >= 12.5) return `${part(ml / 15, 0.5)} msk`;
+  if (ml >= 3.75) return `${part(ml / 5, 0.5)} tsk`;
+  return `${Math.max(1, Math.round(ml))} krm`;
+}
+
+// En rad i ingredienslistan: mått (eller bitar) och gram ("ca 1¾ dl · 70 g havregryn", "ca 2 skivor · 80 g
+// fullkornsbröd"); det som köps i dl (mjölk) och oljan bara i mått, och styckvaror i styck.
+export function cookLine(food, grams) {
+  const item = FOODS[food], name = lower(item.name), size = measure(food, grams);
+  if (item.each || !size) return `${cookAmount(food, grams)} ${name}`;
+  if (item.dl || item.spoon) return `${size} ${name}`;
+  return `ca ${size} · ${Math.round(grams / 5) * 5 || Math.round(grams)} g ${name}`;
+}
+
+// Receptets egen text med ett mått före, när texten börjar med gram och inte redan har ett mått.
+function measured(food, grams, text) {
+  const size = measure(food, grams);
+  return size && !FOODS[food].each && /^\d+(,\d+)?\s*g\b/.test(text) && !/\b(dl|msk|tsk|krm|skivor?|st)\b/.test(text) ? `ca ${size} · ${text}` : text;
 }
 
 // Veckans inköp: allt måltiderna innehåller. Matlådorna räknas med, så ett storkok handlas

@@ -21,7 +21,7 @@ A meal plan in Swedish, from week 45 (2 November 2026) to the end of week 53 (3 
 - **Storkok**: recipes with `storkok: 4` are cooked once for up to four portions. A lunchbox (`<`) takes from a storkok cooked in the last three days that has portions left (the oldest first), otherwise from yesterday's dinner (a double batch). Each dinner is cooked, and shopped for, as many portions as are eaten of it; the day page shows the whole batch's amounts. A storkok on Sunday is shopped for in Sunday's week.
 - **Färgtema** (under Anpassa): Skog, Hav, Bär or Grafit, light, dark or following the device. `js/theme.js` is a plain script in `<head>` that sets `data-palette` and `data-mode` on `<html>` before the page is drawn, so it never flashes the wrong colours.
 - **Byt måltid**, under each meal on the day page: pick any meal for that slot, closest in kcal first. A swapped dinner's leftovers follow it to the next day's lunch; swapping a lunchbox away makes the dinner before a single batch.
-- **Offline**: `sw.js` keeps a copy of the page (cache `matschema-v7`, scope `/matschema/`, both listed on /cookies/). With a connection it fetches fresh files but gives up after 3 s, so the page opens quickly in a store with bad coverage.
+- **Offline**: `sw.js` keeps a copy of the page (cache `matschema-v8`, scope `/matschema/`, both listed on /cookies/). With a connection it fetches fresh files but gives up after 3 s, so the page opens quickly in a store with bad coverage.
 
 ## Files
 

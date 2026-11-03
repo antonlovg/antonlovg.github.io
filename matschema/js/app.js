@@ -1,7 +1,7 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa (veckorna räknas vidare efter 53, så
 // vecka 54 är vecka 1 2027). #synk/… läser in det du sparat på en annan enhet. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, cookAmount, startDate, todayIso, traits, weekLabel } from './plan.js';
+import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, cookLine, startDate, todayIso, traits, weekLabel } from './plan.js';
 import { pack, unpack, fileText, readFile } from './sync.js';
 import { RECIPES } from './recipes.js';
 import { ANIMAL, FOODS, SECTIONS, SPICES, swapFor } from './foods.js';
@@ -305,7 +305,7 @@ function openSwap(day, meal) {
 function openCook(day, meal) {
   const fed = meal.id === 'middag' ? lunchesFrom(day.date) : [];
   const ingredients = fed.length
-    ? [...wholeBatch(meal, fed)].map(([food, grams]) => `${cookAmount(food, grams)} ${lower(FOODS[food].name)}`)
+    ? [...wholeBatch(meal, fed)].map(([food, grams]) => cookLine(food, grams))
     : meal.items.map(([, , text]) => text);
   const steps = meal.how.split(/(?<=[.!])\s+/).filter(Boolean);
   const tick = event => {
@@ -408,7 +408,7 @@ function mealCard(day, meal, isNow) {
       fed.length === 1 ? h('p', { class: 'batch' }, h('b', {}, 'Laga dubbel sats: '), `hälften blir lunch på ${weekdayName(fed[0].date).toLowerCase()}.`) : null,
       fed.length > 1 ? h('p', { class: 'batch' }, h('b', {}, `Storkok, ${meal.portions} portioner: `), `middag idag och matlåda ${list(fed.map(other => weekdayName(other.date).toLowerCase()))}.`) : null,
       fed.length ? h('div', { class: 'whole' }, h('p', {}, h('b', {}, `Hela satsen (${meal.portions} portioner)`)),
-        h('ul', { class: 'ingredients' }, [...wholeBatch(meal, fed)].map(([food, grams]) => h('li', {}, `${cookAmount(food, grams)} ${lower(FOODS[food].name)}`)))) : null,
+        h('ul', { class: 'ingredients' }, [...wholeBatch(meal, fed)].map(([food, grams]) => h('li', {}, cookLine(food, grams))))) : null,
       from ? h('p', { class: 'how' }, `Matlådan från ${weekdayName(from.date).toLowerCase()}ens middag.`) : meal.how ? h('p', { class: 'how' }, meal.how) : null));
 
   return h('li', { class: classes('meal', meal.recipe === 'huel' && 'is-huel', eaten && 'is-eaten', isNow && 'is-now'), 'data-meal': meal.id }, details, check);

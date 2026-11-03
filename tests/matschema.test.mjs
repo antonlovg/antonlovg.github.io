@@ -135,6 +135,26 @@ test('recipes use known foods, swaps lead to known foods, and the numbers match 
   days.slice(0, 7).forEach((day, i) => assert.ok(Math.abs(day.kcal - pdf[i]) <= 60, `${day.date}: ${day.kcal} vs ${pdf[i]}`));
 });
 
+test('ingredients get a kitchen measure next to the grams', async () => {
+  const { measure, cookLine } = await import('../matschema/js/plan.js');
+  const { PER_DL } = await import('../matschema/js/foods.js');
+  for (const food of Object.keys(PER_DL)) assert.ok(FOODS[food], food);
+  assert.equal(measure('havre', 70), '1¾ dl');
+  assert.equal(measure('jordnot', 15), '1 msk');
+  assert.equal(measure('olja', 4.5), '1 tsk');
+  assert.equal(measure('chiafron', 10), '1 msk');
+  assert.equal(measure('kakao', 1), '3 krm');
+  assert.equal(measure('kyckling', 120), '1 filé');
+  assert.equal(measure('oxfile', 120), null);
+  assert.equal(cookLine('brod', 85), 'ca 2 skivor · 85 g fullkornsbröd');
+  assert.equal(cookLine('havre', 49), 'ca 1¼ dl · 50 g havregryn');
+  assert.equal(cookLine('mjolk', 140), '1½ dl mjölk 1,5 %');
+  assert.equal(cookLine('agg', 120), '2 st ägg');
+  // Recepten som de är skrivna får ett mått före när de börjar med gram.
+  const porridge = makePlan({ fit: false, swaps: { '2026-11-02:frukost': 'havregrot' } }).day('2026-11-02').meals[0];
+  assert.deepEqual(porridge.items.map(([, , text]) => text).slice(0, 3), ['70 g havregryn (1¾ dl)', '1 dl mjölk + 2 dl vatten', 'ca 1½ dl · 150 g kvarg (rörs ner efteråt)']);
+});
+
 test('the shopping list adds up the week', () => {
   const items = Object.fromEntries(shopping(45).flatMap(group => group.items).map(item => [item.food, item.amount]));
   assert.equal(items.huel, '7 flaskor');

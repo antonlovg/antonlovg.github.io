@@ -172,5 +172,27 @@ export const WORDS = {
 // Det första i bytet för ett livsmedel som du äter ("drop", ett livsmedel eller null).
 export const swapFor = (food, without) => [].concat(SWAPS[food] ?? []).find(swap => swap === 'drop' || (FOODS[swap] && !without.has(swap))) ?? null;
 
+// Ungefär hur många gram en deciliter väger, för det som går att mäta upp i stället för att väga: sidan visar
+// då dl, msk (15 ml), tsk (5 ml) eller krm (1 ml) med grammen bredvid. Torrvaror löst i måttet, kvarg och
+// liknande slätat, bönor och majs avrunna, bär och ärtor frysta.
+export const PER_DL = {
+  havre: 40, musli: 45, ris: 85, grotris: 90, bulgur: 80, quinoa: 85, linser: 85, gronalinser: 85, pasta: 45,
+  vetemjol: 60, strobrod: 50, kakao: 40, chiafron: 65, naringsjast: 25, mandlar: 60,
+  jordnot: 100, tahini: 100, pesto: 100, hummus: 100, lingon: 125,
+  kvarg: 100, skyr: 100, keso: 95, sojayoghurt: 100, creme: 100, havrefraiche: 100, feta: 55,
+  krossade: 100, kokos: 100, salsa: 100,
+  majs: 65, arter: 60, edamame: 60, kidney: 70, kikartor: 70, svartabonor: 70,
+  blabar: 60, hallon: 50, mango: 70,
+  mjolk: 100, havredryck: 100, sojadryck: 100, olja: 90
+};
+
+// Det som är lättare att räkna än att väga (men köps efter vikt): ungefär hur mycket en bit väger.
+export const PIECES = {
+  brod: [40, 'skiva', 'skivor'], knacke: [13, 'knäckebröd', 'knäckebröd'], ost: [10, 'skiva', 'skivor'], vegost: [10, 'skiva', 'skivor'],
+  kalkon: [10, 'skiva', 'skivor'], riskaka: [8, 'riskaka', 'riskakor'], falafel: [20, 'falafel', 'falafel'],
+  kyckling: [125, 'filé', 'filéer'], kalkonfile: [150, 'filé', 'filéer'], potatis: [90, 'potatis', 'potatisar'], sotpotatis: [300, 'sötpotatis', 'sötpotatisar'],
+  tomat: [100, 'tomat', 'tomater'], champinjon: [20, 'champinjon', 'champinjoner']
+};
+
 // Behöver inte köpas in efter vikt och räknas inte: används fritt.
 export const SPICES = 'Currypulver/currypasta, chilikrydda, spiskummin, tacokrydda, oregano, paprikapulver, kanel, vitlök, ingefära, soja, senap, citron, buljong, salt & peppar.';
