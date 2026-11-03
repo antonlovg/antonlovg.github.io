@@ -204,12 +204,30 @@ export const STORES = {
 // Det man söker på i butiken: namnet utan det inom parentes, efter kommatecken och fetthalten, utom där ett
 // annat ord ger bättre träffar.
 const SEARCH = {
-  mjolk: 'mellanmjölk', ris: 'basmatiris', sallad: 'sallad', pasta: 'fullkornspasta', musli: 'müsli osötad',
-  tonfisk: 'tonfisk i vatten', burgerbrod: 'hamburgerbröd fullkorn', huel: 'huel', whey: 'star nutrition whey',
-  veganprotein: 'veganskt proteinpulver', sojabitar: 'vegobitar', sojafars: 'vegofärs', vegost: 'vegansk ost', kokos: 'kokosmjölk lätt',
+  mjolk: 'mellanmjölk', ris: 'basmatiris', sallad: 'sallad', pasta: 'fullkornspasta', musli: 'müsli',
+  tonfisk: 'tonfisk i vatten', burgerbrod: 'hamburgerbröd fullkorn', huel: 'huel',
+  veganprotein: 'veganskt proteinpulver', sojabitar: 'vegobitar', sojafars: 'vegofärs', vegost: 'vegansk ost', kokos: 'kokosmjölk', rodkal: 'rödkål inlagd', whey: 'whey',
   blabar: 'frysta blåbär', hallon: 'frysta hallon', mango: 'fryst mango'
 };
 export const searchTerm = food => SEARCH[food] || FOODS[food].name.replace(/\s*\(.*?\)/g, '').replace(/,.*$/, '').replace(/\s*\d+(,\d+)?\s*%/, '').trim().toLowerCase();
+
+// Ungefärligt pris i kronor per kilo (per liter för det som köps i dl), efter jämförpriserna för butikernas
+// egna märken och vanliga varor i november 2026. Räcker för att se ungefär vad en vecka kostar, inte för kvittot.
+export const PRICES = {
+  kyckling: 95, kalkonfile: 170, notfars: 155, kycklingfars: 95, oxfile: 520, kalkon: 150, agg: 45,
+  kvarg: 33, skyr: 47, keso: 58, ost: 110, feta: 150, parmesan: 340, mozzarella: 100, mjolk: 12, havredryck: 16,
+  creme: 50, sojadryck: 18, sojayoghurt: 45, havrefraiche: 56, vegost: 100,
+  banan: 22, apple: 25, clementin: 35, avokado: 70, broccoli: 45, brysselkal: 45, champinjon: 65, gurka: 55, lok: 11,
+  rodlok: 17, morot: 15, paprika: 57, potatis: 13, sotpotatis: 30, sallad: 100, spenat: 110, tomat: 50, zucchini: 35,
+  blomkal: 32, blabar: 110, hallon: 100, mango: 50, wok: 55, arter: 30, edamame: 50, falafel: 60,
+  lax: 200, torsk: 240, rakor: 210,
+  brod: 55, knacke: 32, tortilla: 62, burgerbrod: 100, pasta: 30, lasagne: 45, ris: 30, grotris: 25, nudlar: 35,
+  bulgur: 25, linser: 35, gronalinser: 55, quinoa: 90, risnudlar: 75, chiafron: 112, naringsjast: 400, tahini: 100,
+  havre: 13, musli: 45, riskaka: 140, kakao: 190, vetemjol: 8, strobrod: 35, tonfisk: 165, krossade: 22, kokos: 45,
+  kidney: 43, kikartor: 43, svartabonor: 43, majs: 40, salsa: 50, rodkal: 36, lingon: 50, pesto: 130, mandlar: 160,
+  jordnot: 85, olja: 95, huel: 80, whey: 300, veganprotein: 280, hummus: 95, tofu: 65, sojabitar: 110, sojafars: 70,
+  tempeh: 150
+};
 
 // Behöver inte köpas in efter vikt och räknas inte: används fritt.
 export const SPICES = 'Currypulver/currypasta, chilikrydda, spiskummin, tacokrydda, oregano, paprikapulver, kanel, vitlök, ingefära, soja, senap, citron, buljong, salt & peppar.';

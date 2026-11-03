@@ -561,6 +561,9 @@ function renderShop() {
   $('shop-prev').disabled = week === WEEK_NUMBERS[0];
   $('shop-next').disabled = week === WEEK_NUMBERS.at(-1);
   $('shop-count').textContent = done === items.length ? `Allt klart: ${items.length} varor` : `${done} av ${items.length} avbockade`;
+  const total = items.reduce((sum, item) => sum + item.cost, 0);
+  const left = items.filter(item => !store.has(week, item.food)).reduce((sum, item) => sum + item.cost, 0);
+  $('shop-cost').replaceChildren(h('strong', {}, `Veckans mat ≈ ${kronor(total)}`), done ? ` · kvar att handla ≈ ${kronor(left)}` : '');
   $('shop-hide').checked = store.hideHave();
   $('shop-store').value = store.shop();
   $('shop').classList.toggle('hide-done', store.hideHave());
@@ -573,11 +576,14 @@ function renderShop() {
         h('label', {},
           h('input', { type: 'checkbox', checked, onchange: () => { store.toggleHave(week, item.food); renderShop(); document.querySelector(`#shop input[data-food="${item.food}"]`)?.focus(); }, 'data-food': item.food }),
           h('span', { class: 'shop-name' }, item.name, item.pantry ? h('small', {}, 'kolla skafferiet') : null),
-          h('span', { class: 'shop-amount' }, item.amount)),
+          h('span', { class: 'shop-amount' }, item.amount, h('small', {}, `≈ ${item.cost < 1 ? '< 1 kr' : kronor(item.cost, 1)}`))),
         searchUrl ? h('a', { class: 'shop-search', href: searchUrl(searchTerm(item.food)), target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Sök ${searchTerm(item.food)} på ${storeName} (ny flik)` }, 'Sök') : null);
     })))),
   h('section', { class: 'shop-group' }, h('h3', {}, 'Kryddor & smaksättare'), h('p', { class: 'fine' }, SPICES)));
 }
+
+// Ungefär: totalen avrundad till tiotal kronor, en vara till hela kronor.
+const kronor = (amount, step = 10) => `${(Math.max(step, Math.round(amount / step) * step)).toLocaleString('sv-SE')} kr`;
 
 function shopText(week) {
   const lines = [`Inköpslista ${weekName(week).toLowerCase()} (${range(week)})`];
@@ -586,6 +592,8 @@ function shopText(week) {
     if (!left.length) continue;
     lines.push('', group.section, ...left.map(item => `- ${item.name}, ${item.amount}`));
   }
+  const cost = plan.shopping(week).flatMap(group => group.items).filter(item => !store.has(week, item.food)).reduce((sum, item) => sum + item.cost, 0);
+  lines.push('', `Ungefär ${kronor(cost)}`);
   return lines.join('\n');
 }
 

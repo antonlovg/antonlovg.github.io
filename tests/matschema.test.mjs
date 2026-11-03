@@ -165,6 +165,17 @@ test('every grocery item can be searched for in a store', async () => {
   assert.equal(store.clean({ shop: 'ica' }).shop, undefined);
 });
 
+test('the shopping list has a rough price for every item and the week', async () => {
+  const { PRICES } = await import('../matschema/js/foods.js');
+  for (const food of Object.keys(FOODS)) assert.ok(PRICES[food] > 0, food);
+  for (const vegan of [false, true]) {
+    const items = makePlan({ vegan }).shopping(46).flatMap(group => group.items);
+    const total = items.reduce((sum, item) => sum + item.cost, 0);
+    assert.ok(items.every(item => Number.isFinite(item.cost)));
+    assert.ok(total > 500 && total < 1500, `${total} kr`);
+  }
+});
+
 test('the shopping list adds up the week', () => {
   const items = Object.fromEntries(shopping(45).flatMap(group => group.items).map(item => [item.food, item.amount]));
   assert.equal(items.huel, '7 flaskor');

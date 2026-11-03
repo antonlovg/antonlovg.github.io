@@ -1,7 +1,7 @@
 // Veckorna: vecka 45–53 handskrivna, sedan byggda av sig själva (se generateWeek). En dag är fem recept i
 // måltidsordning; "<" i lunchen betyder en matlåda (rester). makePlan lägger på dina val (det du inte äter, måltider du bytt), justerar
 // portionerna och proteinshaken efter dina dagliga mål och räknar fram näringen och inköpslistan.
-import { ANIMAL, FOODS, MACROS, PER_DL, PIECES, SECTIONS, WORDS, swapFor } from './foods.js';
+import { ANIMAL, FOODS, MACROS, PER_DL, PIECES, PRICES, SECTIONS, WORDS, swapFor } from './foods.js';
 import { RECIPES } from './recipes.js';
 
 // Dagliga mål. Socker och mättat fett är tak; resten försöker dagarna träffa.
@@ -623,7 +623,7 @@ function measured(food, grams, text) {
 }
 
 // Veckans inköp: allt måltiderna innehåller. Matlådorna räknas med, så ett storkok handlas
-// för så många portioner som äts av det.
+// för så många portioner som äts av det. Priset (cost, kronor) gäller det som går åt, inte hela förpackningar.
 function shoppingList(days, week) {
   const weekOf = date => days.find(day => day.date === date).week;
   const grams = new Map();
@@ -637,7 +637,7 @@ function shoppingList(days, week) {
   return SECTIONS.map(section => ({
     section,
     items: [...grams].filter(([food]) => FOODS[food].section === section)
-      .map(([food, g]) => ({ food, name: FOODS[food].name, amount: amount(food, g), pantry: Boolean(FOODS[food].pantry) }))
+      .map(([food, g]) => ({ food, name: FOODS[food].name, amount: amount(food, g), cost: g * PRICES[food] / 1000, pantry: Boolean(FOODS[food].pantry) }))
       .sort((a, b) => a.name.localeCompare(b.name, 'sv'))
   })).filter(group => group.items.length);
 }
