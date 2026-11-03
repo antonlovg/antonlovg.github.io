@@ -1,10 +1,10 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa (veckorna räknas vidare efter 53, så
 // vecka 54 är vecka 1 2027). #synk/… läser in det du sparat på en annan enhet. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, cookLine, startDate, todayIso, traits, weekLabel } from './plan.js';
+import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, contents, cookLine, prepFor, startDate, todayIso, traits, weekLabel, weightTrend } from './plan.js';
 import { pack, unpack, fileText, readFile } from './sync.js';
 import { RECIPES } from './recipes.js';
-import { ANIMAL, FOODS, SECTIONS, SPICES, STORES, searchTerm, swapFor } from './foods.js';
+import { ANIMAL, FOODS, PRICES, SECTIONS, SPICES, STORES, searchTerm, swapFor } from './foods.js';
 import * as store from './store.js';
 
 const $ = id => document.getElementById(id);
@@ -33,7 +33,7 @@ function refresh() {
 }
 
 // Det du själv ändrat (byten, bortval); det som bara blivit veganskt räknas inte.
-const personal = meal => !meal.leftover && Boolean(meal.swapped || meal.fixed || (meal.replaced && !meal.replaced.vegan) || (meal.changes.length && !meal.vegan));
+const personal = meal => !meal.leftover && Boolean(meal.outside || meal.swapped || meal.fixed || (meal.replaced && !meal.replaced.vegan) || (meal.changes.length && !meal.vegan));
 
 // ---------- Datum ----------
 const format = (date, options) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'UTC', ...options }).format(new Date(`${date}T12:00:00Z`));
@@ -134,6 +134,16 @@ function renderDay() {
   renderTotals(day);
   const now = currentMeal(day);
   $('meals').replaceChildren(...day.meals.map(meal => mealCard(day, meal, meal.id === now)));
+  renderPrep(day);
+}
+
+// Det som ska göras i kväll inför imorgon: tina, packa matlåda, det recepten säger ska göras kvällen innan.
+function renderPrep(day) {
+  const next = plan.days[dayIndex(day.date) + 1];
+  const tasks = next ? prepFor(next) : [];
+  $('prep').replaceChildren(...(tasks.length ? [h('div', { class: 'box box-sand prep' },
+    h('h3', {}, day.date === today ? 'I kväll, inför imorgon' : `Kvällen inför ${weekdayName(next.date).toLowerCase()}`),
+    h('ul', {}, tasks.map(task => h('li', {}, task))))] : []));
 }
 
 // Hur långt från målet dagens plan är: inom 5 % räknas som träff, och taken får inte passeras.
@@ -327,6 +337,51 @@ function openCook(day, meal) {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && sheet.open && sheet.classList.contains('sheet-cook')) keepAwake(); });
 
+// Åt något annat: en uppskattning i kcal och protein (eller ett vanligt val). Resten av dagens portioner räknas
+// om, och det du redan ätit behåller sin portion.
+const ELSEWHERE = [['Hoppade över', 0, 0], ['Fika', 350, 6], ['Sallad ute', 550, 30], ['Lunch ute', 750, 35], ['Middag ute', 900, 40],
+  ['Pizza', 1000, 40], ['Hamburgare & pommes', 1100, 40]];
+
+function openOutside(day, meal) {
+  const now = meal.outside ? meal : null;
+  const field = (name, label, unit, attrs) => h('label', {}, h('span', {}, label), h('input', { name, ...attrs }), unit ? h('small', {}, unit) : null);
+  const form = h('form', { class: 'goals outside-form', novalidate: true },
+    field('label', 'Vad', null, { type: 'text', maxlength: 60, autocomplete: 'off', value: now?.title ?? '' }),
+    field('kcal', 'Energi', 'kcal', { type: 'number', inputmode: 'numeric', min: 0, max: 5000, step: 1, value: now?.kcal ?? '' }),
+    field('protein', 'Protein', 'g', { type: 'number', inputmode: 'numeric', min: 0, max: 400, step: 1, value: now?.protein ?? '' }));
+  const status = h('p', { class: 'fine', role: 'status' });
+  const presets = h('div', { class: 'filters', role: 'group', 'aria-label': 'Vanliga val' }, ELSEWHERE.map(([label, kcal, protein]) =>
+    h('button', { type: 'button', class: 'filter', onclick: () => {
+      form.elements.label.value = label;
+      form.elements.kcal.value = kcal;
+      form.elements.protein.value = protein;
+      status.textContent = `${label}: ca ${kcal} kcal och ${protein} g protein. Ändra om du vet bättre.`;
+    } }, label)));
+  const done = text => { refresh(); closeSheet(); $('day-status').textContent = text; };
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const label = form.elements.label.value.trim();
+    const [kcal, protein] = ['kcal', 'protein'].map(name => Math.round(Number(form.elements[name].value)));
+    const bad = !label ? form.elements.label : ['kcal', 'protein'].map(name => form.elements[name])
+      .find(input => input.value === '' || !(Number(input.value) >= Number(input.min) && Number(input.value) <= Number(input.max)));
+    if (bad) {
+      status.textContent = bad.name === 'label' ? 'Skriv vad du åt, eller välj ett vanligt val.' : `Skriv ett tal mellan ${bad.min} och ${bad.max}.`;
+      bad.focus();
+      return;
+    }
+    store.setOutside(day.date, meal.id, { label, kcal, protein });
+    done(`${label} till ${lower(meal.name)}. Resten av dagen är omräknad.`);
+  });
+  form.append(h('div', { class: 'intro-nav' },
+    now ? h('button', { type: 'button', class: 'button quiet', onclick: () => { store.setOutside(day.date, meal.id, null); done(`${meal.instead.title} till ${lower(meal.name)} igen.`); } }, 'Tillbaka till planen') : null,
+    h('button', { type: 'submit', class: 'button' }, 'Spara')));
+  openSheet(`Åt annat till ${lower(meal.name)}`, [
+    h('p', { class: 'fine sheet-now' }, `Planen: ${(now ? meal.instead : meal).title} · ${(now ? meal.instead : meal).kcal} kcal`),
+    h('p', { class: 'fine' }, 'Välj ett vanligt val eller skriv en egen uppskattning. Resten av dagen räknas om så att den ändå hamnar nära målet, och det du redan bockat av ändras inte.'),
+    presets, form, status
+  ], { back: () => document.querySelector(`[data-meal="${meal.id}"] [data-action="outside"]`) });
+}
+
 // Ett fast val: vad det gäller och en knapp för att sluta med det.
 function fixedNote(meal) {
   const choice = store.choices().fixed[meal.id];
@@ -351,6 +406,8 @@ function wholeBatch(meal, fed) {
 // kommer från).
 function actions(day, meal, from) {
   if (meal.id === 'shake') return null;
+  const outside = h('button', { type: 'button', class: 'button quiet small', 'data-action': 'outside', 'aria-haspopup': 'dialog', onclick: () => openOutside(day, meal) }, meal.outside ? 'Ändra…' : 'Åt annat…');
+  if (meal.outside) return h('div', { class: 'actions' }, outside);
   const value = store.rating(meal.recipe);
   const rate = next => {
     store.setRating(meal.recipe, next, today);
@@ -363,7 +420,8 @@ function actions(day, meal, from) {
     !from && meal.how && meal.recipe !== 'huel' ? h('button', { type: 'button', class: 'button small', 'data-action': 'cook', 'aria-haspopup': 'dialog', onclick: () => openCook(day, meal) }, 'Laga') : null,
     h('button', { type: 'button', class: 'button quiet small', 'data-action': 'swap', 'aria-haspopup': 'dialog', onclick: () => openSwap(day, meal) }, 'Byt…'),
     h('button', { type: 'button', class: 'button quiet small', 'data-rate': '1', 'aria-pressed': String(value === 1), onclick: () => rate(value === 1 ? 0 : 1) }, value === 1 ? '★ Favorit' : '☆ Favorit'),
-    h('button', { type: 'button', class: 'button quiet small', 'data-rate': '-1', 'aria-pressed': String(value === -1), onclick: () => rate(value === -1 ? 0 : -1) }, 'Aldrig mer'));
+    h('button', { type: 'button', class: 'button quiet small', 'data-rate': '-1', 'aria-pressed': String(value === -1), onclick: () => rate(value === -1 ? 0 : -1) }, 'Aldrig mer'),
+    outside);
 }
 
 function mealCard(day, meal, isNow) {
@@ -379,14 +437,14 @@ function mealCard(day, meal, isNow) {
     isNow ? h('span', { class: 'tag tag-now' }, 'Nu') : null,
     from ? h('span', { class: 'tag' }, 'Matlåda') : null,
     fed.length ? h('span', { class: 'tag tag-batch' }, fed.length > 1 ? 'Storkok' : 'Dubbel sats') : null,
-    meal.fixed ? h('span', { class: 'tag tag-changed' }, 'Fast val') : vegan ? h('span', { class: 'tag tag-vegan' }, 'Vegansk') : changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null,
+    meal.outside ? h('span', { class: 'tag tag-changed' }, 'Åt annat') : meal.fixed ? h('span', { class: 'tag tag-changed' }, 'Fast val') : vegan ? h('span', { class: 'tag tag-vegan' }, 'Vegansk') : changed ? h('span', { class: 'tag tag-changed' }, 'Bytt') : meal.changes.length ? h('span', { class: 'tag tag-changed' }, 'Anpassad') : null,
     meal.scale !== 1 ? h('span', { class: 'tag' }, `${Math.round(meal.scale * 100)} %`) : null
   ];
   const name = `${meal.title}${from ? ' (rester)' : ''}`;
   const check = h('button', {
     type: 'button', class: 'check', 'aria-pressed': String(eaten),
     'aria-label': `${meal.name}: ${name}. Ätit`,
-    onclick: () => { store.toggleEaten(day.date, meal.id); renderDay(); document.querySelector(`[data-meal="${meal.id}"] .check`)?.focus(); }
+    onclick: () => { store.toggleEaten(day.date, meal.id); if (day.meals.some(other => other.outside)) refresh(); else renderDay(); document.querySelector(`[data-meal="${meal.id}"] .check`)?.focus(); }
   }, h('span', { class: 'check-mark', 'aria-hidden': 'true' }));
 
   const details = h('details', { open: open.has(key), ontoggle: event => { if (event.target.open) open.add(key); else open.delete(key); } },
@@ -403,8 +461,9 @@ function mealCard(day, meal, isNow) {
         : `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
       meal.changes.length ? h('p', { class: 'changed' }, `${meal.changes.join('. ')}.`) : null,
       meal.fixed ? fixedNote(meal) : null,
+      meal.outside ? h('p', { class: 'changed' }, `I stället för ${lower(meal.instead.title)}. Uppskattat till ${meal.kcal} kcal och ${meal.protein} g protein; resten av dagen är omräknad efter det.`) : null,
       meal.scale !== 1 ? h('p', { class: 'fine' }, `Portionen är ${Math.round(meal.scale * 100)} % av receptet, för att dagen ska träffa dina mål.`) : null,
-      h('ul', { class: 'ingredients' }, meal.items.map(([, , text]) => h('li', {}, text))),
+      meal.items.length ? h('ul', { class: 'ingredients' }, meal.items.map(([, , text]) => h('li', {}, text))) : null,
       fed.length === 1 ? h('p', { class: 'batch' }, h('b', {}, 'Laga dubbel sats: '), `hälften blir lunch på ${weekdayName(fed[0].date).toLowerCase()}.`) : null,
       fed.length > 1 ? h('p', { class: 'batch' }, h('b', {}, `Storkok, ${meal.portions} portioner: `), `middag idag och matlåda ${list(fed.map(other => weekdayName(other.date).toLowerCase()))}.`) : null,
       fed.length ? h('div', { class: 'whole' }, h('p', {}, h('b', {}, `Hela satsen (${meal.portions} portioner)`)),
@@ -679,13 +738,175 @@ function renderChoices() {
       `${name}: ${RECIPES[choice.recipe].name} (${DAY_TEXT[choice.days]})`, h('span', { 'aria-hidden': 'true' }, ' ×')));
   })) : h('p', { class: 'fine' }, 'Inga fasta val. Välj "Varje dag", "Vardagar" eller "Helger" när du byter frukost, lunch, mellanmål eller kvällsmål.'));
 
+  renderOwn();
+  renderWeight();
+
   const swaps = Object.keys(store.choices().swaps).length;
   $('swaps').textContent = swaps ? `Du har bytt ${swaps} ${swaps === 1 ? 'måltid' : 'måltider'} för hand.` : 'Du har inte bytt några måltider. Det gör du under en måltid på dagens sida.';
   $('clear-swaps').hidden = !swaps;
   $('offline').textContent = navigator.serviceWorker?.controller ? 'Schemat är sparat på den här enheten och öppnas även utan nät.' : 'Öppna sidan en gång till med nät så sparas schemat på enheten.';
 }
 
+// ---------- Egna recept ----------
+const MEAL_NAMES = Object.fromEntries(MEALS.map(meal => [meal.id, meal.name]));
+const ownSummary = items => {
+  const sum = contents(items);
+  const cost = items.reduce((total, [food, grams]) => total + grams * PRICES[food] / 1000, 0);
+  return `${Math.round(sum.kcal)} kcal · ${Math.round(sum.protein)} g protein · ${Math.round(sum.carbs)} g kolh · ${Math.round(sum.fat)} g fett · ≈ ${Math.max(1, Math.round(cost))} kr`;
+};
+
+function renderOwn() {
+  const own = Object.entries(store.own()).sort(([, a], [, b]) => a.name.localeCompare(b.name, 'sv'));
+  $('own').replaceChildren(own.length ? h('ul', { class: 'own-list' }, own.map(([id, recipe]) => h('li', {},
+    h('span', {}, h('b', {}, recipe.name), h('small', {}, `${MEAL_NAMES[recipe.slot]} · ${ownSummary(recipe.items.filter(([food]) => FOODS[food]))}`)),
+    h('button', { type: 'button', class: 'button quiet small', 'data-own': id, 'aria-haspopup': 'dialog', 'aria-label': `Ändra ${recipe.name}`, onclick: () => openOwn(id) }, 'Ändra'))))
+    : h('p', { class: 'fine' }, 'Inga egna recept än.'));
+}
+
+// Ett eget recept: namn, måltid, ingredienser (från livsmedelslistan, i gram) och hur man gör. Näringen räknas
+// medan du skriver.
+const foodOptions = chosen => SECTIONS.map(section => h('optgroup', { label: section },
+  Object.keys(FOODS).filter(food => FOODS[food].section === section).sort((a, b) => FOODS[a].name.localeCompare(FOODS[b].name, 'sv'))
+    .map(food => h('option', { value: food, selected: food === chosen }, FOODS[food].name))));
+
+function openOwn(id = null) {
+  const recipe = id ? store.own()[id] : { name: '', slot: 'middag', items: [['kyckling', 150], ['ris', 75], ['broccoli', 150]], how: '' };
+  const status = h('p', { class: 'fine', role: 'status' });
+  const summary = h('p', { class: 'own-sum', 'aria-live': 'polite' });
+  const rows = h('ol', { class: 'own-items' });
+  const read = () => [...rows.children].map(row => [row.querySelector('select').value, Number(row.querySelector('input').value)]).filter(([food, grams]) => FOODS[food] && grams > 0);
+  const update = () => { const items = read(); summary.textContent = items.length ? `Per portion: ${ownSummary(items)}` : 'Lägg till minst en ingrediens.'; };
+  const row = ([food, grams]) => {
+    const item = h('li', {},
+      h('select', { 'aria-label': 'Ingrediens', onchange: update }, foodOptions(food)),
+      h('label', { class: 'own-grams' }, h('input', { type: 'number', inputmode: 'numeric', min: 1, max: 2000, step: 1, value: grams, 'aria-label': 'Gram', oninput: update }), h('small', {}, 'g')),
+      h('button', { type: 'button', class: 'own-remove', 'aria-label': 'Ta bort ingrediensen', onclick: () => {
+        const next = item.nextElementSibling || item.previousElementSibling;
+        item.remove();
+        update();
+        next?.querySelector('select')?.focus();
+      } }, '×'));
+    return item;
+  };
+  rows.append(...recipe.items.map(row));
+  const name = h('input', { type: 'text', id: 'own-name', maxlength: 60, autocomplete: 'off', value: recipe.name });
+  const slot = h('select', { id: 'own-slot' }, MEALS.map(meal => h('option', { value: meal.id, selected: meal.id === recipe.slot }, meal.name)));
+  const how = h('textarea', { id: 'own-how', rows: 4, maxlength: 2000 });
+  how.value = recipe.how || '';
+  const save = () => {
+    const items = read();
+    if (!name.value.trim()) { status.textContent = 'Ge receptet ett namn.'; name.focus(); return; }
+    if (!items.length) { status.textContent = 'Lägg till minst en ingrediens med gram.'; return; }
+    const key = id || `egen_${Date.now().toString(36)}`;
+    store.setOwn(key, { name: name.value.trim(), slot: slot.value, items: items.map(([food, grams]) => [food, Math.round(grams)]), how: how.value.trim() });
+    refresh();
+    closeSheet();
+    $('own-status').textContent = `${name.value.trim()} är sparat. Du hittar det under Byt när du söker på namnet.`;
+  };
+  update();
+  openSheet(id ? `Ändra ${recipe.name}` : 'Nytt recept', [
+    h('div', { class: 'own-form' },
+      h('label', { for: 'own-name' }, 'Namn'), name,
+      h('label', { for: 'own-slot' }, 'Måltid'), slot,
+      h('p', { class: 'own-head' }, 'Ingredienser för en portion'), rows,
+      h('button', { type: 'button', class: 'button quiet small', onclick: () => { rows.append(row(['agg', 60])); update(); rows.lastElementChild.querySelector('select').focus(); } }, 'Lägg till ingrediens'),
+      summary,
+      h('label', { for: 'own-how' }, 'Gör så här (valfritt)'), how),
+    status,
+    h('div', { class: 'intro-nav' },
+      id ? h('button', { type: 'button', class: 'button quiet', onclick: () => {
+        store.setOwn(id, null);
+        refresh();
+        closeSheet();
+        $('own-status').textContent = `${recipe.name} är borttaget.`;
+      } }, 'Ta bort') : null,
+      h('button', { type: 'button', class: 'button', onclick: save }, 'Spara'))
+  ], { back: () => (id && document.querySelector(`[data-own="${id}"]`)) || $('own-new') });
+}
+
+// ---------- Vikt ----------
+// Vägningarna som en linje (de senaste tolv veckorna), takten de senaste fyra veckorna och ett förslag på
+// nytt kcal-mål om du valt en takt.
+const kg = value => `${value.toLocaleString('sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`;
+const SVG = 'http://www.w3.org/2000/svg';
+const svg = (tag, attrs = {}, ...children) => {
+  const node = document.createElementNS(SVG, tag);
+  for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, value);
+  node.append(...children);
+  return node;
+};
+
+function weightChart(points) {
+  const [width, height, left, right, top, bottom] = [320, 140, 34, 10, 10, 22];
+  const times = points.map(([date]) => Date.parse(`${date}T12:00:00Z`));
+  const values = points.map(([, value]) => value);
+  const [low, high] = [Math.floor(Math.min(...values) - 0.5), Math.ceil(Math.max(...values) + 0.5)];
+  const [first, last] = [times[0], Math.max(times.at(-1), times[0] + 86400000)];
+  const x = time => left + (time - first) / (last - first) * (width - left - right);
+  const y = value => top + (high - value) / (high - low) * (height - top - bottom);
+  const label = (text, attrs) => svg('text', { class: 'chart-text', ...attrs }, text);
+  return svg('svg', { class: 'weight-chart', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `Vikt från ${dayMonth(points[0][0])} till ${dayMonth(points.at(-1)[0])}: ${kg(values[0])} till ${kg(values.at(-1))}.` },
+    ...[low, high].map(value => svg('line', { class: 'chart-grid', x1: left, x2: width - right, y1: y(value), y2: y(value) })),
+    label(String(high), { x: left - 6, y: y(high) + 4, 'text-anchor': 'end' }),
+    label(String(low), { x: left - 6, y: y(low) + 4, 'text-anchor': 'end' }),
+    label(format(points[0][0], { day: 'numeric', month: 'short' }), { x: left, y: height - 4 }),
+    points.length > 1 ? label(format(points.at(-1)[0], { day: 'numeric', month: 'short' }), { x: width - right, y: height - 4, 'text-anchor': 'end' }) : '',
+    svg('polyline', { class: 'chart-line', points: times.map((time, i) => `${x(time)},${y(values[i])}`).join(' ') }),
+    ...times.map((time, i) => svg('circle', { class: 'chart-dot', cx: x(time), cy: y(values[i]), r: 4 },
+      svg('title', {}, `${dayMonth(points[i][0])}: ${kg(values[i])}`))));
+}
+
+function renderWeight() {
+  const all = Object.entries(store.weights()).sort(([a], [b]) => a.localeCompare(b));
+  const form = $('weight-form').elements;
+  if (!form.date.value) form.date.value = today;
+  form.date.max = today;
+  $('weight-goal').value = store.weightGoal() === null ? '' : String(store.weightGoal());
+  const recent = all.filter(([date]) => date >= new Date(Date.parse(`${today}T12:00:00Z`) - 84 * 86400000).toISOString().slice(0, 10));
+  const trend = weightTrend(store.weights(), store.weightGoal(), goals().kcal, today);
+  const pace = rate => (Math.abs(rate) < 0.05 ? 'Vikten står ungefär still' : `Du går ${rate < 0 ? 'ner' : 'upp'} ca ${kg(Math.abs(rate)).replace(' kg', '')} kg i veckan`);
+  const suggestion = trend && trend.change ? h('div', { class: 'box box-mint weight-tip' },
+    h('p', {}, `${pace(trend.rate)} de senaste fyra veckorna. För takten du vill ha: ${trend.change < 0 ? 'sänk' : 'höj'} målet med ${Math.abs(trend.change)} kcal till ${number(trend.kcal)} kcal om dagen.`),
+    h('button', { type: 'button', class: 'button small', onclick: () => {
+      store.setGoals({ ...store.choices().goals, kcal: trend.kcal });
+      refresh();
+      $('weight-status').textContent = `Målet är nu ${number(trend.kcal)} kcal om dagen. Se hur det går ett par veckor innan du ändrar igen.`;
+      $('weight-title').focus();
+    } }, `Ändra målet till ${number(trend.kcal)} kcal`)) : null;
+  $('weight').replaceChildren(...[
+    recent.length ? h('h3', { class: 'section-sub' }, 'Vikt, senaste tolv veckorna') : null,
+    recent.length ? weightChart(recent) : null,
+    h('p', { class: 'fine' }, !all.length ? 'Inga vägningar än.'
+      : !trend ? 'Efter minst fyra vägningar över två veckor visar sidan hur fort vikten ändras.'
+      : trend.change ? '' : `${pace(trend.rate)} de senaste fyra veckorna.${store.weightGoal() === null ? ' Välj en takt ovan för att få förslag på kcal-mål.' : ' Det stämmer med takten du vill ha.'}`),
+    suggestion,
+    all.length ? h('ul', { class: 'chips' }, all.slice(-8).reverse().map(([date, value]) => h('li', {},
+      h('button', { type: 'button', class: 'chip', 'aria-label': `Ta bort vägningen ${dayMonth(date)}, ${kg(value)}`, onclick: () => {
+        store.setWeight(date, null);
+        renderWeight();
+        $('weight-status').textContent = `Vägningen ${dayMonth(date)} är borttagen.`;
+        $('weight-title').focus();
+      } }, `${format(date, { day: 'numeric', month: 'short' })}: ${kg(value)}`, h('span', { 'aria-hidden': 'true' }, ' ×'))))) : null
+  ].filter(Boolean));
+}
+
 // ---------- Händelser ----------
+$('own-new').addEventListener('click', () => openOwn());
+$('weight-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const form = event.target.elements;
+  const value = Math.round(Number(String(form.kg.value).replace(',', '.')) * 10) / 10;
+  if (!form.date.value || form.date.value > today) { $('weight-status').textContent = 'Välj ett datum, idag eller tidigare.'; form.date.focus(); return; }
+  if (!(value >= 30 && value <= 300)) { $('weight-status').textContent = 'Skriv vikten i kg, till exempel 82,4.'; form.kg.focus(); return; }
+  store.setWeight(form.date.value, value);
+  form.kg.value = '';
+  renderWeight();
+  $('weight-status').textContent = `${kg(value)} ${form.date.value === today ? 'idag' : dayMonth(form.date.value)} är sparat.`;
+});
+$('weight-goal').addEventListener('change', event => {
+  store.setWeightGoal(event.target.value === '' ? null : Number(event.target.value));
+  renderWeight();
+});
 $('day-prev-week').addEventListener('click', () => moveWeek(-1, 'dag'));
 $('day-next-week').addEventListener('click', () => moveWeek(1, 'dag'));
 $('go-today').addEventListener('click', () => go(`#dag/${startDate(today)}`));
@@ -757,7 +978,9 @@ function showOffer(value) {
     `${liked} ${liked === 1 ? 'favorit' : 'favoriter'}`,
     `${other.exclude.length} bortvalda livsmedel`,
     other.vegan ? 'vegan' : null,
-    other.goals ? 'egna mål' : null
+    other.goals ? 'egna mål' : null,
+    Object.keys(other.own).length ? `${Object.keys(other.own).length} egna recept` : null,
+    Object.keys(other.weights).length ? `${Object.keys(other.weights).length} vägningar` : null
   ].filter(Boolean).join(', ') + '.';
   $('sync-offer').hidden = false;
   $('sync-title').scrollIntoView();

@@ -53,7 +53,8 @@
       <div class="totals" id="totals"></div>
       <ol class="meals" id="meals"></ol>
       <p class="fine" id="day-status" role="status"></p>
-      <p class="hint">Tryck på en måltid för recept, Laga och Byt, och bocka av när du ätit. Svep åt sidan för att byta dag.</p>
+      <div id="prep"></div>
+      <p class="hint">Tryck på en måltid för recept, Laga, Byt och Åt annat, och bocka av när du ätit. Svep åt sidan för att byta dag.</p>
     </section>
 
     <!-- Vecka -->
@@ -133,6 +134,25 @@
       <p class="fine" id="goals-status" role="status"></p>
       <button type="button" class="button quiet" id="goals-reset">Återställ målen</button>
 
+      <h2 class="section-title section-gap" id="weight-title" tabindex="-1">Vikt</h2>
+      <p>Väg dig ungefär en gång i veckan, gärna samma veckodag och på morgonen. Efter ett par veckor visar sidan hur fort vikten ändras, och har du valt en takt föreslår den ett nytt kcal-mål om det går för fort eller för sakta. Vikten sparas bara i den här webbläsaren.</p>
+      <form class="goals weight-form" id="weight-form" novalidate>
+        <label><span>Datum</span><input type="date" name="date"></label>
+        <label><span>Vikt</span><input type="text" name="kg" inputmode="decimal" autocomplete="off" placeholder="82,4"><small>kg</small></label>
+        <button type="submit" class="button">Spara vägningen</button>
+      </form>
+      <label class="weight-goal">Jag vill
+        <select id="weight-goal">
+          <option value="">inte välja någon takt</option>
+          <option value="-0.5">gå ner ca 0,5 kg i veckan</option>
+          <option value="-0.25">gå ner ca 0,25 kg i veckan</option>
+          <option value="0">behålla vikten</option>
+          <option value="0.25">gå upp ca 0,25 kg i veckan</option>
+        </select>
+      </label>
+      <p class="fine" id="weight-status" role="status"></p>
+      <div id="weight"></div>
+
       <h2 class="section-title section-gap">Det här äter jag inte</h2>
       <label class="goals-fit vegan-choice"><input type="checkbox" id="vegan"> Jag är vegan</label>
       <p class="fine">Inget kött, ingen fisk, inga ägg, inget mejeri och ingen honung. Mjölk, kvarg, ost och crème fraiche byts mot sojadryck, sojayoghurt, vegansk ost och havrefraiche, och rätter med kött, fisk eller ägg byts mot veganska rätter med tofu, tempeh, vegofärs, bönor och linser (storkok mot storkok). Proteinshaken görs på veganskt proteinpulver.</p>
@@ -148,6 +168,12 @@
       <h3 class="section-sub" id="fixed-title" tabindex="-1">Fasta val</h3>
       <p>Vill du ha samma sak varje gång, till exempel havregrynsgröt till frukost, välj den under måltiden och "Varje dag", "Vardagar" eller "Helger". Den gäller från den dagen tills du tar bort den, och portionen justeras efter dina mål som allt annat.</p>
       <div id="fixed"></div>
+
+      <h3 class="section-sub" id="own-title" tabindex="-1">Egna recept</h3>
+      <p>Lägg in en egen rätt med ingredienser från listan, för en portion. Näring och pris räknas ut, och du hittar den under Byt (sök på namnet). Den kan bli favorit eller fast val som alla andra, och portionen justeras efter dina mål.</p>
+      <div id="own"></div>
+      <button type="button" class="button" id="own-new" aria-haspopup="dialog">Nytt recept</button>
+      <p class="fine" id="own-status" role="status"></p>
 
       <h3 class="section-sub" id="ratings-title" tabindex="-1">Favoriter och aldrig mer</h3>
       <p>Markera rätter under varje måltid på dagens sida. En favorit kommer oftare från och med veckan efter (en middag högst en gång i veckan), och en rätt du inte vill ha byts ut från samma dag.</p>

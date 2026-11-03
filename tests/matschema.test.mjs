@@ -176,6 +176,75 @@ test('the shopping list has a rough price for every item and the week', async ()
   }
 });
 
+test('the evening before lists thawing, lunch boxes and overnight steps', async () => {
+  const { prepFor } = await import('../matschema/js/plan.js');
+  const plan = makePlan({ swaps: { '2026-11-07:frukost': 'overnight', '2026-11-07:middag': 'ugnslax' } });
+  const tasks = prepFor(plan.day('2026-11-07'));
+  assert.ok(tasks.some(task => /^Overnight oats .* till frukosten: .*kvällen innan/.test(task)), tasks.join(' | '));
+  assert.ok(tasks.some(task => /^Lägg \d+ g laxfilé i kylen att tina, till middagen\.$/.test(task)), tasks.join(' | '));
+  assert.ok(prepFor(plan.day('2026-11-03')).some(task => task.startsWith('Packa en matlåda till lunchen')));
+});
+
+test('a meal eaten elsewhere is counted, and the rest of the day is refitted', () => {
+  const outside = { '2026-11-04:middag': { label: 'Pizza', kcal: 1000, protein: 40 } };
+  const before = makePlan().day('2026-11-04');
+  const plan = makePlan({ outside, eaten: { '2026-11-04': ['lunch'] } });
+  const day = plan.day('2026-11-04');
+  const dinner = day.meals[3];
+  assert.equal(dinner.outside, true);
+  assert.equal(dinner.title, 'Pizza');
+  assert.equal(dinner.kcal, 1000);
+  assert.equal(dinner.items.length, 0);
+  assert.equal(dinner.instead.recipe, before.meals[3].recipe);
+  // Det ätna behåller sin portion, resten krymper.
+  assert.equal(day.meals[1].scale, before.meals[1].scale);
+  assert.ok(day.meals.filter(meal => !meal.outside && meal.recipe !== 'huel' && meal.id !== 'lunch' && meal.id !== 'shake').every(meal => meal.scale <= 0.75));
+  // Ingen matlåda från pizzan, och inget att handla för den.
+  assert.equal(plan.day('2026-11-05').meals[1].leftover, false);
+  assert.equal(day.kcal, day.meals.reduce((sum, meal) => sum + meal.kcal, 0));
+  // En matlåda du inte äter gör gårdagens middag till en enkel sats.
+  const skipped = makePlan({ outside: { '2026-11-04:lunch': { label: 'Lunch ute', kcal: 750, protein: 35 } } });
+  assert.equal(skipped.day('2026-11-03').meals[3].portions, 1);
+  assert.equal(makePlan().day('2026-11-03').meals[3].portions, 2);
+});
+
+test('own recipes can be chosen and are removed again', async () => {
+  const { CHOOSABLE: choosable } = await import('../matschema/js/plan.js');
+  const own = { egen_abc: { name: 'Min bowl', slot: 'middag', items: [['kyckling', 150], ['ris', 80], ['nope', 10]], how: 'Koka riset.' } };
+  const plan = makePlan({ own, swaps: { '2026-11-04:middag': 'egen_abc' }, fit: false });
+  const dinner = plan.day('2026-11-04').meals[3];
+  assert.equal(dinner.title, 'Min bowl');
+  assert.equal(dinner.items.length, 2);
+  assert.ok(POOLS.lunch.includes('egen_abc') && choosable.includes('egen_abc'));
+  assert.ok(plan.shopping(46).flatMap(group => group.items).some(item => item.food === 'kyckling'));
+  makePlan();
+  assert.ok(!POOLS.middag.includes('egen_abc') && !choosable.includes('egen_abc') && !RECIPES.egen_abc);
+});
+
+test('the weight trend suggests a new kcal goal', async () => {
+  const { weightTrend } = await import('../matschema/js/plan.js');
+  const weights = { '2026-10-06': 85, '2026-10-13': 84.7, '2026-10-20': 84.4, '2026-10-27': 84.1, '2026-11-03': 83.8 };
+  assert.equal(weightTrend({ '2026-11-01': 80, '2026-11-02': 80 }, -0.5, 2228, '2026-11-03'), null);
+  assert.deepEqual(weightTrend(weights, -0.5, 2228, '2026-11-03'), { rate: -0.3, change: -220, kcal: 2008 });
+  assert.deepEqual(weightTrend(weights, -0.25, 2228, '2026-11-03'), { rate: -0.3, change: 0, kcal: 2228 });
+  assert.equal(weightTrend(weights, 0.25, 2228, '2026-11-03').change, 300);
+  assert.equal(weightTrend(weights, null, 2228, '2026-11-03').change, 0);
+});
+
+test('own recipes, meals eaten elsewhere and weights are cleaned and merged', () => {
+  const value = store.clean({
+    own: { egen_a1: { name: 'Bowl', slot: 'middag', items: [['kyckling', 150]] }, egen_bad: { name: '', slot: 'middag', items: [['kyckling', 1]] }, other: { name: 'x', slot: 'lunch', items: [['agg', 60]] } },
+    outside: { '2026-11-04:middag': { label: 'Pizza', kcal: 1000, protein: 40 }, '2026-11-04:fika': { label: 'x', kcal: 1, protein: 1 }, '2026-11-05:lunch': { label: 'x', kcal: 9000, protein: 1 } },
+    weights: { '2026-11-03': 82.4, '2026-11-04': 12, nope: 80 },
+    weightGoal: -0.5
+  });
+  assert.deepEqual(Object.keys(value.own), ['egen_a1']);
+  assert.deepEqual(Object.keys(value.outside), ['2026-11-04:middag']);
+  assert.deepEqual(value.weights, { '2026-11-03': 82.4 });
+  assert.equal(value.weightGoal, -0.5);
+  assert.equal(store.clean({ weightGoal: 3 }).weightGoal, undefined);
+});
+
 test('the shopping list adds up the week', () => {
   const items = Object.fromEntries(shopping(45).flatMap(group => group.items).map(item => [item.food, item.amount]));
   assert.equal(items.huel, '7 flaskor');
@@ -255,7 +324,7 @@ test('sync: a link or file carries everything, and reading it in merges', async 
   assert.deepEqual(await unpack(code), value);
   assert.deepEqual(readSyncFile(fileText(value, '2026-11-05')), value);
   assert.deepEqual(store.clean({ ...value, evil: '<script>', eaten: { x: [1, 'a'] }, ratings: { a: { r: 5, at: 'x' } } }),
-    { eaten: { x: ['a'] }, have: {}, hide: false, exclude: [], swaps: value.swaps, ratings: {}, fixed: {}, goals: { kcal: 2400 }, vegan: true });
+    { eaten: { x: ['a'] }, have: {}, hide: false, exclude: [], swaps: value.swaps, ratings: {}, fixed: {}, own: {}, outside: {}, weights: {}, goals: { kcal: 2400 }, vegan: true });
   assert.deepEqual(store.clean({ fixed: { frukost: { recipe: 'havregrot', days: 'vardag', at: '2026-11-04' }, middag: { recipe: 'tacos', days: 'alla', at: '2026-11-04' }, lunch: { recipe: 'x', days: 'ibland', at: '2026-11-04' } } }).fixed,
     { frukost: { recipe: 'havregrot', days: 'vardag', at: '2026-11-04' } }, 'only meals that can be fixed, in the right shape');
   store.forget();

@@ -419,6 +419,38 @@ body:has(.sheet[open]) { overflow: hidden; }
 .shop-amount { color: var(--muted); font-size: 14px; text-align: right; white-space: nowrap; }
 .shop-group li.is-done .shop-name { color: var(--muted); text-decoration: line-through; }
 .hide-done li.is-done { display: none; }
+/* ---------- Inför imorgon, åt annat, egna recept, vikt ---------- */
+.prep { margin-top: 16px; }
+.prep ul { margin: 0; padding-left: 20px; }
+.prep li + li { margin-top: 4px; }
+.outside-form { margin-top: 12px; }
+.outside-form label:first-child, .outside-form .intro-nav { grid-column: 1 / -1; }
+.goals input[type="text"], .goals input[type="date"] { width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 17px; font-weight: 700; }
+.weight-form .button { grid-column: 1 / -1; justify-self: start; }
+.own-list { margin: 0 0 12px; padding: 0; list-style: none; }
+.own-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.own-list small { display: block; color: var(--muted); font-size: 13px; }
+.own-form { display: grid; gap: 6px; }
+.own-form > label, .own-head { margin: 10px 0 0; font-weight: 600; }
+.own-form input[type="text"], .own-form select, .own-form textarea { min-height: 44px; padding: 8px 10px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 8px; }
+.own-form textarea { min-height: 96px; resize: vertical; }
+.own-items { display: grid; gap: 8px; margin: 0 0 4px; padding: 0; list-style: none; }
+.own-items li { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; gap: 8px; align-items: center; }
+.own-items select { min-width: 0; width: 100%; }
+.own-grams { display: flex; align-items: center; gap: 4px; }
+.own-grams input { width: 76px; min-height: 44px; padding: 0 8px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 8px; }
+.own-remove { width: 44px; height: 44px; font: inherit; font-size: 20px; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
+.own-sum { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+.weight-form { align-items: end; }
+.weight-goal { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; }
+.weight-goal select { min-height: 44px; padding: 0 8px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 8px; }
+.weight-chart { display: block; width: 100%; max-width: 560px; height: auto; margin: 4px 0 8px; }
+.chart-grid { stroke: var(--line); stroke-width: 1; }
+.chart-text { fill: var(--muted); font-size: 11px; }
+.chart-line { fill: none; stroke: var(--green); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-dot { fill: var(--green); stroke: var(--surface); stroke-width: 2; }
+.weight-tip p { margin: 0 0 10px; }
+
 .shop-store { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 .shop-store select { min-height: 40px; padding: 0 8px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 8px; }
 .shop-search { flex: none; display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; color: var(--green); text-decoration: none; }

@@ -279,6 +279,22 @@ export const POOLS = {
 // Allt du kan välja själv, i vilken måltid som helst (planen håller sig själv till rätterna i POOLS).
 export const CHOOSABLE = [...new Set(Object.values(POOLS).flat())];
 
+// Egna recept (Anpassa): { egen_…: { name, slot, items: [[livsmedel, gram]], how } }. De läggs till bland
+// recepten och i måltidens val (en middag också som lunch), men planen tar dem bara när du själv väljer dem
+// eller gör dem till favorit.
+const OWN = /^egen_[a-z0-9]+$/;
+export function useOwn(own = {}) {
+  for (const id of Object.keys(RECIPES)) if (OWN.test(id)) delete RECIPES[id];
+  for (const list of [...Object.values(POOLS), CHOOSABLE]) for (let i = list.length - 1; i >= 0; i--) if (OWN.test(list[i])) list.splice(i, 1);
+  for (const [id, recipe] of Object.entries(own)) {
+    const items = (recipe.items || []).filter(([food, grams]) => FOODS[food] && grams > 0).map(([food, grams]) => [food, grams, cookLine(food, grams)]);
+    if (!OWN.test(id) || !items.length || !POOLS[recipe.slot]) continue;
+    RECIPES[id] = { name: recipe.name, items, how: recipe.how || '', own: true };
+    for (const slot of recipe.slot === 'middag' ? ['middag', 'lunch'] : [recipe.slot]) POOLS[slot].push(id);
+    CHOOSABLE.push(id);
+  }
+}
+
 // Måltider som kan ha ett fast val ("gröt varje morgon"), och vilka dagar ett fast val gäller (måndag = 0).
 export const FIXABLE = ['frukost', 'lunch', 'mellanmal', 'kvallsmal'];
 export const DAYS = { alla: () => true, vardag: weekday => weekday < 5, helg: weekday => weekday >= 5 };
@@ -338,10 +354,10 @@ export function alternatives(slot, kcal, exclude = new Set(), skip = [], ids = P
 function leftoverSource(days, index) {
   for (let back = 3; back >= 1; back--) {
     const dinner = days[index - back]?.meals[3];
-    if (dinner?.storkok && dinner.extra < dinner.storkok - 1) return dinner;
+    if (dinner?.storkok && !dinner.outside && dinner.extra < dinner.storkok - 1) return dinner;
   }
   const yesterday = days[index - 1]?.meals[3];
-  return yesterday && !yesterday.storkok && yesterday.extra < 1 ? yesterday : null;
+  return yesterday && !yesterday.storkok && !yesterday.outside && yesterday.extra < 1 ? yesterday : null;
 }
 
 // ---------- Portionerna efter målen ----------
@@ -362,13 +378,16 @@ const CAP = 8; // att gå över ett tak väger tyngre än att missa ett mål
 const MARGIN = { sugar: 0.85, satfat: 0.95 };
 const KEEP = 0.04; // hur mycket det kostar att ändra en portion från receptet
 
-function fitDay(day, goals, shake, oil, powder) {
-  const free = day.meals.map((meal, m) => m).filter(m => day.meals[m].recipe !== 'huel');
+// Huel och det du ätit någon annanstans står still; locked = { måltidens plats: portion } för måltider du redan
+// ätit, som inte ska ändras i efterhand.
+function fitDay(day, goals, shake, oil, powder, locked = {}) {
+  const free = day.meals.map((meal, m) => m).filter(m => day.meals[m].recipe !== 'huel' && !day.meals[m].outside);
   const fixed = contents(day.meals.filter(meal => meal.recipe === 'huel').flatMap(meal => meal.items));
+  for (const meal of day.meals) if (meal.outside) for (const key in fixed) fixed[key] += meal[key];
   const parts = [...free.map(m => contents(day.meals[m].items)), contents([[powder || 'whey', 10]]), contents([['olja', 4.5]])];
   const n = free.length;
-  const bounds = [...free.map(() => SCALE), shake ? SHAKE : [0, 0], oil ? OIL : [0, 0]];
-  const start = [...free.map(() => 1), 0, 0];
+  const bounds = [...free.map(m => (m in locked ? [locked[m], locked[m]] : SCALE)), shake ? SHAKE : [0, 0], oil ? OIL : [0, 0]];
+  const start = [...free.map(m => locked[m] ?? 1), 0, 0];
   const x = [...start];
   const total = (key, at = x) => fixed[key] + at.reduce((sum, value, j) => sum + value * parts[j][key], 0);
   // Hur långt från målen (och över taken) dagen hamnar, plus en liten kostnad för att ändra recepten.
@@ -434,9 +453,12 @@ function scaled(meal, scale) {
 // goals = dagliga mål (GOALS), fit = justera portionerna efter målen, vegan = inget från djur, ratings =
 // { recept: { r: 1 (favorit) | -1 (aldrig mer) | 0 (ångrat), at: "ÅÅÅÅ-MM-DD" } }, fixed = fasta val
 // { frukost: { recipe, days: "alla" | "vardag" | "helg", at } } från dagen at. Ett byte för en enskild dag går
-// före ett fast val, och båda går före matlådor och favoriter. Matlådorna följer middagarna.
-export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false, ratings = {}, fixed = {} } = {}) {
+// före ett fast val, och båda går före matlådor och favoriter. Matlådorna följer middagarna. own = egna recept
+// (useOwn), outside = { "2026-11-02:lunch": { label, kcal, protein } } för det du ätit i stället, och eaten =
+// { datum: [måltider] } (ätna måltider behåller sin portion när resten av dagen räknas om).
+export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false, ratings = {}, fixed = {}, own = {}, outside = {}, eaten = {} } = {}) {
   goals = { ...GOALS, ...goals };
+  useOwn(own);
   const without = excludedFoods({ exclude, vegan });
   // Byten som bara beror på att du är vegan (inte på något du själv valt bort) visas som veganska.
   const mine = new Set(exclude);
@@ -500,7 +522,14 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
       if (replaced) uses.set(dish.recipe, (uses.get(dish.recipe) || 0) + 1);
       return { ...slot, ...dish, vegan: veganOnly(dish.touched), favourite, leftover: false, swapped: Boolean(daily), fixed: Boolean(always), planned, replaced, extra: 0 };
     });
-    days.push({ week: base.week, weekday: base.weekday, date: base.date, note: base.note, meals });
+    // Det du ätit i stället: en matlåda som inte äts gör att middagen den kom från lagas för en portion mindre.
+    const ate = meals.map(meal => {
+      const other = outside[`${base.date}:${meal.id}`];
+      if (!other) return meal;
+      if (meal.leftover) days.find(day => day.date === meal.from).meals[3].extra--;
+      return outsideMeal(meal, other);
+    });
+    days.push({ week: base.week, weekday: base.weekday, date: base.date, note: base.note, meals: ate });
   });
   // Proteinpulvret: whey, eller veganskt om du är vegan. Väljer du bort proteinpulver blir det ingen shake.
   const powder = mine.has('whey') ? null : vegan ? 'veganprotein' : 'whey';
@@ -509,7 +538,15 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
     dinner.portions = 1 + dinner.extra;
     dinner.batch = dinner.extra > 0;
     if (fit) {
-      const { scales, shake, oil } = fitDay(day, goals, powder && !without.has(powder), !without.has('olja'), powder);
+      const args = [goals, powder && !without.has(powder), !without.has('olja'), powder];
+      // Har du ätit något annat behåller de måltider du redan ätit sin portion från planen som den var.
+      const done = eaten[day.date] || [];
+      const locked = {};
+      if (done.length && day.meals.some(meal => meal.outside)) {
+        const before = fitDay({ meals: day.meals.map(meal => meal.instead || meal) }, ...args);
+        day.meals.forEach((meal, m) => { if (!meal.outside && done.includes(meal.id)) locked[m] = before.scales[m]; });
+      }
+      const { scales, shake, oil } = fitDay(day, ...args, locked);
       day.meals = day.meals.map((meal, m) => scaled(meal, scales[m]));
       if (oil) {
         const dinner = day.meals[3];
@@ -537,6 +574,56 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
     week: week => days.filter(day => day.week === week),
     shopping: week => shoppingList(days, week)
   };
+}
+
+// En måltid du ätit någon annanstans ({ label, kcal, protein }): kolhydrater och fett uppskattas ur resten av
+// energin (60/40 som energi), socker och mättat fett ur dem. Den räknas med i dagen men ändras inte.
+function outsideMeal(meal, { label, kcal, protein }) {
+  const rest = Math.max(0, kcal - protein * 4);
+  const carbs = rest * 0.6 / 4, fat = rest * 0.4 / 9;
+  return { ...MEALS.find(slot => slot.id === meal.id), recipe: null, title: label, how: '', items: [], changes: [], outside: true, instead: meal,
+    ...rounded({ kcal, protein, carbs, fat, sugar: carbs * 0.2, satfat: fat * 0.35 }),
+    leftover: false, swapped: false, fixed: false, favourite: false, vegan: false, replaced: null, storkok: 0, extra: 0, scale: 1 };
+}
+
+// Det som ska göras kvällen innan en dag: fisk och räkor som ska tina, matlådor att packa och det recepten
+// säger ska göras kvällen innan (overnight oats, kokt potatis).
+const THAW = ['lax', 'torsk', 'rakor'];
+const THE = { frukost: 'frukosten', lunch: 'lunchen', mellanmal: 'mellanmålet', middag: 'middagen', kvallsmal: 'kvällsmålet', shake: 'shaken' };
+export function prepFor(day) {
+  const tasks = [];
+  for (const meal of day.meals) {
+    if (meal.outside) continue;
+    if (meal.leftover) {
+      tasks.push(`Packa en matlåda till ${THE[meal.id]} (${lower(meal.title)}).`);
+      continue;
+    }
+    for (const [food, grams] of meal.items) {
+      if (!THAW.includes(food)) continue;
+      const total = grams * (meal.id === 'middag' ? meal.portions || 1 : 1);
+      tasks.push(`Lägg ${Math.round(total / 10) * 10} g ${lower(FOODS[food].name.replace(/\s*\(.*?\)/g, ''))} i kylen att tina, till ${THE[meal.id]}.`);
+    }
+    for (const step of meal.how.split(/(?<=[.!])\s+/)) {
+      if (/kvällen innan|över natten/i.test(step)) tasks.push(`${meal.title} till ${THE[meal.id]}: ${step}`);
+    }
+  }
+  return tasks;
+}
+
+// Viktens trend: lutningen i kg per vecka genom vägningarna de senaste fyra veckorna (minsta kvadrat), när
+// det finns minst fyra vägningar över minst två veckor. Med en önskad takt (kg per vecka) föreslås ett nytt
+// kcal-mål: 1 kg ≈ 7 700 kcal, så 1 kg i veckan ≈ 1 100 kcal om dagen, högst 300 kcal åt gången (under 100 kcal är brus).
+export function weightTrend(weights, goalRate, kcal, today) {
+  const end = parseIso(today), start = end - 28 * DAY;
+  const points = Object.entries(weights).map(([date, kg]) => [parseIso(date), kg]).filter(([time]) => time >= start && time <= end).sort((a, b) => a[0] - b[0]);
+  if (points.length < 4 || points.at(-1)[0] - points[0][0] < 14 * DAY) return null;
+  const mean = index => points.reduce((sum, point) => sum + point[index], 0) / points.length;
+  const [mt, mk] = [mean(0), mean(1)];
+  const slope = points.reduce((sum, [t, k]) => sum + (t - mt) * (k - mk), 0) / points.reduce((sum, [t]) => sum + (t - mt) ** 2, 0);
+  const rate = Math.round(slope * 7 * DAY * 100) / 100;
+  if (goalRate == null) return { rate, change: 0, kcal };
+  const change = Math.max(-300, Math.min(300, Math.round((goalRate - rate) * 1100 / 10) * 10));
+  return { rate, change: Math.abs(change) < 100 ? 0 : change, kcal: kcal + (Math.abs(change) < 100 ? 0 : change) };
 }
 
 export const FIRST_DATE = BASE[0].date;
