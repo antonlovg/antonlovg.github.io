@@ -1,10 +1,11 @@
 // Matschemat: dagen (med recept, avbockning och byten), veckan, inköpslistan och dina val. Adressen
 // bestämmer vyn: #dag/2026-11-02, #vecka/46, #handla/46 och #anpassa (veckorna räknas vidare efter 53, så
 // vecka 54 är vecka 1 2027). #synk/… läser in det du sparat på en annan enhet. Utan adress öppnas dagens dag.
-import { MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, contents, cookLine, prepFor, startDate, todayIso, traits, weekLabel, weightTrend } from './plan.js';
+import { EXTRA, MEALS, WEEK_NUMBERS, GOALS, NUTRIENTS, POOLS, CHOOSABLE, FIXABLE, makePlan, alternatives, contents, cookLine, prepFor, startDate, todayIso, traits, weekLabel, weightTrend } from './plan.js';
 import { pack, unpack, fileText, readFile } from './sync.js';
 import { RECIPES } from './recipes.js';
 import { ANIMAL, FOODS, PRICES, SECTIONS, SPICES, STORES, searchTerm, swapFor } from './foods.js';
+import { load, search as searchFoods, total } from './livsmedel.js';
 import * as store from './store.js';
 
 const $ = id => document.getElementById(id);
@@ -134,7 +135,21 @@ function renderDay() {
   renderTotals(day);
   const now = currentMeal(day);
   $('meals').replaceChildren(...day.meals.map(meal => mealCard(day, meal, meal.id === now)));
+  renderExtra(day);
   renderPrep(day);
+}
+
+// Det du ätit utöver måltiderna, med en knapp för att lägga till eller ändra det.
+const ateList = meal => h('ul', { class: 'ingredients' }, meal.ate.map(([, name, grams]) => h('li', {}, `${grams} g ${name}`)));
+function renderExtra(day) {
+  const more = day.extra;
+  $('extra').replaceChildren(more
+    ? h('div', { class: 'box box-mint extra' },
+      h('p', { class: 'extra-head' }, h('b', {}, 'Extra: '), more.title, h('span', { class: 'fine' }, ` · ${more.kcal} kcal · ${more.protein} g protein`)),
+      more.ate.length ? ateList(more) : null,
+      h('p', { class: 'fine' }, 'Räknas med i dagen; måltiderna du har kvar är mindre för det.'),
+      h('button', { type: 'button', class: 'button quiet small', id: 'extra-add', 'aria-haspopup': 'dialog', onclick: () => openOutside(day, more) }, 'Ändra…'))
+    : h('button', { type: 'button', class: 'button quiet small', id: 'extra-add', 'aria-haspopup': 'dialog', onclick: () => openOutside(day, EXTRA) }, 'Åt något extra…'));
 }
 
 // Det som ska göras i kväll inför imorgon: tina, packa matlåda, det recepten säger ska göras kvällen innan.
@@ -169,7 +184,7 @@ let allTotals = false;
 
 function renderTotals(day) {
   const target = goals();
-  const eaten = day.meals.filter(meal => store.isEaten(day.date, meal.id));
+  const eaten = [...day.meals.filter(meal => store.isEaten(day.date, meal.id)), ...(day.extra ? [day.extra] : [])];
   const off = NUTRIENTS.filter(nutrient => missed(nutrient, day[nutrient.id], target[nutrient.id]));
   const shown = NUTRIENTS.filter(nutrient => allTotals || ['kcal', 'protein'].includes(nutrient.id) || off.includes(nutrient));
   const toggle = h('button', { type: 'button', class: 'totals-toggle', 'aria-expanded': String(allTotals), onclick: () => {
@@ -337,49 +352,171 @@ function openCook(day, meal) {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && sheet.open && sheet.classList.contains('sheet-cook')) keepAwake(); });
 
-// Åt något annat: en uppskattning i kcal och protein (eller ett vanligt val). Resten av dagens portioner räknas
-// om, och det du redan ätit behåller sin portion.
+// Åt något annat, eller något extra: sök fram det du åt i livsmedelsdatabasen och skriv hur många gram, så räknas
+// näringen ut. Går det inte att hitta räcker en uppskattning i kcal och protein (eller ett vanligt val). Resten av
+// dagens portioner räknas om, och det du redan ätit behåller sin portion.
 const ELSEWHERE = [['Hoppade över', 0, 0], ['Fika', 350, 6], ['Sallad ute', 550, 30], ['Lunch ute', 750, 35], ['Middag ute', 900, 40],
   ['Pizza', 1000, 40], ['Hamburgare & pommes', 1100, 40]];
+const LIVSMEDELSVERKET = 'https://soknaringsinnehall.livsmedelsverket.se/';
+
+// Det du sökt fram tidigare, senast först och ett av varje, så att det går att lägga in igen med ett tryck.
+function recentMeals() {
+  const seen = new Set();
+  return Object.entries(store.choices().outside).filter(([, entry]) => entry.items?.length)
+    .sort(([a], [b]) => b.localeCompare(a)).map(([, entry]) => entry)
+    .filter(entry => !seen.has(entry.label) && seen.add(entry.label)).slice(0, 6);
+}
+
+// Ett namn av det du åt: hela namnet för ett livsmedel, annars de två första orden i varje ("Torsk filé,
+// remouladsås, potatis kokt").
+const labelFor = items => {
+  if (items.length === 1 && items[0][1].length <= 60) return items[0][1];
+  const text = items.map(([, name], i) => {
+    const short = name.split(/\s+/).slice(0, 2).join(' ');
+    return i ? short.toLowerCase() : short;
+  }).join(', ');
+  return text.length <= 60 ? text : `${text.slice(0, 57).replace(/[\s,]+\S*$/, '')}…`;
+};
 
 function openOutside(day, meal) {
+  const extra = meal.id === 'extra';
+  const slot = extra ? 'extra' : meal.id;
   const now = meal.outside ? meal : null;
+  const saved = now ? store.choices().outside[`${day.date}:${slot}`] : null;
+  let foods = null;
+  let items = (saved?.items ?? []).map(item => [...item]);
+  let auto = !saved || (items.length > 0 && saved.label === labelFor(items));
+
   const field = (name, label, unit, attrs) => h('label', {}, h('span', {}, label), h('input', { name, ...attrs }), unit ? h('small', {}, unit) : null);
   const form = h('form', { class: 'goals outside-form', novalidate: true },
-    field('label', 'Vad', null, { type: 'text', maxlength: 60, autocomplete: 'off', value: now?.title ?? '' }),
+    field('label', 'Vad', null, { type: 'text', maxlength: 60, autocomplete: 'off', value: now?.title ?? '', oninput: () => { auto = false; } }),
     field('kcal', 'Energi', 'kcal', { type: 'number', inputmode: 'numeric', min: 0, max: 5000, step: 1, value: now?.kcal ?? '' }),
     field('protein', 'Protein', 'g', { type: 'number', inputmode: 'numeric', min: 0, max: 400, step: 1, value: now?.protein ?? '' }));
   const status = h('p', { class: 'fine', role: 'status' });
+  const sum = h('p', { class: 'own-sum', 'aria-live': 'polite' });
+  const rows = h('ol', { class: 'own-items ate-items' });
+  const results = h('ul', { class: 'ate-results', id: 'ate-results' });
+  const search = h('input', { type: 'search', id: 'ate-search', autocomplete: 'off', enterkeyhint: 'search', disabled: true,
+    placeholder: 'Laddar livsmedel…', 'aria-controls': 'ate-results', oninput: () => show() });
+  const estimate = h('p', { class: 'own-head' }, 'Eller en uppskattning');
+
+  // Med livsmedel räknas kcal och protein ut och går inte att skriva i; utan dem är de din uppskattning.
+  const update = () => {
+    const counted = foods && items.length > 0;
+    for (const name of ['kcal', 'protein']) form.elements[name].readOnly = counted;
+    estimate.hidden = presets.hidden = counted;
+    if (!counted) { sum.textContent = ''; return; }
+    const totals = total(items, foods);
+    form.elements.kcal.value = totals.kcal;
+    form.elements.protein.value = totals.protein;
+    if (auto) form.elements.label.value = labelFor(items);
+    sum.textContent = `Totalt ${totals.kcal} kcal · ${totals.protein} g protein · ${totals.carbs} g kolh · ${totals.fat} g fett`;
+  };
+  const row = (item, i) => {
+    const food = foods?.find(other => other.ref === item[0]);
+    const kcal = h('small', { class: 'ate-kcal' }, food ? `${Math.round(food.per.kcal * item[2] / 100)} kcal` : '');
+    return h('li', {},
+      h('span', { class: 'ate-name' }, item[1]),
+      h('label', { class: 'own-grams' }, h('input', { type: 'number', inputmode: 'numeric', min: 1, max: 5000, step: 1, value: item[2], 'aria-label': `Gram ${item[1]}`,
+        oninput: event => {
+          item[2] = Number(event.target.value);
+          kcal.textContent = food && item[2] > 0 ? `${Math.round(food.per.kcal * item[2] / 100)} kcal` : '';
+          update();
+        } }), h('small', {}, 'g')),
+      kcal,
+      h('button', { type: 'button', class: 'own-remove', 'aria-label': `Ta bort ${item[1]}`, onclick: () => {
+        items.splice(i, 1);
+        draw();
+        (rows.children[Math.min(i, items.length - 1)]?.querySelector('input') ?? search).focus();
+      } }, '×'));
+  };
+  const draw = () => { rows.replaceChildren(...items.map(row)); update(); };
+  const add = food => {
+    items.push([food.ref, food.name, 100]);
+    search.value = '';
+    show();
+    draw();
+    status.textContent = `${food.name} är tillagt. Skriv hur många gram du åt.`;
+    const input = rows.lastElementChild.querySelector('input');
+    input.focus();
+    input.select();
+  };
+  const show = () => {
+    const found = foods ? searchFoods(search.value, foods) : [];
+    results.replaceChildren(...found.map(food => h('li', {},
+      h('button', { type: 'button', class: 'swap-option', onclick: () => add(food) },
+        h('span', {}, food.name), h('small', {}, `${Math.round(food.per.kcal)} kcal · ${food.per.protein} g protein per 100 g${food.own ? ' · i schemat' : ''}`)))));
+    if (search.value.trim() && !found.length) results.append(h('li', { class: 'fine' }, 'Inget hittades. Prova ett annat ord, eller skriv en uppskattning nedan.'));
+  };
+  load().then(list => {
+    foods = list;
+    search.disabled = false;
+    search.placeholder = 'T.ex. panerad fisk, remouladsås, potatis';
+    draw();
+  }, () => {
+    search.placeholder = 'Kunde inte ladda livsmedlen';
+    status.textContent = 'Livsmedelsdatabasen gick inte att ladda (du är kanske offline). Skriv en uppskattning i stället.';
+  });
+
+  const recent = recentMeals();
+  const again = recent.length ? h('div', { class: 'filters', role: 'group', 'aria-label': 'Ätit förut' }, recent.map(entry =>
+    h('button', { type: 'button', class: 'filter', onclick: () => {
+      items = entry.items.map(item => [...item]);
+      auto = false;
+      form.elements.label.value = entry.label;
+      draw();
+      status.textContent = `${entry.label}: samma mängder som förra gången. Ändra grammen om det behövs.`;
+    } }, entry.label))) : null;
   const presets = h('div', { class: 'filters', role: 'group', 'aria-label': 'Vanliga val' }, ELSEWHERE.map(([label, kcal, protein]) =>
     h('button', { type: 'button', class: 'filter', onclick: () => {
+      items = [];
+      auto = false;
+      draw();
       form.elements.label.value = label;
       form.elements.kcal.value = kcal;
       form.elements.protein.value = protein;
       status.textContent = `${label}: ca ${kcal} kcal och ${protein} g protein. Ändra om du vet bättre.`;
     } }, label)));
+
   const done = text => { refresh(); closeSheet(); $('day-status').textContent = text; };
+  const what = extra ? 'extra' : `till ${lower(meal.name)}`;
   form.addEventListener('submit', event => {
     event.preventDefault();
     const label = form.elements.label.value.trim();
-    const [kcal, protein] = ['kcal', 'protein'].map(name => Math.round(Number(form.elements[name].value)));
-    const bad = !label ? form.elements.label : ['kcal', 'protein'].map(name => form.elements[name])
-      .find(input => input.value === '' || !(Number(input.value) >= Number(input.min) && Number(input.value) <= Number(input.max)));
+    const counted = foods && items.length > 0;
+    const grams = counted ? [...rows.querySelectorAll('input')].find(input => !(Number(input.value) >= 1 && Number(input.value) <= 5000)) : null;
+    const bad = grams || (!label ? form.elements.label : counted ? null : ['kcal', 'protein'].map(name => form.elements[name])
+      .find(input => input.value === '' || !(Number(input.value) >= Number(input.min) && Number(input.value) <= Number(input.max))));
     if (bad) {
-      status.textContent = bad.name === 'label' ? 'Skriv vad du åt, eller välj ett vanligt val.' : `Skriv ett tal mellan ${bad.min} och ${bad.max}.`;
+      status.textContent = bad === grams ? 'Skriv hur många gram, mellan 1 och 5000.'
+        : bad.name === 'label' ? 'Skriv vad du åt, sök fram det eller välj ett vanligt val.' : `Skriv ett tal mellan ${bad.min} och ${bad.max}.`;
       bad.focus();
       return;
     }
-    store.setOutside(day.date, meal.id, { label, kcal, protein });
-    done(`${label} till ${lower(meal.name)}. Resten av dagen är omräknad.`);
+    const entry = counted
+      ? { label, ...total(items, foods), items: items.map(([ref, name, g]) => [ref, name, Math.round(g)]) }
+      : { label, kcal: Math.round(Number(form.elements.kcal.value)), protein: Math.round(Number(form.elements.protein.value)) };
+    store.setOutside(day.date, slot, entry);
+    done(`${label} ${what}, ${entry.kcal} kcal. Resten av dagen är omräknad.`);
   });
   form.append(h('div', { class: 'intro-nav' },
-    now ? h('button', { type: 'button', class: 'button quiet', onclick: () => { store.setOutside(day.date, meal.id, null); done(`${meal.instead.title} till ${lower(meal.name)} igen.`); } }, 'Tillbaka till planen') : null,
+    now ? h('button', { type: 'button', class: 'button quiet', onclick: () => {
+      store.setOutside(day.date, slot, null);
+      done(extra ? `${now.title} är borttaget.` : `${meal.instead.title} till ${lower(meal.name)} igen.`);
+    } }, extra ? 'Ta bort' : 'Tillbaka till planen') : null,
     h('button', { type: 'submit', class: 'button' }, 'Spara')));
-  openSheet(`Åt annat till ${lower(meal.name)}`, [
-    h('p', { class: 'fine sheet-now' }, `Planen: ${(now ? meal.instead : meal).title} · ${(now ? meal.instead : meal).kcal} kcal`),
-    h('p', { class: 'fine' }, 'Välj ett vanligt val eller skriv en egen uppskattning. Resten av dagen räknas om så att den ändå hamnar nära målet, och det du redan bockat av ändras inte.'),
-    presets, form, status
-  ], { back: () => document.querySelector(`[data-meal="${meal.id}"] [data-action="outside"]`) });
+
+  openSheet(extra ? 'Åt något extra' : `Åt annat till ${lower(meal.name)}`, [
+    extra ? h('p', { class: 'fine sheet-now' }, 'Räknas utöver måltiderna, och de du har kvar idag blir mindre.')
+      : h('p', { class: 'fine sheet-now' }, `Planen: ${(now ? meal.instead : meal).title} · ${(now ? meal.instead : meal).kcal} kcal`),
+    h('label', { for: 'ate-search', class: 'own-head' }, 'Sök det du åt'),
+    search, results,
+    rows, sum,
+    again ? h('p', { class: 'own-head' }, 'Ätit förut') : null, again,
+    estimate, presets, form, status,
+    h('p', { class: 'fine' }, 'Näringsvärden från ', h('a', { href: LIVSMEDELSVERKET, target: '_blank', rel: 'noopener noreferrer' }, 'Livsmedelsverkets livsmedelsdatabas'),
+      ' (CC BY 4.0), som finns i sidan själv: det du söker på skickas inte någonstans. Väg om du kan, annars är en portion potatis ungefär 200 g, en fiskbit 125 g och en klick sås 30 g.')
+  ], { back: () => (extra ? $('extra-add') : null) || document.querySelector(`[data-meal="${meal.id}"] [data-action="outside"]`) });
 }
 
 // Ett fast val: vad det gäller och en knapp för att sluta med det.
@@ -444,7 +581,7 @@ function mealCard(day, meal, isNow) {
   const check = h('button', {
     type: 'button', class: 'check', 'aria-pressed': String(eaten),
     'aria-label': `${meal.name}: ${name}. Ätit`,
-    onclick: () => { store.toggleEaten(day.date, meal.id); if (day.meals.some(other => other.outside)) refresh(); else renderDay(); document.querySelector(`[data-meal="${meal.id}"] .check`)?.focus(); }
+    onclick: () => { store.toggleEaten(day.date, meal.id); if (day.extra || day.meals.some(other => other.outside)) refresh(); else renderDay(); document.querySelector(`[data-meal="${meal.id}"] .check`)?.focus(); }
   }, h('span', { class: 'check-mark', 'aria-hidden': 'true' }));
 
   const details = h('details', { open: open.has(key), ontoggle: event => { if (event.target.open) open.add(key); else open.delete(key); } },
@@ -461,7 +598,8 @@ function mealCard(day, meal, isNow) {
         : `I stället för ${lower(RECIPES[meal.replaced.from].name)}, eftersom du inte äter ${list(meal.replaced.because.map(food => lower(FOODS[food].name)))}.`) : null,
       meal.changes.length ? h('p', { class: 'changed' }, `${meal.changes.join('. ')}.`) : null,
       meal.fixed ? fixedNote(meal) : null,
-      meal.outside ? h('p', { class: 'changed' }, `I stället för ${lower(meal.instead.title)}. Uppskattat till ${meal.kcal} kcal och ${meal.protein} g protein; resten av dagen är omräknad efter det.`) : null,
+      meal.outside ? h('p', { class: 'changed' }, `I stället för ${lower(meal.instead.title)}. ${meal.guess ? 'Uppskattat till' : 'Uträknat till'} ${meal.kcal} kcal och ${meal.protein} g protein; resten av dagen är omräknad efter det.`) : null,
+      meal.ate?.length ? ateList(meal) : null,
       meal.scale !== 1 ? h('p', { class: 'fine' }, `Portionen är ${Math.round(meal.scale * 100)} % av receptet, för att dagen ska träffa dina mål.`) : null,
       meal.items.length ? h('ul', { class: 'ingredients' }, meal.items.map(([, , text]) => h('li', {}, text))) : null,
       fed.length === 1 ? h('p', { class: 'batch' }, h('b', {}, 'Laga dubbel sats: '), `hälften blir lunch på ${weekdayName(fed[0].date).toLowerCase()}.`) : null,

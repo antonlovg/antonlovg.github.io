@@ -208,6 +208,53 @@ test('a meal eaten elsewhere is counted, and the rest of the day is refitted', (
   assert.equal(makePlan().day('2026-11-03').meals[3].portions, 2);
 });
 
+test('food you searched for is counted with its own nutrients, and an extra shrinks the rest of the day', async () => {
+  const { fromData, OWN, search, total } = await import('../matschema/js/livsmedel.js');
+  const foods = [...OWN, ...fromData(JSON.parse(await read('matschema/data/livsmedel.json')))];
+  assert.ok(foods.length > 2500);
+  // Det man skriver hittar det databasen kallar något annat, utan att bry sig om å, ä och ö.
+  assert.ok(search('sprödbakad torsk', foods).some(food => food.name === 'Torsk filé panerad stekt hemlagad'));
+  assert.ok(search('remoulad', foods)[0].name.startsWith('Remouladsås'));
+  assert.ok(search('rakor', foods).some(food => food.name.startsWith('Räkor')));
+  assert.equal(search('high protein', foods)[0].ref, 'proteinkvarg');
+  assert.deepEqual(search('   ', foods), []);
+  const fish = foods.find(food => food.name === 'Torsk filé panerad stekt hemlagad');
+  const sauce = search('remouladsås', foods)[0];
+  const potato = foods.find(food => food.name === 'Potatis kokt m. salt');
+  const items = [[fish.ref, fish.name, 150], [sauce.ref, sauce.name, 30], [potato.ref, potato.name, 200], ['proteinkvarg', 'High Protein Kvarg', 100]];
+  const sum = total(items, foods);
+  assert.equal(sum.kcal, Math.round(fish.per.kcal * 1.5 + sauce.per.kcal * 0.3 + potato.per.kcal * 2 + 66));
+  assert.ok(sum.fat > 25 && sum.protein > 35, JSON.stringify(sum));
+
+  const before = makePlan().day('2026-11-04');
+  const plan = makePlan({ outside: { '2026-11-04:middag': { label: 'Fisk', ...sum, items } } });
+  const dinner = plan.day('2026-11-04').meals[3];
+  assert.equal(dinner.guess, false);
+  assert.equal(dinner.fat, sum.fat);
+  assert.equal(dinner.kcal, sum.kcal); // ingen extra olja som skriver över middagen
+  assert.equal(dinner.ate.length, 4);
+  assert.equal(dinner.items.length, 0);
+  // Något extra ersätter ingen måltid men räknas med, och resten av dagen blir mindre.
+  const extra = makePlan({ outside: { '2026-11-04:extra': { label: 'Kanelbulle', kcal: 300, protein: 5 } } }).day('2026-11-04');
+  assert.equal(extra.extra.title, 'Kanelbulle');
+  assert.equal(extra.extra.guess, true);
+  assert.ok(extra.meals.every(meal => meal.id !== 'extra'));
+  assert.equal(extra.kcal, extra.meals.reduce((sum, meal) => sum + meal.kcal, 0) + 300);
+  assert.ok(extra.meals.reduce((sum, meal) => sum + meal.kcal, 0) < before.kcal - 200);
+  assert.equal(makePlan().day('2026-11-04').extra, null);
+});
+
+test('High Protein Kvarg is a food and a dish for breakfast and the evening', () => {
+  assert.deepEqual([FOODS.proteinkvarg.kcal, FOODS.proteinkvarg.protein], [66, 12.5]);
+  assert.ok(ANIMAL.includes('proteinkvarg'));
+  assert.ok(POOLS.frukost.includes('proteinkvarg') && POOLS.kvallsmal.includes('proteinkvarg'));
+  const plan = makePlan({ fixed: { frukost: { recipe: 'proteinkvarg', days: 'vardag', at: '2026-11-02' } } });
+  const breakfast = plan.day('2026-11-05').meals[0];
+  assert.equal(breakfast.recipe, 'proteinkvarg');
+  assert.equal(breakfast.fixed, true);
+  assert.equal(makePlan({ vegan: true, fixed: { frukost: { recipe: 'proteinkvarg', days: 'vardag', at: '2026-11-02' } } }).day('2026-11-05').meals[0].items[0][0], 'sojayoghurt');
+});
+
 test('own recipes can be chosen and are removed again', async () => {
   const { CHOOSABLE: choosable } = await import('../matschema/js/plan.js');
   const own = { egen_abc: { name: 'Min bowl', slot: 'middag', items: [['kyckling', 150], ['ris', 80], ['nope', 10]], how: 'Koka riset.' } };
@@ -234,12 +281,14 @@ test('the weight trend suggests a new kcal goal', async () => {
 test('own recipes, meals eaten elsewhere and weights are cleaned and merged', () => {
   const value = store.clean({
     own: { egen_a1: { name: 'Bowl', slot: 'middag', items: [['kyckling', 150]] }, egen_bad: { name: '', slot: 'middag', items: [['kyckling', 1]] }, other: { name: 'x', slot: 'lunch', items: [['agg', 60]] } },
-    outside: { '2026-11-04:middag': { label: 'Pizza', kcal: 1000, protein: 40 }, '2026-11-04:fika': { label: 'x', kcal: 1, protein: 1 }, '2026-11-05:lunch': { label: 'x', kcal: 9000, protein: 1 } },
+    outside: { '2026-11-04:middag': { label: 'Pizza', kcal: 1000, protein: 40 }, '2026-11-04:fika': { label: 'x', kcal: 1, protein: 1 }, '2026-11-05:lunch': { label: 'x', kcal: 9000, protein: 1 },
+      '2026-11-04:extra': { label: 'Bulle', kcal: 300, protein: 5, carbs: 45, sugar: 11, fat: 13, satfat: 7, items: [['lv1594', 'Kanelbulle', 90]] },
+      '2026-11-05:extra': { label: 'x', kcal: 300, protein: 5, items: [['lv1', 'x', 0]] }, '2026-11-06:extra': { label: 'x', kcal: 300, protein: 5, carbs: -1, sugar: 0, fat: 0, satfat: 0 } },
     weights: { '2026-11-03': 82.4, '2026-11-04': 12, nope: 80 },
     weightGoal: -0.5
   });
   assert.deepEqual(Object.keys(value.own), ['egen_a1']);
-  assert.deepEqual(Object.keys(value.outside), ['2026-11-04:middag']);
+  assert.deepEqual(Object.keys(value.outside), ['2026-11-04:middag', '2026-11-04:extra']);
   assert.deepEqual(value.weights, { '2026-11-03': 82.4 });
   assert.equal(value.weightGoal, -0.5);
   assert.equal(store.clean({ weightGoal: 3 }).weightGoal, undefined);

@@ -293,7 +293,7 @@ button { font: inherit; color: inherit; }
 .changed { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface); font-size: 14px; }
 .swap { display: grid; gap: 8px; }
 .swap label { font-size: 13px; font-weight: 800; color: var(--green); }
-.swap input[type="search"] { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; }
+.swap input[type="search"], #ate-search { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; }
 .swap-scope { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; border: 0; }
 .swap-scope legend { float: left; margin-right: 4px; padding: 0; font-size: 13px; font-weight: 800; color: var(--muted); }
 .swap-scope label { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 14px; font-weight: 600; color: var(--text); }
@@ -441,6 +441,24 @@ body:has(.sheet[open]) { overflow: hidden; }
 .own-grams input { width: 76px; min-height: 44px; padding: 0 8px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 8px; }
 .own-remove { width: 44px; height: 44px; font: inherit; font-size: 20px; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
 .own-sum { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+.own-sum:empty { display: none; }
+#ate-search { margin-top: 6px; }
+.ate-results { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.ate-results:empty { display: none; }
+.ate-items { margin-top: 10px; }
+.ate-items:empty { display: none; }
+.ate-items li { grid-template-columns: minmax(0, 1fr) auto 64px 44px; }
+.ate-name { min-width: 0; overflow-wrap: anywhere; font-size: 15px; }
+.ate-kcal { color: var(--muted); font-size: 13px; text-align: right; }
+.outside-form input[readonly] { color: var(--muted); border-style: dashed; }
+.extra-wrap { margin-top: 12px; }
+.extra-wrap > .button { width: 100%; }
+.extra .extra-head { margin: 0 0 6px; }
+.extra .ingredients { margin: 0 0 6px; }
+@media (max-width: 420px) {
+  .ate-items li { grid-template-columns: minmax(0, 1fr) auto 44px; }
+  .ate-kcal { grid-column: 1; grid-row: 2; text-align: left; }
+}
 .weight-form { align-items: end; }
 .weight-goal { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; }
 .weight-goal select { min-height: 44px; padding: 0 8px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 8px; }

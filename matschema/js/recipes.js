@@ -258,6 +258,8 @@ export const RECIPES = {
   knacke_ost: r('Knäcke med ost', [['knacke', 26, '2 knäckebröd'], ['ost', 20, '2 skivor ost'], ['gurka', 50, 'gurka']]),
   knacke_agg: r('Knäcke med ägg & kalkon', [['knacke', 26, '2 knäckebröd'], ['agg', 60, '1 kokt ägg'], ['kalkon', 30, '30 g kalkonpålägg']]),
   kalkonmackor: r('Mackor med kalkon', [['brod', 80, '2 skivor fullkornsbröd'], ['kalkon', 60, '60 g kalkonpålägg'], ['tomat', 40, 'tomat'], ['gurka', 30, 'gurka']]),
+  proteinkvarg: r('High Protein Kvarg med egen smak', [['proteinkvarg', 300, '300 g High Protein Kvarg']],
+    'Smaksätt som du vill: vanilj, kanel, kakao, citronskal, några droppar smaksättning eller lite sötningsmedel. Toppa gärna med bär.'),
   chokladkvarg: r('Chokladkvarg med banan', [['kvarg', 200, '200 g kvarg'], ['kakao', 5, '1 tsk kakao'], ['banan', 60, '½ banan']], 'Rör ner kakaon i kvargen och toppa med banan, som ger sötman.'),
   riskakor: r('Riskakor med jordnötssmör & banan', [['riskaka', 24, '3 riskakor'], ['jordnot', 15, '1 msk jordnötssmör'], ['banan', 60, '½ banan']]),
   agg_morot: r('Kokta ägg & morot', [['agg', 120, '2 kokta ägg'], ['morot', 70, '1 morot']]),

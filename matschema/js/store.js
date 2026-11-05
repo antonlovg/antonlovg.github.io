@@ -31,8 +31,11 @@ export function clean(value) {
       && Array.isArray(recipe.items) && recipe.items.length > 0 && recipe.items.length <= 20
       && recipe.items.every(item => Array.isArray(item) && typeof item[0] === 'string' && within(item[1], 1, 5000))
       && (recipe.how === undefined || (typeof recipe.how === 'string' && recipe.how.length <= 2000))),
-    outside: entries(value.outside, ([key, meal]) => new RegExp(`^\\d{4}-\\d{2}-\\d{2}:(${SLOTS.join('|')})$`).test(key) && isObject(meal)
-      && text(meal.label, 60) && within(meal.kcal, 0, 5000) && within(meal.protein, 0, 400)),
+    outside: entries(value.outside, ([key, meal]) => new RegExp(`^\\d{4}-\\d{2}-\\d{2}:(${SLOTS.join('|')}|extra)$`).test(key) && isObject(meal)
+      && text(meal.label, 60) && within(meal.kcal, 0, 5000) && within(meal.protein, 0, 400)
+      && (meal.carbs === undefined || ['carbs', 'sugar', 'fat', 'satfat'].every(key => within(meal[key], 0, 1000)))
+      && (meal.items === undefined || (Array.isArray(meal.items) && meal.items.length <= 30 && meal.items.every(item => Array.isArray(item)
+        && /^(lv\d{1,6}|[a-z_]{2,20})$/.test(item[0]) && text(item[1], 120) && within(item[2], 1, 5000))))),
     weights: entries(value.weights, ([date, kg]) => DATE.test(date) && within(kg, 30, 300))
   };
   if ([-0.5, -0.25, 0, 0.25].includes(value.weightGoal)) result.weightGoal = value.weightGoal;
@@ -144,7 +147,8 @@ export function setOwn(id, recipe) {
   save();
 }
 
-// Det du ätit i stället för en måltid ({ label, kcal, protein }), eller null för att gå tillbaka till planen.
+// Det du ätit i stället för en måltid, eller utöver dem (meal = "extra"): { label, kcal, protein } och, när du sökt
+// fram livsmedlen, carbs, sugar, fat, satfat och items = [[livsmedel, namn, gram]]. null går tillbaka till planen.
 export function setOutside(date, meal, value) {
   if (value) data.outside[`${date}:${meal}`] = value; else delete data.outside[`${date}:${meal}`];
   save();

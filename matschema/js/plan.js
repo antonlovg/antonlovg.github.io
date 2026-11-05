@@ -266,14 +266,14 @@ const SNACKS = ['apple_mandlar', 'clementin_mandlar', 'banan_jnt', 'kvarg_mango'
   'edamame', 'hummus_morot', 'rostade_kikartor', 'skyr_hallon'];
 export const POOLS = {
   frukost: ['huel', 'aggrora', 'proteingrot', 'pannkakor', 'omelett', 'overnight', 'risgrynsgrot', 'kvargmusli', 'smoothie', 'aggmackor',
-    'tofurora', 'chiapudding', 'frukostburrito', 'avokadotoast', 'bananplattar', 'havregrot', 'applegrot', 'grot_vegan', 'skyrbowl', 'keso_mackor'],
+    'tofurora', 'chiapudding', 'frukostburrito', 'avokadotoast', 'bananplattar', 'havregrot', 'applegrot', 'grot_vegan', 'skyrbowl', 'keso_mackor', 'proteinkvarg'],
   lunch: ['tonfiskpasta', 'kycklingsallad', 'pestosallad', 'tonfiskwrap', 'kycklingwrap', 'grekisk', 'tonfisksallad', 'linssoppa', 'tonfiskrora', 'kycklingmacka',
     'falafelwrap', 'linsquinoa', 'kikartsrora', 'edamamebowl', 'tofumacka', 'linssoppa_vegan', 'laxsallad', 'rakmackor', 'kycklingbowl', 'kalkonwrap', 'nudelsallad_tofu',
     ...DINNERS, ...VEGAN_DINNERS],
   mellanmal: ['huel', ...SNACKS],
   middag: [...DINNERS, ...VEGAN_DINNERS],
   kvallsmal: ['kvarg_blabar', 'kvarg_blabar_liten', 'knacke_keso', 'knacke_ost', 'knacke_agg', 'kalkonmackor', 'chokladkvarg', 'keso_hallon', 'kvarg_musli',
-    'sojayoghurt_musli', 'chia_hallon', 'chokladmousse', 'kvallsgrot', ...SNACKS]
+    'sojayoghurt_musli', 'chia_hallon', 'chokladmousse', 'kvallsgrot', 'proteinkvarg', ...SNACKS]
 };
 
 // Allt du kan välja själv, i vilken måltid som helst (planen håller sig själv till rätterna i POOLS).
@@ -378,12 +378,12 @@ const CAP = 8; // att gå över ett tak väger tyngre än att missa ett mål
 const MARGIN = { sugar: 0.85, satfat: 0.95 };
 const KEEP = 0.04; // hur mycket det kostar att ändra en portion från receptet
 
-// Huel och det du ätit någon annanstans står still; locked = { måltidens plats: portion } för måltider du redan
+// Huel, det du ätit någon annanstans och det du ätit extra står still; locked = { måltidens plats: portion } för måltider du redan
 // ätit, som inte ska ändras i efterhand.
 function fitDay(day, goals, shake, oil, powder, locked = {}) {
   const free = day.meals.map((meal, m) => m).filter(m => day.meals[m].recipe !== 'huel' && !day.meals[m].outside);
   const fixed = contents(day.meals.filter(meal => meal.recipe === 'huel').flatMap(meal => meal.items));
-  for (const meal of day.meals) if (meal.outside) for (const key in fixed) fixed[key] += meal[key];
+  for (const meal of [...day.meals, day.extra]) if (meal?.outside) for (const key in fixed) fixed[key] += meal[key];
   const parts = [...free.map(m => contents(day.meals[m].items)), contents([[powder || 'whey', 10]]), contents([['olja', 4.5]])];
   const n = free.length;
   const bounds = [...free.map(m => (m in locked ? [locked[m], locked[m]] : SCALE)), shake ? SHAKE : [0, 0], oil ? OIL : [0, 0]];
@@ -454,7 +454,8 @@ function scaled(meal, scale) {
 // { recept: { r: 1 (favorit) | -1 (aldrig mer) | 0 (ångrat), at: "ÅÅÅÅ-MM-DD" } }, fixed = fasta val
 // { frukost: { recipe, days: "alla" | "vardag" | "helg", at } } från dagen at. Ett byte för en enskild dag går
 // före ett fast val, och båda går före matlådor och favoriter. Matlådorna följer middagarna. own = egna recept
-// (useOwn), outside = { "2026-11-02:lunch": { label, kcal, protein } } för det du ätit i stället, och eaten =
+// (useOwn), outside = { "2026-11-02:lunch": { label, kcal, protein, … } } för det du ätit i stället (och "2026-11-02:extra" för
+// det du ätit utöver måltiderna), och eaten =
 // { datum: [måltider] } (ätna måltider behåller sin portion när resten av dagen räknas om).
 export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, vegan = false, ratings = {}, fixed = {}, own = {}, outside = {}, eaten = {} } = {}) {
   goals = { ...GOALS, ...goals };
@@ -529,7 +530,8 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
       if (meal.leftover) days.find(day => day.date === meal.from).meals[3].extra--;
       return outsideMeal(meal, other);
     });
-    days.push({ week: base.week, weekday: base.weekday, date: base.date, note: base.note, meals: ate });
+    const more = outside[`${base.date}:extra`];
+    days.push({ week: base.week, weekday: base.weekday, date: base.date, note: base.note, meals: ate, extra: more ? outsideMeal(EXTRA, more) : null });
   });
   // Proteinpulvret: whey, eller veganskt om du är vegan. Väljer du bort proteinpulver blir det ingen shake.
   const powder = mine.has('whey') ? null : vegan ? 'veganprotein' : 'whey';
@@ -542,11 +544,12 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
       // Har du ätit något annat behåller de måltider du redan ätit sin portion från planen som den var.
       const done = eaten[day.date] || [];
       const locked = {};
-      if (done.length && day.meals.some(meal => meal.outside)) {
+      if (done.length && (day.extra || day.meals.some(meal => meal.outside))) {
         const before = fitDay({ meals: day.meals.map(meal => meal.instead || meal) }, ...args);
         day.meals.forEach((meal, m) => { if (!meal.outside && done.includes(meal.id)) locked[m] = before.scales[m]; });
       }
-      const { scales, shake, oil } = fitDay(day, ...args, locked);
+      // Extra olivolja hamnar i middagen, så ingen när du ätit något annat till middag.
+      const { scales, shake, oil } = fitDay(day, ...args.with(2, args[2] && !dinner.outside), locked);
       day.meals = day.meals.map((meal, m) => scaled(meal, scales[m]));
       if (oil) {
         const dinner = day.meals[3];
@@ -559,7 +562,7 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
         day.meals.push({ id: 'shake', name: 'Proteinshake', until: 24, ...dish, title: vegan ? 'Proteinshake (veganskt pulver)' : 'Proteinshake med Star Nutrition Banana', items, ...rounded(contents(items)), leftover: false, swapped: false, scale: 1 });
       }
     }
-    Object.assign(day, rounded(day.meals.reduce((sum, meal) => {
+    Object.assign(day, rounded([...day.meals, ...(day.extra ? [day.extra] : [])].reduce((sum, meal) => {
       for (const key of Object.keys(sum)) sum[key] += meal[key];
       return sum;
     }, { kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, satfat: 0 })));
@@ -576,13 +579,19 @@ export function makePlan({ exclude = [], swaps = {}, goals = GOALS, fit = true, 
   };
 }
 
-// En måltid du ätit någon annanstans ({ label, kcal, protein }): kolhydrater och fett uppskattas ur resten av
+// Något du ätit utöver måltiderna: det räknas med i dagen, och måltiderna du har kvar blir mindre.
+export const EXTRA = { id: 'extra', name: 'Extra', until: 24 };
+
+// En måltid du ätit någon annanstans ({ label, kcal, protein } och, när du sökt fram det du åt, kolhydrater, socker,
+// fett och mättat fett och items = [[livsmedel, namn, gram]]). Utan dem uppskattas kolhydrater och fett ur resten av
 // energin (60/40 som energi), socker och mättat fett ur dem. Den räknas med i dagen men ändras inte.
-function outsideMeal(meal, { label, kcal, protein }) {
+function outsideMeal(meal, { label, kcal, protein, carbs, sugar, fat, satfat, items = [] }) {
   const rest = Math.max(0, kcal - protein * 4);
-  const carbs = rest * 0.6 / 4, fat = rest * 0.4 / 9;
-  return { ...MEALS.find(slot => slot.id === meal.id), recipe: null, title: label, how: '', items: [], changes: [], outside: true, instead: meal,
-    ...rounded({ kcal, protein, carbs, fat, sugar: carbs * 0.2, satfat: fat * 0.35 }),
+  const guess = carbs === undefined;
+  if (guess) [carbs, fat] = [rest * 0.6 / 4, rest * 0.4 / 9];
+  return { ...(meal === EXTRA ? EXTRA : MEALS.find(slot => slot.id === meal.id)), recipe: null, title: label, how: '', items: [], ate: items, guess, changes: [],
+    outside: true, instead: meal === EXTRA ? null : meal,
+    ...rounded({ kcal, protein, carbs, fat, sugar: guess ? carbs * 0.2 : sugar, satfat: guess ? fat * 0.35 : satfat }),
     leftover: false, swapped: false, fixed: false, favourite: false, vegan: false, replaced: null, storkok: 0, extra: 0, scale: 1 };
 }
 

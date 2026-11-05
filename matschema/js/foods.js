@@ -18,6 +18,7 @@ export const FOODS = {
 
   agg: food('Ägg', 140, 12.5, 'Mejeri & ägg', st(60)),
   kvarg: food('Kvarg naturell', 60, 11, 'Mejeri & ägg'),
+  proteinkvarg: food('High Protein Kvarg', 66, 12.5, 'Mejeri & ägg'),
   skyr: food('Skyr naturell', 63, 11, 'Mejeri & ägg'),
   keso: food('Keso mager', 75, 13, 'Mejeri & ägg'),
   ost: food('Hårdost 17 %', 270, 30, 'Mejeri & ägg'),
@@ -114,13 +115,13 @@ export const FOODS = {
 
 // Det som kommer från djur (kött, fisk, ägg, mejeri, äggnudlar och pesto med parmesan): bort
 // när du väljer vegan.
-export const ANIMAL = ['kyckling', 'kalkonfile', 'notfars', 'kycklingfars', 'oxfile', 'kalkon', 'tonfisk', 'lax', 'torsk', 'rakor', 'agg', 'kvarg', 'skyr', 'keso',
+export const ANIMAL = ['kyckling', 'kalkonfile', 'notfars', 'kycklingfars', 'oxfile', 'kalkon', 'tonfisk', 'lax', 'torsk', 'rakor', 'agg', 'kvarg', 'proteinkvarg', 'skyr', 'keso',
   'ost', 'feta', 'parmesan', 'mozzarella', 'mjolk', 'creme', 'nudlar', 'pesto', 'whey'];
 
 // Kolhydrater, varav socker, fett och varav mättat fett, gram per 100 g (ungefärliga svenska värden).
 export const MACROS = {
   kyckling: [0, 0, 1.5, 0.4], kalkonfile: [0, 0, 1, 0.3], notfars: [0, 0, 10, 4.3], kycklingfars: [0, 0, 7, 2], oxfile: [0, 0, 5, 2],
-  kalkon: [2, 1, 1.5, 0.5], agg: [0.7, 0.4, 10, 2.8], kvarg: [3.5, 3.5, 0.2, 0.1], skyr: [4, 4, 0.2, 0.1], keso: [3, 3, 1.5, 1],
+  kalkon: [2, 1, 1.5, 0.5], agg: [0.7, 0.4, 10, 2.8], kvarg: [3.5, 3.5, 0.2, 0.1], proteinkvarg: [3, 2.4, 0.4, 0.3], skyr: [4, 4, 0.2, 0.1], keso: [3, 3, 1.5, 1],
   ost: [0, 0, 17, 11], feta: [1, 1, 21, 14], parmesan: [0, 0, 28, 18], mozzarella: [1, 1, 10, 6.5], mjolk: [4.8, 4.8, 1.5, 0.9],
   havredryck: [6.5, 4, 1.5, 0.2], creme: [3.5, 3.5, 15, 10],
   banan: [21, 17, 0.3, 0.1], apple: [11, 10, 0.2, 0], clementin: [10, 9, 0.2, 0], avokado: [2, 0.5, 15, 2.1], broccoli: [3.5, 1.5, 0.4, 0.1],
@@ -148,7 +149,7 @@ export const MACROS = {
 // att mejeriet byts när du är vegan, medan kött, fisk och ägg ger veganska måltider i stället.
 export const SWAPS = {
   kyckling: 'kalkonfile', kalkonfile: 'kyckling', notfars: 'kycklingfars', kycklingfars: 'notfars', tonfisk: 'kyckling', lax: 'torsk', torsk: 'lax', rakor: 'torsk',
-  kvarg: ['skyr', 'sojayoghurt'], skyr: ['kvarg', 'sojayoghurt'], keso: 'kvarg', creme: ['kvarg', 'havrefraiche'],
+  kvarg: ['skyr', 'sojayoghurt'], proteinkvarg: ['kvarg', 'skyr', 'sojayoghurt'], skyr: ['kvarg', 'sojayoghurt'], keso: 'kvarg', creme: ['kvarg', 'havrefraiche'],
   mjolk: ['sojadryck', 'havredryck'], havredryck: ['mjolk', 'sojadryck'], sojadryck: ['havredryck', 'mjolk'], sojayoghurt: ['kvarg', 'skyr'],
   feta: ['mozzarella', 'vegost'], mozzarella: ['feta', 'vegost'], parmesan: ['ost', 'naringsjast'], ost: ['mozzarella', 'vegost'],
   tofu: 'sojabitar', sojabitar: 'tofu', sojafars: 'sojabitar', tempeh: 'tofu', edamame: 'arter', svartabonor: 'kidney', gronalinser: 'linser',
@@ -163,7 +164,7 @@ export const SWAPS = {
 // Hur livsmedlen heter i rätternas namn, så att "Kycklingwok" blir "Kalkonwok" när kycklingen byts.
 export const WORDS = {
   kyckling: 'kyckling', kalkonfile: 'kalkon', champinjon: 'champinjoner', zucchini: 'zucchini', tonfisk: 'tonfisk',
-  keso: 'keso', kvarg: 'kvarg', skyr: 'skyr', feta: 'feta', mozzarella: 'mozzarella', banan: 'banan', apple: 'äpple',
+  keso: 'keso', kvarg: 'kvarg', proteinkvarg: 'kvarg', skyr: 'skyr', feta: 'feta', mozzarella: 'mozzarella', banan: 'banan', apple: 'äpple',
   blabar: 'blåbär', hallon: 'hallon', mango: 'mango', clementin: 'clementiner', kidney: 'kidneybönor', kikartor: 'kikärtor',
   sojayoghurt: 'sojayoghurt', mjolk: 'mjölk', sojadryck: 'sojadryck', havredryck: 'havredryck', tofu: 'tofu', svartabonor: 'svarta bönor',
   lax: 'lax', torsk: 'torsk', rakor: 'räkor'
@@ -179,7 +180,7 @@ export const PER_DL = {
   havre: 40, musli: 45, ris: 85, grotris: 90, bulgur: 80, quinoa: 85, linser: 85, gronalinser: 85, pasta: 45,
   vetemjol: 60, strobrod: 50, kakao: 40, chiafron: 65, naringsjast: 25, mandlar: 60,
   jordnot: 100, tahini: 100, pesto: 100, hummus: 100, lingon: 125,
-  kvarg: 100, skyr: 100, keso: 95, sojayoghurt: 100, creme: 100, havrefraiche: 100, feta: 55,
+  kvarg: 100, proteinkvarg: 100, skyr: 100, keso: 95, sojayoghurt: 100, creme: 100, havrefraiche: 100, feta: 55,
   krossade: 100, kokos: 100, salsa: 100,
   majs: 65, arter: 60, edamame: 60, kidney: 70, kikartor: 70, svartabonor: 70,
   blabar: 60, hallon: 50, mango: 70,
@@ -215,7 +216,7 @@ export const searchTerm = food => SEARCH[food] || FOODS[food].name.replace(/\s*\
 // egna märken och vanliga varor i november 2026. Räcker för att se ungefär vad en vecka kostar, inte för kvittot.
 export const PRICES = {
   kyckling: 95, kalkonfile: 170, notfars: 155, kycklingfars: 95, oxfile: 520, kalkon: 150, agg: 45,
-  kvarg: 33, skyr: 47, keso: 58, ost: 110, feta: 150, parmesan: 340, mozzarella: 100, mjolk: 12, havredryck: 16,
+  kvarg: 33, proteinkvarg: 55, skyr: 47, keso: 58, ost: 110, feta: 150, parmesan: 340, mozzarella: 100, mjolk: 12, havredryck: 16,
   creme: 50, sojadryck: 18, sojayoghurt: 45, havrefraiche: 56, vegost: 100,
   banan: 22, apple: 25, clementin: 35, avokado: 70, broccoli: 45, brysselkal: 45, champinjon: 65, gurka: 55, lok: 11,
   rodlok: 17, morot: 15, paprika: 57, potatis: 13, sotpotatis: 30, sallad: 100, spenat: 110, tomat: 50, zucchini: 35,
