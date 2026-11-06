@@ -22,7 +22,8 @@ function h(tag, attrs = {}, ...children) {
   return node;
 }
 const classes = (...names) => names.filter(Boolean).join(' ');
-const lower = text => text[0].toLowerCase() + text.slice(1);
+// Liten första bokstav mitt i en mening, utom i märkesnamn (Huel, High Protein Kvarg).
+const lower = text => (/^(Huel|High Protein)\b/.test(text) ? text : text[0].toLowerCase() + text.slice(1));
 const list = items => items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} och ${items.at(-1)}`;
 
 // ---------- Planen, med det du inte äter och det du bytt ----------
@@ -358,6 +359,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && sh
 const ELSEWHERE = [['Hoppade över', 0, 0], ['Fika', 350, 6], ['Sallad ute', 550, 30], ['Lunch ute', 750, 35], ['Middag ute', 900, 40],
   ['Pizza', 1000, 40], ['Hamburgare & pommes', 1100, 40]];
 const LIVSMEDELSVERKET = 'https://soknaringsinnehall.livsmedelsverket.se/';
+const MOST = 30; // livsmedel i en måltid, som i store.clean
 
 // Det du sökt fram tidigare, senast först och ett av varje, så att det går att lägga in igen med ett tryck.
 function recentMeals() {
@@ -397,7 +399,8 @@ function openOutside(day, meal) {
   const rows = h('ol', { class: 'own-items ate-items' });
   const results = h('ul', { class: 'ate-results', id: 'ate-results' });
   const search = h('input', { type: 'search', id: 'ate-search', autocomplete: 'off', enterkeyhint: 'search', disabled: true,
-    placeholder: 'Laddar livsmedel…', 'aria-controls': 'ate-results', oninput: () => show() });
+    placeholder: 'Laddar livsmedel…', 'aria-controls': 'ate-results', oninput: () => show(),
+    onkeydown: event => { if (event.key === 'Enter') { event.preventDefault(); results.querySelector('button')?.click(); } } });
   const estimate = h('p', { class: 'own-head' }, 'Eller en uppskattning');
 
   // Med livsmedel räknas kcal och protein ut och går inte att skriva i; utan dem är de din uppskattning.
@@ -432,11 +435,12 @@ function openOutside(day, meal) {
   };
   const draw = () => { rows.replaceChildren(...items.map(row)); update(); };
   const add = food => {
+    if (items.length >= MOST) { status.textContent = `Högst ${MOST} livsmedel i en måltid.`; return; }
     items.push([food.ref, food.name, 100]);
     search.value = '';
     show();
     draw();
-    status.textContent = `${food.name} är tillagt. Skriv hur många gram du åt.`;
+    status.textContent = `Lade till ${food.name}. Skriv hur många gram du åt.`;
     const input = rows.lastElementChild.querySelector('input');
     input.focus();
     input.select();
@@ -445,7 +449,7 @@ function openOutside(day, meal) {
     const found = foods ? searchFoods(search.value, foods) : [];
     results.replaceChildren(...found.map(food => h('li', {},
       h('button', { type: 'button', class: 'swap-option', onclick: () => add(food) },
-        h('span', {}, food.name), h('small', {}, `${Math.round(food.per.kcal)} kcal · ${food.per.protein} g protein per 100 g${food.own ? ' · i schemat' : ''}`)))));
+        h('span', {}, food.name), h('small', {}, `${Math.round(food.per.kcal)} kcal · ${food.per.protein.toLocaleString('sv-SE')} g protein per 100 g${food.own ? ' · i schemat' : ''}`)))));
     if (search.value.trim() && !found.length) results.append(h('li', { class: 'fine' }, 'Inget hittades. Prova ett annat ord, eller skriv en uppskattning nedan.'));
   };
   load().then(list => {
@@ -455,7 +459,7 @@ function openOutside(day, meal) {
     draw();
   }, () => {
     search.placeholder = 'Kunde inte ladda livsmedlen';
-    status.textContent = 'Livsmedelsdatabasen gick inte att ladda (du är kanske offline). Skriv en uppskattning i stället.';
+    status.textContent = 'Livsmedelsdatabasen gick inte att ladda (kanske är du offline). Skriv en uppskattning i stället.';
   });
 
   const recent = recentMeals();
@@ -479,7 +483,6 @@ function openOutside(day, meal) {
     } }, label)));
 
   const done = text => { refresh(); closeSheet(); $('day-status').textContent = text; };
-  const what = extra ? 'extra' : `till ${lower(meal.name)}`;
   form.addEventListener('submit', event => {
     event.preventDefault();
     const label = form.elements.label.value.trim();
@@ -493,21 +496,28 @@ function openOutside(day, meal) {
       bad.focus();
       return;
     }
+    const eaten = items.map(([ref, name, g]) => [ref, name, Math.round(g)]);
     const entry = counted
-      ? { label, ...total(items, foods), items: items.map(([ref, name, g]) => [ref, name, Math.round(g)]) }
+      ? { label, ...total(eaten, foods), items: eaten }
       : { label, kcal: Math.round(Number(form.elements.kcal.value)), protein: Math.round(Number(form.elements.protein.value)) };
+    // Samma gränser som när det sparade läses in (store.clean), så att inget försvinner vid nästa besök.
+    if (entry.kcal > 5000 || entry.protein > 400 || ['carbs', 'sugar', 'fat', 'satfat'].some(key => entry[key] > 1000)) {
+      status.textContent = 'Det blir mer än en dag går att räkna med (högst 5 000 kcal och 400 g protein). Kolla grammen.';
+      rows.querySelector('input')?.focus();
+      return;
+    }
     store.setOutside(day.date, slot, entry);
-    done(`${label} ${what}, ${entry.kcal} kcal. Resten av dagen är omräknad.`);
+    done(extra ? `Extra: ${label}, ${entry.kcal} kcal. Resten av dagen är omräknad.` : `${label} till ${lower(meal.name)}, ${entry.kcal} kcal. Resten av dagen är omräknad.`);
   });
   form.append(h('div', { class: 'intro-nav' },
     now ? h('button', { type: 'button', class: 'button quiet', onclick: () => {
       store.setOutside(day.date, slot, null);
-      done(extra ? `${now.title} är borttaget.` : `${meal.instead.title} till ${lower(meal.name)} igen.`);
+      done(extra ? `Tog bort det extra (${now.title}).` : `${meal.instead.title} till ${lower(meal.name)} igen.`);
     } }, extra ? 'Ta bort' : 'Tillbaka till planen') : null,
     h('button', { type: 'submit', class: 'button' }, 'Spara')));
 
   openSheet(extra ? 'Åt något extra' : `Åt annat till ${lower(meal.name)}`, [
-    extra ? h('p', { class: 'fine sheet-now' }, 'Räknas utöver måltiderna, och de du har kvar idag blir mindre.')
+    extra ? h('p', { class: 'fine sheet-now' }, 'Räknas utöver måltiderna, och de du har kvar den dagen blir mindre.')
       : h('p', { class: 'fine sheet-now' }, `Planen: ${(now ? meal.instead : meal).title} · ${(now ? meal.instead : meal).kcal} kcal`),
     h('label', { for: 'ate-search', class: 'own-head' }, 'Sök det du åt'),
     search, results,
@@ -515,7 +525,7 @@ function openOutside(day, meal) {
     again ? h('p', { class: 'own-head' }, 'Ätit förut') : null, again,
     estimate, presets, form, status,
     h('p', { class: 'fine' }, 'Näringsvärden från ', h('a', { href: LIVSMEDELSVERKET, target: '_blank', rel: 'noopener noreferrer' }, 'Livsmedelsverkets livsmedelsdatabas'),
-      ' (CC BY 4.0), som finns i sidan själv: det du söker på skickas inte någonstans. Väg om du kan, annars är en portion potatis ungefär 200 g, en fiskbit 125 g och en klick sås 30 g.')
+      ' (CC BY 4.0). Den finns i själva sidan, så det du söker på skickas inte någonstans. Väg om du kan, annars är en portion potatis ungefär 200 g, en fiskbit 125 g och en klick sås 30 g.')
   ], { back: () => (extra ? $('extra-add') : null) || document.querySelector(`[data-meal="${meal.id}"] [data-action="outside"]`) });
 }
 
@@ -646,7 +656,8 @@ function renderWeek() {
             h('span', {}, `${meal.title}${meal.leftover ? ' (rester)' : ''}`, changed ? h('span', { class: 'visually-hidden' }, ' (bytt eller anpassad)') : null,
               meal.id === 'middag' && movable(day) ? h('button', { type: 'button', class: 'move', 'aria-haspopup': 'dialog', 'aria-label': `Flytta ${lower(meal.title)} till en annan dag`, onclick: () => openMove(day) }, 'Flytta') : null));
         }),
-        h('td', { class: 'week-total', 'data-label': 'Totalt' }, h('span', {}, h('b', {}, `${number(day.kcal)} kcal`), h('span', {}, `${day.protein} g protein`))));
+        h('td', { class: 'week-total', 'data-label': 'Totalt' }, h('span', {}, h('b', {}, `${number(day.kcal)} kcal`), h('span', {}, `${day.protein} g protein`),
+          day.extra ? h('span', { class: 'week-extra' }, `varav extra ${number(day.extra.kcal)} kcal`) : null)));
     })));
   $('week').replaceChildren(table);
 

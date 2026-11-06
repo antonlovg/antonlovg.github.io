@@ -206,7 +206,7 @@ export const STORES = {
 // annat ord ger bättre träffar.
 const SEARCH = {
   mjolk: 'mellanmjölk', ris: 'basmatiris', sallad: 'sallad', pasta: 'fullkornspasta', musli: 'müsli',
-  tonfisk: 'tonfisk i vatten', burgerbrod: 'hamburgerbröd fullkorn', huel: 'huel',
+  proteinkvarg: 'proteinkvarg', tonfisk: 'tonfisk i vatten', burgerbrod: 'hamburgerbröd fullkorn', huel: 'huel',
   veganprotein: 'veganskt proteinpulver', sojabitar: 'vegobitar', sojafars: 'vegofärs', vegost: 'vegansk ost', kokos: 'kokosmjölk', rodkal: 'rödkål inlagd', whey: 'whey',
   blabar: 'frysta blåbär', hallon: 'frysta hallon', mango: 'fryst mango'
 };

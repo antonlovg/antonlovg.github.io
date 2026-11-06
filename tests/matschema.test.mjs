@@ -8,7 +8,7 @@ import { WEEK_NUMBERS, GOALS, POOLS, CHOOSABLE, makePlan, nutrition, startDate, 
 import { pack, unpack, fileText, readFile as readSyncFile } from '../matschema/js/sync.js';
 import * as store from '../matschema/js/store.js';
 import { RECIPES } from '../matschema/js/recipes.js';
-import { ANIMAL, FOODS, SWAPS } from '../matschema/js/foods.js';
+import { ANIMAL, FOODS, SWAPS, searchTerm } from '../matschema/js/foods.js';
 
 const root = new URL('../', import.meta.url);
 const read = file => readFile(new URL(file, root), 'utf8');
@@ -225,6 +225,9 @@ test('food you searched for is counted with its own nutrients, and an extra shri
   const sum = total(items, foods);
   assert.equal(sum.kcal, Math.round(fish.per.kcal * 1.5 + sauce.per.kcal * 0.3 + potato.per.kcal * 2 + 66));
   assert.ok(sum.fat > 25 && sum.protein > 35, JSON.stringify(sum));
+  // "Varav socker" är aldrig mer än kolhydraterna, även där databasen säger så (röd paprika).
+  assert.ok(foods.every(food => food.per.sugar <= food.per.carbs));
+  assert.equal(foods.find(food => food.name === 'Paprika röd').per.sugar, foods.find(food => food.name === 'Paprika röd').per.carbs);
 
   const before = makePlan().day('2026-11-04');
   const plan = makePlan({ outside: { '2026-11-04:middag': { label: 'Fisk', ...sum, items } } });
@@ -252,6 +255,9 @@ test('High Protein Kvarg is a food and a dish for breakfast and the evening', ()
   const breakfast = plan.day('2026-11-05').meals[0];
   assert.equal(breakfast.recipe, 'proteinkvarg');
   assert.equal(breakfast.fixed, true);
+  // Märkesnamnet behåller stor bokstav mitt i en rad, och butiken söker på det som ger kvarg (inte pudding).
+  assert.match(breakfast.items[0][2], /\d+ g High Protein Kvarg$/);
+  assert.equal(searchTerm('proteinkvarg'), 'proteinkvarg');
   assert.equal(makePlan({ vegan: true, fixed: { frukost: { recipe: 'proteinkvarg', days: 'vardag', at: '2026-11-02' } } }).day('2026-11-05').meals[0].items[0][0], 'sojayoghurt');
 });
 

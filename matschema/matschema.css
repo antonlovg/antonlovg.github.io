@@ -376,6 +376,7 @@ body:has(.sheet[open]) { overflow: hidden; }
 .box li + li { margin-top: 4px; }
 .week-total span { color: var(--green); }
 .week-total b { margin-right: 8px; }
+.week-total .week-extra { display: block; white-space: normal; color: var(--muted); font-size: 13px; }
 
 @media (min-width: 820px) {
   .week-table thead { display: table-header-group; }

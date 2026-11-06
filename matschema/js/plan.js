@@ -302,7 +302,8 @@ export const DAYS = { alla: () => true, vardag: weekday => weekday < 5, helg: we
 // Det du inte äter: det du valt bort, och allt från djur om du är vegan.
 export const excludedFoods = ({ exclude = [], vegan = false } = {}) => new Set([...exclude, ...(vegan ? ANIMAL : [])].filter(food => FOODS[food]));
 
-const lower = text => text[0].toLowerCase() + text.slice(1);
+// Liten första bokstav mitt i en mening, utom i märkesnamn (Huel, High Protein Kvarg).
+const lower = text => (/^(Huel|High Protein)\b/.test(text) ? text : text[0].toLowerCase() + text.slice(1));
 // Byter ett ord i en rätts namn och behåller stor bokstav: ("Kycklingwok", "kyckling", "kalkon") → "Kalkonwok".
 const renamed = (title, from, to) => title.replace(new RegExp(from, 'gi'), match => (match[0] === match[0].toUpperCase() ? to[0].toUpperCase() + to.slice(1) : to));
 

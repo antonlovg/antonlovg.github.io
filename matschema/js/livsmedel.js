@@ -19,9 +19,13 @@ export const OWN = Object.entries(FOODS).map(([id, food]) => {
   return entry(id, food.name, { kcal: food.kcal, protein: food.protein, carbs, sugar, fat, satfat }, true);
 });
 
-// Databasens rader: [nummer, namn, kcal, protein, kolhydrater, socker, fett, mättat fett].
-export const fromData = data => data.foods.map(([nummer, name, ...values]) =>
-  entry(`lv${nummer}`, name, Object.fromEntries(KEYS.map((key, i) => [key, values[i]]))));
+// Databasens rader: [nummer, namn, kcal, protein, kolhydrater, socker, fett, mättat fett]. I databasen är sockret
+// ibland lite mer än kolhydraterna (de räknas fram på olika sätt); här är det "varav socker", så högst lika mycket.
+export const fromData = data => data.foods.map(([nummer, name, ...values]) => {
+  const per = Object.fromEntries(KEYS.map((key, i) => [key, values[i]]));
+  per.sugar = Math.min(per.sugar, per.carbs);
+  return entry(`lv${nummer}`, name, per);
+});
 
 let loading = null;
 export function load() {
