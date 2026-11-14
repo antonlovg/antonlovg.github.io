@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>Flytten · lovgren.dev</title>
+  <meta name="description" content="Att göra och att köpa inför flytten, med datum från flyttdagen.">
+  <meta name="theme-color" content="#2d3f5c">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preload" href="/assets/fonts/manrope-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="flytt.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Till innehållet</a>
+  <header class="top">
+    <div class="top-inner">
+      <div>
+        <h1 class="top-title">Flytten</h1>
+        <p class="top-sub" id="subtitle">Välj flyttdag under Att göra</p>
+      </div>
+      <p class="top-count" id="count"></p>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Vyer">
+    <a href="#gora" data-view="gora"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Att göra</a>
+    <a href="#kopa" data-view="kopa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11h10.8L21 8H7M10 20h.01M17 20h.01"/></svg>Att köpa</a>
+    <a href="#mer" data-view="mer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg>Mer</a>
+  </nav>
+
+  <main id="main" class="main" tabindex="-1">
+    <!-- Att göra -->
+    <section id="view-gora" class="view" aria-labelledby="gora-title" hidden>
+      <h2 class="section-title" id="gora-title" tabindex="-1">Att göra</h2>
+      <div class="box when">
+        <label for="move-date">Flyttdag</label>
+        <input type="date" id="move-date">
+        <p class="fine" id="when-text">Välj flyttdagen så får varje uppgift ett datum att vara klar till.</p>
+      </div>
+      <form class="add" id="task-form" novalidate>
+        <label class="add-what"><span>Ny uppgift</span><input type="text" name="title" maxlength="120" autocomplete="off" placeholder="T.ex. Boka tvättstuga"></label>
+        <label class="add-small"><span>När</span><select name="days"></select></label>
+        <button type="submit" class="button">Lägg till</button>
+      </form>
+      <p class="fine" id="task-status" role="status"></p>
+      <label class="toggle"><input type="checkbox" id="hide-tasks"> Dölj det som är klart</label>
+      <div id="tasks"></div>
+      <button type="button" class="button quiet" id="restore" hidden>Lägg tillbaka mallens uppgifter</button>
+    </section>
+
+    <!-- Att köpa -->
+    <section id="view-kopa" class="view" aria-labelledby="kopa-title" hidden>
+      <h2 class="section-title" id="kopa-title" tabindex="-1">Att köpa</h2>
+      <div class="box sum" id="sum"></div>
+      <form class="add add-buy" id="item-form" novalidate>
+        <label class="add-what"><span>Ny sak</span><input type="text" name="name" maxlength="80" autocomplete="off" placeholder="T.ex. Duschdraperi"></label>
+        <label class="add-small"><span>Rum</span><select name="room"></select></label>
+        <label class="add-num"><span>Antal</span><input type="text" name="qty" inputmode="numeric" autocomplete="off" value="1"></label>
+        <label class="add-num"><span>Pris/st</span><input type="text" name="price" inputmode="decimal" autocomplete="off" placeholder="kr"></label>
+        <button type="submit" class="button">Lägg till</button>
+      </form>
+      <p class="fine" id="item-status" role="status"></p>
+      <label class="toggle"><input type="checkbox" id="hide-items"> Dölj det som är köpt</label>
+      <div id="items"></div>
+      <div class="share">
+        <button type="button" class="button quiet" id="copy-list">Kopiera listan som text</button>
+        <p class="fine" id="copy-status" role="status"></p>
+      </div>
+      <details class="ideas">
+        <summary>Förslag på sånt man ofta behöver</summary>
+        <p class="fine">Tryck för att lägga till. Det som redan finns på listan är markerat.</p>
+        <div id="ideas"></div>
+      </details>
+    </section>
+
+    <!-- Mer -->
+    <section id="view-mer" class="view" aria-labelledby="sync-title" hidden>
+      <h2 class="section-title" id="sync-title" tabindex="-1">Synka mobil och dator</h2>
+      <p>Det finns ingen inloggning: allt du skriver in ligger bara i webbläsaren. För att få samma lista på en annan enhet, skicka en synklänk till dig själv och öppna den där, eller spara en fil och läs in den. För varje uppgift och sak gäller den senaste ändringen.</p>
+      <div class="buttons">
+        <button type="button" class="button" id="sync-link">Kopiera synklänk</button>
+        <button type="button" class="button quiet" id="sync-save">Spara som fil</button>
+        <button type="button" class="button quiet" id="sync-open">Läs in fil</button>
+        <input type="file" id="sync-file" accept="application/json,.json" hidden>
+      </div>
+      <div class="box sync-offer" id="sync-offer" hidden>
+        <h3>Läsa in från en annan enhet?</h3>
+        <p id="sync-summary"></p>
+        <div class="buttons">
+          <button type="button" class="button" id="sync-accept">Läs in</button>
+          <button type="button" class="button quiet" id="sync-cancel">Avbryt</button>
+        </div>
+      </div>
+      <p class="fine" id="sync-status" role="status"></p>
+      <p class="fine">Länken innehåller allt du skrivit in, men efter #, så den skickas aldrig till webbservern. Skickar du den i en chatt eller ett mejl kan den tjänsten se den.</p>
+
+      <h3 class="section-sub">Utan nät</h3>
+      <p id="offline"></p>
+
+      <h3 class="section-sub">Din data</h3>
+      <p>Det du skriver in sparas bara i den här webbläsaren, i lokal lagring under namnet <code>lovgren-flytt</code>. Inget skickas någonstans. Mer om det i <a href="/cookies/">cookiepolicyn</a>.</p>
+      <button type="button" class="button quiet" id="forget">Radera allt jag skrivit in</button>
+      <p class="fine" id="forget-status" role="status"></p>
+    </section>
+  </main>
+
+  <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+    <div class="sheet-head">
+      <h2 id="sheet-title"></h2>
+      <button type="button" class="sheet-close" id="sheet-close" aria-label="Stäng">×</button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+  </dialog>
+</body>
+</html>
