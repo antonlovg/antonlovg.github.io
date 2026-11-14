@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
-import { PHASES, PHASE_DAYS, ROOMS, SUGGESTIONS, TEMPLATE, addDays, daysBetween, missingTemplate, phases, rooms, shoppingText, totals } from '../flytt/js/list.js';
+import { PHASES, PHASE_DAYS, ROOMS, SUGGESTIONS, TEMPLATE, addDays, daysBetween, linkLabel, missingTemplate, nameFromLink, phases, rooms, safeLink, shoppingText, splitEntry, totals } from '../flytt/js/list.js';
 import * as store from '../flytt/js/store.js';
 
 const root = new URL('../', import.meta.url);
@@ -47,6 +47,21 @@ test('the shopping list adds up per room and in total, and copies as text', () =
   for (const room of Object.keys(SUGGESTIONS)) assert.ok(ROOMS.includes(room), room);
 });
 
+test('a link pasted into the text becomes the link of the row, and a lone link names the row', () => {
+  const ikea = 'https://www.ikea.com/se/sv/p/fornuft-bestick-24-delar-rostfritt-stal-60196930/';
+  assert.deepEqual(splitEntry(`Köp bestick ${ikea}`), { title: 'Köp bestick', link: ikea });
+  assert.deepEqual(splitEntry(`Köp bestick: ${ikea}`), { title: 'Köp bestick', link: ikea });
+  assert.deepEqual(splitEntry('Bestick (https://ikea.se/x).'), { title: 'Bestick', link: 'https://ikea.se/x' });
+  assert.deepEqual(splitEntry('Lampa (vit) https://ikea.se/l'), { title: 'Lampa (vit)', link: 'https://ikea.se/l' });
+  assert.deepEqual(splitEntry(ikea), { title: 'Fornuft bestick 24 delar rostfritt stal', link: ikea });
+  assert.deepEqual(splitEntry('  Bestick  '), { title: 'Bestick', link: null });
+  assert.equal(nameFromLink('https://www.clasohlson.com/se/Brandvarnare-Housegard/p/36-7896'), 'Brandvarnare Housegard');
+  assert.equal(nameFromLink('https://ikea.se/'), 'Ikea.se');
+  assert.equal(linkLabel(ikea), 'ikea.com');
+  for (const bad of ['javascript:alert(1)', 'data:text/html,hi', 'ftp://ikea.se/x', 'http://localhost/x', 'nej']) assert.equal(safeLink(bad), null, bad);
+  assert.equal(splitEntry('javascript:alert(1)').link, null);
+});
+
 test('stored lists are cleaned, and two devices merge by the newest change', () => {
   const fresh = store.clean(null);
   assert.equal(Object.keys(fresh.tasks).length, TEMPLATE.length, 'a new list starts as the template');
@@ -54,7 +69,8 @@ test('stored lists are cleaned, and two devices merge by the newest change', () 
     date: '2026-12-01',
     tasks: { a1: { title: 'Ok', note: '', days: -7, done: false, made: 1, at: 5 }, a2: { title: 'Fel fas', note: '', days: -3, done: false, made: 1, at: 5 },
       a3: { gone: true, at: 9 }, 'Bad id': { title: 'x', days: 0, done: false, made: 1, at: 1 } },
-    buy: { b1: { name: 'Lampa', room: 'Sovrum', qty: 2, price: 99.9, note: '', done: false, made: 1, at: 1 }, b2: { name: 'Lampa', room: 'Garage', qty: 1, price: null, done: false, made: 1, at: 1 },
+    buy: { b1: { name: 'Lampa', room: 'Sovrum', qty: 2, price: 99.9, note: '', link: 'https://ikea.se/lampa', done: false, made: 1, at: 1 },
+      b5: { name: 'x', room: 'Kök', qty: 1, price: null, link: 'javascript:alert(1)', done: false, made: 1, at: 1 }, b2: { name: 'Lampa', room: 'Garage', qty: 1, price: null, done: false, made: 1, at: 1 },
       b3: { name: 'x', room: 'Kök', qty: 1.5, price: null, done: false, made: 1, at: 1 }, b4: { name: 'x', room: 'Kök', qty: 1, price: -1, done: false, made: 1, at: 1 } },
     hide: ['items', 'nope']
   });
@@ -83,7 +99,10 @@ test('the offline copy has every file the page loads', async () => {
   const sw = await read('flytt/sw.js');
   const files = [...sw.match(/const PRECACHE = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
   for (const file of files) await assert.doesNotReject(stat(new URL(file === './' ? 'flytt/index.html' : `flytt/${file}`, root)), file);
-  assert.ok(sw.includes("'/assets/fonts/manrope-latin-wght.woff2'"));
+  for (const font of ['fonts/caveat-700.woff2', 'fonts/patrick-hand-400.woff2']) assert.ok(files.includes(font), font);
+  const css = await read('flytt/flytt.css');
+  for (const [, file] of css.matchAll(/url\('([^']+\.woff2)'\)/g)) assert.ok(files.includes(file), `${file} is not in the offline copy`);
+  for (const licence of ['OFL-caveat.txt', 'OFL-patrick-hand.txt']) await assert.doesNotReject(stat(new URL(`flytt/fonts/${licence}`, root)), licence);
   const html = await read('flytt/index.html');
   for (const [, file] of html.matchAll(/(?:href|src)="((?!\/|#|https?:)[^"]+)"/g)) assert.ok(files.includes(file), `${file} is not in the offline copy`);
   const app = await read('flytt/js/app.js');

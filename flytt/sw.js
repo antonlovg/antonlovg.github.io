@@ -1,17 +1,17 @@
 // Flyttlistan utan nät (bara /flytt/). Allt sidan behöver sparas när den installeras. Med nät hämtas filerna
 // på nytt (så att ändringar syns direkt) men ger upp efter 3 sekunder; då, och utan nät, används den sparade kopian.
-const CACHE = 'flytt-v1';
-const FONT = '/assets/fonts/manrope-latin-wght.woff2';
+const CACHE = 'flytt-v2';
 const PRECACHE = [
   './',
   'flytt.css',
   'icon.svg',
   'manifest.webmanifest',
+  'fonts/caveat-700.woff2',
+  'fonts/patrick-hand-400.woff2',
   'js/app.js',
   'js/list.js',
   'js/store.js',
-  'js/sync.js',
-  FONT
+  'js/sync.js'
 ];
 
 self.addEventListener('install', event => {
@@ -29,7 +29,7 @@ const timeout = ms => new Promise((resolve, reject) => setTimeout(() => reject(n
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-  const inScope = url.pathname.startsWith(new URL('./', location).pathname) || url.pathname === FONT;
+  const inScope = url.pathname.startsWith(new URL('./', location).pathname);
   if (request.method !== 'GET' || url.origin !== location.origin || !inScope) return;
   const network = fetch(request).then(response => {
     if (response.ok) {

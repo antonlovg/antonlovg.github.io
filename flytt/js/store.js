@@ -2,7 +2,7 @@
 // webbläsarens lokala lagring ("lovgren-flytt", listad på /cookies/), och bara när du ändrar något.
 // Varje uppgift och sak har ett id och när den senast ändrades (at), så att två enheter kan slås ihop; en
 // borttagen sparas som { gone: true, at } så att den inte kommer tillbaka från den andra enheten.
-import { PHASE_DAYS, ROOMS, TEMPLATE } from './list.js';
+import { PHASE_DAYS, ROOMS, TEMPLATE, safeLink } from './list.js';
 
 const KEY = 'lovgren-flytt';
 const blank = () => ({ tasks: Object.fromEntries(TEMPLATE.map(task => [task.id, { ...task, at: 0 }])), buy: {}, hide: [] });
@@ -16,12 +16,13 @@ const text = (value, max) => typeof value === 'string' && value.trim().length > 
 const note = value => value === undefined || (typeof value === 'string' && value.length <= 500);
 const within = (value, min, max) => Number.isFinite(value) && value >= min && value <= max;
 const stamp = value => within(value, 0, 1e14);
+const link = value => value === undefined || value === '' || (typeof value === 'string' && safeLink(value) === value);
 
 const task = value => isObject(value) && stamp(value.at) && (value.gone === true || (text(value.title, 120) && note(value.note)
-  && PHASE_DAYS.includes(value.days) && typeof value.done === 'boolean' && stamp(value.made)));
+  && PHASE_DAYS.includes(value.days) && typeof value.done === 'boolean' && stamp(value.made) && link(value.link)));
 const item = value => isObject(value) && stamp(value.at) && (value.gone === true || (text(value.name, 80) && note(value.note)
   && ROOMS.includes(value.room) && Number.isInteger(value.qty) && within(value.qty, 1, 999)
-  && (value.price === null || within(value.price, 0, 1e6)) && typeof value.done === 'boolean' && stamp(value.made)));
+  && (value.price === null || within(value.price, 0, 1e6)) && typeof value.done === 'boolean' && stamp(value.made) && link(value.link)));
 const keep = (map, valid) => Object.fromEntries(Object.entries(isObject(map) ? map : {}).filter(([id, value]) => ID.test(id) && valid(value)));
 
 export function clean(value) {

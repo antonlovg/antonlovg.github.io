@@ -57,6 +57,41 @@ export const SUGGESTIONS = {
   'Flytten': ['Flyttkartonger', 'Packtejp', 'Bubbelplast', 'Märkpenna', 'Möbeltassar', 'Sopsäckar']
 };
 
+// ---------- Länkar ----------
+// Bara vanliga webbadresser (http och https) blir länkar.
+export function safeLink(text) {
+  try {
+    const url = new URL(text.trim());
+    return /^https?:$/.test(url.protocol) && url.hostname.includes('.') && url.href.length <= 2000 ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+// Det som står på länkknappen: butikens eller sajtens namn ("ikea.se").
+export const linkLabel = link => new URL(link).hostname.replace(/^www\d?\./, '');
+
+// Ett namn ur själva adressen, när du bara klistrat in en länk: det sista ordet i sökvägen som inte är ett
+// artikelnummer ("…/p/fornuft-bestick-24-delar-60196930/" blir "Fornuft bestick 24 delar").
+export function nameFromLink(link) {
+  const url = new URL(link);
+  const parts = url.pathname.split('/').map(part => { try { return decodeURIComponent(part); } catch { return part; } })
+    .map(part => part.replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[-_+]+/g, ' ').replace(/\b[a-z]*\d{5,}[a-z0-9]*\b/gi, '').replace(/\s+/g, ' ').trim())
+    .filter(part => /\p{L}{3}/u.test(part));
+  const name = (parts.at(-1) ?? linkLabel(link)).slice(0, 80).trim();
+  return name[0].toUpperCase() + name.slice(1);
+}
+
+// Det du skrev i rutan: en länk var som helst i texten plockas ut, och resten blir namnet. Bara en länk ger
+// ett namn ur adressen. { title, link } (link = null om det inte fanns någon).
+export function splitEntry(text) {
+  const found = text.match(/https?:\/\/\S+/i);
+  const link = found ? safeLink(found[0].replace(/[),.;]+$/, '')) : null;
+  const rest = (found ? text.replace(found[0], ' ') : text).replace(/\(\s*\)/g, ' ').replace(/\s+/g, ' ')
+    .replace(/^[\s:–)-]+|[\s:–(-]+$/g, '').trim();
+  return { title: rest || (link ? nameFromLink(link) : ''), link };
+}
+
 // ---------- Datum ----------
 const pad = n => String(n).padStart(2, '0');
 export const todayIso = (now = new Date()) => `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
