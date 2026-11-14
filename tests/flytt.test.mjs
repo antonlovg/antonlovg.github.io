@@ -1,112 +1,103 @@
-// The moving list (/flytt/): the template's dates follow the moving day, totals add up, two devices merge
-// without losing edits or bringing deleted things back, the offline copy has every file, and the page stays unlisted.
+// The moving list (/flytt/): a shopping list you fill in yourself. Links pasted after a name are split out and
+// only http(s) links are kept, prices and totals add up, two devices merge without losing edits or bringing
+// erased things back, old saved lists are read in, the offline copy has every file, and the page stays unlisted.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
-import { PHASES, PHASE_DAYS, ROOMS, SUGGESTIONS, TEMPLATE, addDays, daysBetween, linkLabel, missingTemplate, nameFromLink, phases, rooms, safeLink, shoppingText, splitEntry, totals } from '../flytt/js/list.js';
+import { linkFrom, linkLabel, nameFromLink, ordered, priceFrom, safeLink, shoppingText, splitEntry, totals } from '../flytt/js/list.js';
 import * as store from '../flytt/js/store.js';
 
 const root = new URL('../', import.meta.url);
 const read = file => readFile(new URL(file, root), 'utf8');
+const IKEA = 'https://www.ikea.com/se/sv/p/fornuft-bestick-24-delar-rostfritt-stal-60196930/';
 
-test('the template covers the whole move, each task in a phase, with unique ids', () => {
-  assert.ok(TEMPLATE.length >= 20);
-  assert.equal(new Set(TEMPLATE.map(task => task.id)).size, TEMPLATE.length);
-  for (const task of TEMPLATE) {
-    assert.ok(PHASE_DAYS.includes(task.days), task.title);
-    assert.ok(task.title.length <= 120 && task.note.length <= 500, task.title);
-    assert.ok(!/\s$|^\s|\.$/.test(task.title), `${task.title}: no trailing dot or spaces`);
-  }
-  for (const phase of PHASES) assert.ok(TEMPLATE.some(task => task.days === phase.days), `${phase.name} has tasks`);
-  assert.ok(TEMPLATE.some(task => /Skatteverket/.test(task.title)));
-});
-
-test('phases get a due date counted from the moving day', () => {
-  assert.equal(addDays('2026-12-01', -28), '2026-11-03');
-  assert.equal(addDays('2026-03-01', -1), '2026-02-28');
-  assert.equal(daysBetween('2026-11-14', '2026-12-01'), 17);
-  assert.equal(daysBetween('2026-03-28', '2026-03-30'), 2, 'across the switch to summer time');
-  const groups = phases(TEMPLATE, '2026-12-01');
-  assert.deepEqual(groups.map(group => group.days), PHASE_DAYS);
-  assert.equal(groups.find(group => group.days === -28).due, '2026-11-03');
-  assert.equal(groups.find(group => group.days === 0).due, '2026-12-01');
-  assert.ok(phases(TEMPLATE, null).every(group => group.due === null));
-  // Inom en fas: i den ordning de lades till.
-  const own = { id: 'x1', title: 'Egen', note: '', days: -28, made: Date.now(), done: false };
-  assert.equal(phases([own, ...TEMPLATE], null).find(group => group.days === -28).tasks.at(-1).id, 'x1');
-  assert.deepEqual(missingTemplate(TEMPLATE.slice(1)).map(task => task.id), ['m1']);
-});
-
-test('the shopping list adds up per room and in total, and copies as text', () => {
-  const item = (id, name, room, qty, price, done = false) => ({ id, name, room, qty, price, done, note: '', made: Number(id.slice(1)) });
-  const items = [item('i1', 'Gardinstänger', 'Vardagsrum', 2, 149.5), item('i2', 'Diskmedel', 'Kök', 1, 25, true), item('i3', 'Skärbräda', 'Kök', 1, null),
-    item('i4', 'Duschdraperi', 'Badrum', 1, 199)];
-  assert.deepEqual(totals(items), { total: 299 + 25 + 199, bought: 25, left: 299 + 199, unpriced: 1 });
-  assert.deepEqual(rooms(items).map(group => [group.room, group.total]), [['Kök', 25], ['Badrum', 199], ['Vardagsrum', 299]]);
-  assert.equal(shoppingText(items), 'Kök\n- Skärbräda\n\nBadrum\n- Duschdraperi\n\nVardagsrum\n- Gardinstänger (2 st)');
-  for (const room of Object.keys(SUGGESTIONS)) assert.ok(ROOMS.includes(room), room);
-});
-
-test('a link pasted into the text becomes the link of the row, and a lone link names the row', () => {
-  const ikea = 'https://www.ikea.com/se/sv/p/fornuft-bestick-24-delar-rostfritt-stal-60196930/';
-  assert.deepEqual(splitEntry(`Köp bestick ${ikea}`), { title: 'Köp bestick', link: ikea });
-  assert.deepEqual(splitEntry(`Köp bestick: ${ikea}`), { title: 'Köp bestick', link: ikea });
-  assert.deepEqual(splitEntry('Bestick (https://ikea.se/x).'), { title: 'Bestick', link: 'https://ikea.se/x' });
-  assert.deepEqual(splitEntry('Lampa (vit) https://ikea.se/l'), { title: 'Lampa (vit)', link: 'https://ikea.se/l' });
-  assert.deepEqual(splitEntry(ikea), { title: 'Fornuft bestick 24 delar rostfritt stal', link: ikea });
-  assert.deepEqual(splitEntry('  Bestick  '), { title: 'Bestick', link: null });
+test('a link pasted after the name becomes the link, and a lone link names the thing', () => {
+  assert.deepEqual(splitEntry(`Bestick ${IKEA}`), { name: 'Bestick', link: IKEA });
+  assert.deepEqual(splitEntry(`Bestick: ${IKEA}`), { name: 'Bestick', link: IKEA });
+  assert.deepEqual(splitEntry('Bestick (https://ikea.se/x).'), { name: 'Bestick', link: 'https://ikea.se/x' });
+  assert.deepEqual(splitEntry('Lampa (vit) https://ikea.se/l'), { name: 'Lampa (vit)', link: 'https://ikea.se/l' });
+  assert.deepEqual(splitEntry(IKEA), { name: 'Fornuft bestick 24 delar rostfritt stal', link: IKEA });
+  assert.deepEqual(splitEntry('  Bestick  '), { name: 'Bestick', link: null });
   assert.equal(nameFromLink('https://www.clasohlson.com/se/Brandvarnare-Housegard/p/36-7896'), 'Brandvarnare Housegard');
   assert.equal(nameFromLink('https://ikea.se/'), 'Ikea.se');
-  assert.equal(linkLabel(ikea), 'ikea.com');
+  assert.equal(linkLabel(IKEA), 'ikea.com');
   for (const bad of ['javascript:alert(1)', 'data:text/html,hi', 'ftp://ikea.se/x', 'http://localhost/x', 'nej']) assert.equal(safeLink(bad), null, bad);
   assert.equal(splitEntry('javascript:alert(1)').link, null);
+  // Länkfältet: utan https:// går också, tomt är ingen länk, och något annat är fel.
+  assert.equal(linkFrom('ikea.se/bestick'), 'https://ikea.se/bestick');
+  assert.equal(linkFrom('  '), null);
+  assert.equal(linkFrom('inte en länk'), undefined);
+  assert.equal(linkFrom('javascript:alert(1)'), undefined);
 });
 
-test('stored lists are cleaned, and two devices merge by the newest change', () => {
-  const fresh = store.clean(null);
-  assert.equal(Object.keys(fresh.tasks).length, TEMPLATE.length, 'a new list starts as the template');
-  const value = store.clean({
-    date: '2026-12-01',
-    tasks: { a1: { title: 'Ok', note: '', days: -7, done: false, made: 1, at: 5 }, a2: { title: 'Fel fas', note: '', days: -3, done: false, made: 1, at: 5 },
-      a3: { gone: true, at: 9 }, 'Bad id': { title: 'x', days: 0, done: false, made: 1, at: 1 } },
-    buy: { b1: { name: 'Lampa', room: 'Sovrum', qty: 2, price: 99.9, note: '', link: 'https://ikea.se/lampa', done: false, made: 1, at: 1 },
-      b5: { name: 'x', room: 'Kök', qty: 1, price: null, link: 'javascript:alert(1)', done: false, made: 1, at: 1 }, b2: { name: 'Lampa', room: 'Garage', qty: 1, price: null, done: false, made: 1, at: 1 },
-      b3: { name: 'x', room: 'Kök', qty: 1.5, price: null, done: false, made: 1, at: 1 }, b4: { name: 'x', room: 'Kök', qty: 1, price: -1, done: false, made: 1, at: 1 } },
-    hide: ['items', 'nope']
-  });
-  assert.deepEqual(Object.keys(value.tasks), ['a1', 'a3']);
-  assert.deepEqual(Object.keys(value.buy), ['b1']);
-  assert.deepEqual(value.hide, ['items']);
-  assert.equal(value.date, '2026-12-01');
-  assert.equal(store.clean({ date: '1 dec' }).date, undefined);
+test('prices are read the Swedish way, and the totals add up', () => {
+  assert.equal(priceFrom('199'), 199);
+  assert.equal(priceFrom('49,90'), 49.9);
+  assert.equal(priceFrom('1 299 kr'), 1299);
+  assert.equal(priceFrom('1299:-'), 1299);
+  assert.equal(priceFrom(''), null);
+  assert.ok(Number.isNaN(priceFrom('gratis')));
+  assert.ok(Number.isNaN(priceFrom('1,999')), 'at most two decimals');
+  const item = (id, name, price, qty = 1, done = false, link = '') => ({ id, name, price, qty, done, link, note: '', made: Number(id.slice(1)) });
+  const items = [item('i3', 'Gardinstänger', 149.5, 2), item('i1', 'Bestick', 199, 1, true, IKEA), item('i2', 'Skärbräda', null), item('i4', 'Lampa', 299, 1, false, 'https://ikea.se/l')];
+  assert.deepEqual(totals(items), { total: 299 + 199 + 299, bought: 199, left: 299 + 299, unpriced: 1 });
+  assert.deepEqual(ordered(items).map(entry => entry.id), ['i2', 'i3', 'i4', 'i1'], 'in the order added, bought last');
+  assert.equal(shoppingText(items), '- Skärbräda\n- Gardinstänger (2 st), 299 kr\n- Lampa, 299 kr\n  https://ikea.se/l');
+});
 
-  // Den här enheten: bocka av m1 och ta bort m2. Den andra: ändra m1 tidigare, lägg till en sak och en flyttdag.
+test('the list is cleaned, old lists are read in, and two devices merge by the newest change', () => {
+  assert.deepEqual(store.clean(null), { items: {}, theme: 'light' }, 'a new list is empty');
+  const value = store.clean({
+    items: {
+      a1: { name: 'Bestick', link: IKEA, price: 199, qty: 1, note: '', done: false, made: 1, at: 2 },
+      a2: { name: 'Lampa', link: 'javascript:alert(1)', price: null, qty: 1, done: false, made: 1, at: 2 },
+      a3: { name: 'x', price: -1, qty: 1, done: false, made: 1, at: 2 },
+      a4: { name: 'x', price: null, qty: 1.5, done: false, made: 1, at: 2 },
+      a5: { gone: true, at: 9 },
+      'Bad id': { name: 'x', price: null, qty: 1, done: false, made: 1, at: 2 }
+    },
+    theme: 'dark'
+  });
+  assert.deepEqual(Object.keys(value.items), ['a1', 'a5']);
+  assert.equal(value.theme, 'dark');
+  assert.equal(store.clean({ theme: 'neon' }).theme, 'light');
+  // Den förra versionen sparade under "buy", med rum, och hade en att göra-lista.
+  const old = store.clean({ tasks: { m1: { title: 'x' } }, buy: { b1: { name: 'Lampa', room: 'Sovrum', qty: 2, price: 99.9, note: '', link: '', done: false, made: 1, at: 1 } } });
+  assert.deepEqual(old.items, { b1: { name: 'Lampa', link: '', price: 99.9, qty: 2, note: '', done: false, made: 1, at: 1 } });
+  assert.equal(old.tasks, undefined);
+
+  // Den här enheten: köp a1 och sudda ut a2. Den andra: en äldre ändring av båda och en ny sak.
   store.forget();
-  store.setTask('m1', { ...TEMPLATE[0], done: true });
-  store.setTask('m2', null);
-  const other = { date: '2026-12-01', tasks: { m1: { ...TEMPLATE[0], title: 'Gammal', at: 1 }, m2: { ...TEMPLATE[1], at: 1 } },
-    buy: { z9: { name: 'Packtejp', room: 'Flytten', qty: 3, price: 29, note: '', done: false, made: 1, at: 2 } } };
-  store.merge(other);
-  assert.equal(store.tasks().find(task => task.id === 'm1').done, true, 'the newer change wins');
-  assert.ok(!store.tasks().some(task => task.id === 'm2'), 'a deleted task does not come back');
-  assert.equal(store.items()[0].name, 'Packtejp');
-  assert.equal(store.date(), '2026-12-01');
-  assert.equal(store.tasks().length, TEMPLATE.length - 1);
+  store.setItem('a1', { name: 'Bestick', link: IKEA, price: 199, qty: 1, note: '', done: true, made: 1 });
+  store.setItem('a2', { name: 'Lampa', link: '', price: null, qty: 1, note: '', done: false, made: 2 });
+  store.setItem('a2', null);
+  store.merge({ items: {
+    a1: { name: 'Gammalt namn', price: 199, qty: 1, done: false, made: 1, at: 1 },
+    a2: { name: 'Lampa', price: null, qty: 1, done: false, made: 2, at: 1 },
+    z9: { name: 'Packtejp', price: 29, qty: 3, done: false, made: 3, at: 2 }
+  } });
+  const now = Object.fromEntries(store.items().map(entry => [entry.id, entry]));
+  assert.equal(now.a1.done, true, 'the newer change wins');
+  assert.equal(now.a2, undefined, 'an erased thing does not come back');
+  assert.equal(now.z9.qty, 3);
+  store.setTheme('dark');
+  assert.equal(store.theme(), 'dark');
   store.forget();
+  assert.equal(store.theme(), 'light');
+  assert.deepEqual(store.items(), []);
 });
 
 test('the offline copy has every file the page loads', async () => {
   const sw = await read('flytt/sw.js');
   const files = [...sw.match(/const PRECACHE = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
   for (const file of files) await assert.doesNotReject(stat(new URL(file === './' ? 'flytt/index.html' : `flytt/${file}`, root)), file);
-  for (const font of ['fonts/caveat-700.woff2', 'fonts/patrick-hand-400.woff2']) assert.ok(files.includes(font), font);
-  const css = await read('flytt/flytt.css');
-  for (const [, file] of css.matchAll(/url\('([^']+\.woff2)'\)/g)) assert.ok(files.includes(file), `${file} is not in the offline copy`);
-  for (const licence of ['OFL-caveat.txt', 'OFL-patrick-hand.txt']) await assert.doesNotReject(stat(new URL(`flytt/fonts/${licence}`, root)), licence);
   const html = await read('flytt/index.html');
   for (const [, file] of html.matchAll(/(?:href|src)="((?!\/|#|https?:)[^"]+)"/g)) assert.ok(files.includes(file), `${file} is not in the offline copy`);
   const app = await read('flytt/js/app.js');
   for (const [, file] of app.matchAll(/from '\.\/([^']+)'/g)) assert.ok(files.includes(`js/${file}`), file);
+  const css = await read('flytt/flytt.css');
+  for (const [, file] of css.matchAll(/url\('([^']+\.woff2)'\)/g)) assert.ok(files.includes(file), `${file} is not in the offline copy`);
+  for (const licence of ['OFL-caveat.txt', 'OFL-patrick-hand.txt']) await assert.doesNotReject(stat(new URL(`flytt/fonts/${licence}`, root)), licence);
 });
 
 test('the page is unlisted, strict, and its storage is on the cookie page', async () => {
@@ -114,10 +105,12 @@ test('the page is unlisted, strict, and its storage is on the cookie page', asyn
   const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
   assert.match(csp, /script-src 'self';/);
   assert.ok(!csp.includes('unsafe'));
+  assert.ok(!/\sstyle="/.test(html), 'no inline styles (the CSP blocks them)');
   assert.match(html, /<meta name="robots" content="noindex">/);
   assert.match(await read('scripts/build-site.mjs'), /Disallow: \/flytt\//);
   for (const file of ['index.html', 'games/index.html', 'assets/site.js']) assert.ok(!(await read(file)).includes('/flytt/'), `${file} links to /flytt/`);
   const key = (await read('flytt/js/store.js')).match(/const KEY = '([^']+)'/)[1];
+  assert.ok((await read('flytt/js/theme.js')).includes(`'${key}'`), 'theme.js reads the same storage');
   const cache = (await read('flytt/sw.js')).match(/const CACHE = '([^']+)'/)[1];
   const cookies = await read('cookies/index.html');
   for (const name of [key, cache, '/flytt/sw.js']) assert.ok(cookies.includes(`<code>${name}</code>`), name);

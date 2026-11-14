@@ -1,6 +1,7 @@
-/* Flyttlistan (/flytt/): ritad med kritor på rutat papper, eller med krita på en griffeltavla i mörkt läge.
-   Handstilen är Caveat (rubriker) och Patrick Hand (text), båda SIL Open Font License (fonts/OFL-*.txt).
-   Det ritade är bara CSS: ojämna hörn (--wobble), streckad fyllning (--hatch) och ett korn (--grain). */
+/* Flyttlistan (/flytt/): en inköpslista ritad med kritor. Ljust papper som standard, svart ritpapper om du
+   väljer mörkt läge (js/theme.js sätter data-theme på <html> innan sidan ritas). Handstilen är Caveat
+   (rubriker) och Patrick Hand (text), båda SIL Open Font License (fonts/OFL-*.txt). Allt ritat är CSS och
+   SVG: ojämna hörn (--wobble), korn (--grain), klotter i bakgrunden (--doodles) och kritan i #crayon. */
 @font-face {
   font-family: 'Caveat';
   src: url('fonts/caveat-700.woff2') format('woff2');
@@ -15,57 +16,54 @@
 }
 
 :root {
-  --paper: #fbf7ec;
-  --paper-2: #fffdf6;
-  --grid: rgb(70 110 160 / 0.13);
-  --ink: #2a2723;
-  --ink-soft: #5b544b;
-  --line: rgb(42 39 35 / 0.35);
-  /* Kritorna, i den ordning grupperna får dem. */
-  --c1: #b3261e; /* röd */
-  --c2: #1f4f9c; /* blå */
-  --c3: #2e6b2f; /* grön */
-  --c4: #9a4a00; /* orange */
-  --c5: #6b3a96; /* lila */
-  --c6: #7a4f2a; /* brun */
+  --paper: #fffaf0;
+  --card: #ffffff;
+  --ink: #2b2622;
+  --ink-soft: #675d54;
+  --line: rgb(43 38 34 / 0.3);
+  /* Kritorna: --kN att rita med, --tN samma färg mörk nog att läsa som text. */
+  --k1: #e63946; --t1: #c1121f;
+  --k2: #f77f00; --t2: #a84a00;
+  --k3: #fcbf49; --t3: #8a5a00;
+  --k4: #43aa46; --t4: #24782a;
+  --k5: #1e88e5; --t5: #1259b0;
+  --k6: #8e44ec; --t6: #6a2bc4;
+  --k7: #ef5ea0; --t7: #b3165c;
+  --k8: #8d5524; --t8: #7a461b;
   --on-crayon: #ffffff;
-  --link: #1f4f9c;
-  --note: #ffe682;
-  --note-ink: #2a2723;
-  --highlight: rgb(255 214 64 / 0.75);
-  --late: #b3261e;
-  --hatch: repeating-linear-gradient(-55deg, rgb(255 255 255 / 0.14) 0 2px, transparent 2px 6px);
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .15 0 0 0 0 .1 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --button: #c1121f;
+  --box: #ffcf33;
+  --box-line: #b8860b;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .2 0 0 0 0 .1 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --doodles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520' fill='none' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' stroke-opacity='.22'%3E%3Cpath stroke='%23fcbf49' d='M70 40l9 20 22 2-17 14 6 22-20-12-20 12 6-22-17-14 22-2z'/%3E%3Cpath stroke='%231e88e5' d='M380 60q15-25 30 0t30 0 30 0'/%3E%3Cpath stroke='%23ef5ea0' d='M440 300c-8-14-30-6-22 10l22 22 22-22c8-16-14-24-22-10z'/%3E%3Cpath stroke='%2343aa46' d='M120 400c0-12 18-12 18 0s-30 14-30-4 40-20 40 6-46 26-50-6'/%3E%3Cpath stroke='%238e44ec' d='M300 470l20-30 20 30 20-30 20 30'/%3E%3Cpath stroke='%23e63946' d='M40 250q30-20 20 10t30 0'/%3E%3C/svg%3E");
   --wobble: 255px 15px 225px 15px / 15px 225px 15px 255px;
   --wobble-2: 15px 255px 15px 225px / 225px 15px 255px 15px;
   --hand: 'Patrick Hand', 'Comic Sans MS', 'Segoe Print', system-ui, sans-serif;
   --title: 'Caveat', 'Segoe Print', 'Comic Sans MS', cursive;
   color-scheme: light;
 }
-/* Mörkt: krita på en griffeltavla. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #1f2b25;
-    --paper-2: #24322b;
-    --grid: rgb(255 255 255 / 0.04);
-    --ink: #f1eee4;
-    --ink-soft: #c5c9bf;
-    --line: rgb(241 238 228 / 0.3);
-    --c1: #ff9e94;
-    --c2: #9cc3ff;
-    --c3: #a8e3a0;
-    --c4: #ffc477;
-    --c5: #d7b4ff;
-    --c6: #e6c39c;
-    --on-crayon: #17201b;
-    --link: #9cc3ff;
-    --note: #f2e3a0;
-    --highlight: rgb(255 230 120 / 0.28);
-    --late: #ff9e94;
-    --hatch: repeating-linear-gradient(-55deg, rgb(0 0 0 / 0.1) 0 2px, transparent 2px 6px);
-    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    color-scheme: dark;
-  }
+/* Mörkt: starka kritor på svart ritpapper. */
+:root[data-theme="dark"] {
+  --paper: #1b1923;
+  --card: #25222f;
+  --ink: #f5f0e8;
+  --ink-soft: #c4bbb0;
+  --line: rgb(245 240 232 / 0.3);
+  --k1: #ff6b6b; --t1: #ff8a8a;
+  --k2: #ffa94d; --t2: #ffb766;
+  --k3: #ffd43b; --t3: #ffd43b;
+  --k4: #69db7c; --t4: #69db7c;
+  --k5: #4dabf7; --t5: #74c0fc;
+  --k6: #b197fc; --t6: #b197fc;
+  --k7: #f783ac; --t7: #f783ac;
+  --k8: #d9a066; --t8: #e0ae7c;
+  --on-crayon: #1b1923;
+  --button: #ff6b6b;
+  --box: #e0a800;
+  --box-line: #ffd43b;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --doodles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='520' fill='none' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' stroke-opacity='.2'%3E%3Cpath stroke='%23ffd43b' d='M70 40l9 20 22 2-17 14 6 22-20-12-20 12 6-22-17-14 22-2z'/%3E%3Cpath stroke='%234dabf7' d='M380 60q15-25 30 0t30 0 30 0'/%3E%3Cpath stroke='%23f783ac' d='M440 300c-8-14-30-6-22 10l22 22 22-22c8-16-14-24-22-10z'/%3E%3Cpath stroke='%2369db7c' d='M120 400c0-12 18-12 18 0s-30 14-30-4 40-20 40 6-46 26-50-6'/%3E%3Cpath stroke='%23b197fc' d='M300 470l20-30 20 30 20-30 20 30'/%3E%3Cpath stroke='%23ff6b6b' d='M40 250q30-20 20 10t30 0'/%3E%3C/svg%3E");
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -76,261 +74,267 @@ body {
   min-height: 100dvh;
   color: var(--ink);
   background-color: var(--paper);
-  background-image: var(--grain), linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 180px 180px, 26px 26px, 26px 26px;
+  background-image: var(--grain), var(--doodles);
+  background-size: 180px 180px, 520px 520px;
+  background-attachment: scroll, fixed;
   font: 19px/1.45 var(--hand);
 }
-a { color: var(--link); }
-h1, h2, h3 { font-family: var(--title); font-weight: 700; line-height: 1.1; }
-:focus-visible { outline: 3px dashed var(--c2); outline-offset: 3px; }
-button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--t5); }
+h1, h2, h3 { font-family: var(--title); font-weight: 700; line-height: 1.05; }
+:focus-visible { outline: 3px dashed var(--k5); outline-offset: 3px; }
+button, input, textarea { font: inherit; color: inherit; }
 code { font-family: ui-monospace, monospace; font-size: 0.8em; }
+.defs { position: absolute; width: 0; height: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.skip { position: absolute; left: 8px; top: -60px; z-index: 10; padding: 8px 12px; background: var(--paper-2); border-radius: var(--wobble); }
+.skip { position: absolute; left: 8px; top: -60px; z-index: 10; padding: 8px 12px; background: var(--card); border: 2px solid var(--ink); border-radius: var(--wobble); }
 .skip:focus { top: 8px; }
-.page { max-width: 680px; margin: 0 auto; padding: calc(10px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom)); }
-.main:focus { outline: none; }
+.page { max-width: 640px; margin: 0 auto; padding: calc(10px + env(safe-area-inset-top)) 16px calc(48px + env(safe-area-inset-bottom)); }
 
-/* ---------- Kritknappar ---------- */
-.crayon {
-  min-height: 46px;
-  padding: 6px 18px;
-  border: 2.5px solid var(--c2);
-  border-radius: var(--wobble);
-  background-color: var(--c2);
-  background-image: var(--hatch), var(--grain);
-  color: var(--on-crayon);
-  font-size: 20px;
-  cursor: pointer;
-  transition: transform 0.12s;
-}
-.crayon:hover { transform: rotate(-1deg) scale(1.02); }
-.crayon:active { transform: rotate(1deg) scale(0.98); }
-.crayon.quiet { background: transparent; color: var(--c2); }
-.crayon.danger { border-color: var(--c1); color: var(--c1); }
+/* Varje sak (och bokstav) får en krita: .kN och data-c="N" sätter --c (rita) och --ct (text). */
+.k1, [data-c="1"] { --c: var(--k1); --ct: var(--t1); }
+.k2, [data-c="2"] { --c: var(--k2); --ct: var(--t2); }
+.k3, [data-c="3"] { --c: var(--k3); --ct: var(--t3); }
+.k4, [data-c="4"] { --c: var(--k4); --ct: var(--t4); }
+.k5, [data-c="5"] { --c: var(--k5); --ct: var(--t5); }
+.k6, [data-c="6"] { --c: var(--k6); --ct: var(--t6); }
+.k7, [data-c="7"] { --c: var(--k7); --ct: var(--t7); }
+.k8, [data-c="8"] { --c: var(--k8); --ct: var(--t8); }
+
+/* ---------- Knappar ---------- */
+.pill { min-height: 44px; padding: 4px 16px; border: 2.5px solid var(--ink); border-radius: var(--wobble-2); background: var(--card); font-size: 18px; cursor: pointer; transition: transform 0.12s; }
+.pill:hover { transform: rotate(-1.5deg); }
+.pill.solid { border-color: var(--t5); background-color: var(--t5); background-image: var(--grain); color: #fff; }
+:root[data-theme="dark"] .pill.solid { border-color: var(--k5); background-color: var(--k5); color: var(--on-crayon); }
+.pill.danger { border-color: var(--t1); color: var(--t1); }
+.pill[aria-pressed="true"] { background-color: var(--k3); color: #2b2622; border-color: var(--k3); }
 .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
-.hint { margin: 6px 2px 0; color: var(--ink-soft); font-size: 16px; }
-.status { margin: 8px 2px 0; color: var(--c3); font-size: 17px; }
+.hint { margin: 8px 2px 0; color: var(--ink-soft); font-size: 16px; }
+.status { margin: 8px 2px 0; color: var(--t4); font-size: 17px; }
 .status:empty { display: none; }
 
-/* ---------- Rubrik och lappen med flyttdagen ---------- */
-.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.title { margin: 0; font-size: 58px; color: var(--c1); transform: rotate(-2deg); text-decoration: underline wavy var(--c4) 3px; text-underline-offset: 10px; text-decoration-skip-ink: none; }
-.more { min-height: 44px; padding: 4px 14px; border: 2px dashed var(--line); border-radius: var(--wobble-2); background: transparent; color: var(--ink-soft); font-size: 17px; cursor: pointer; }
-
-.note {
+/* Knappen är en krita: färg, pappersomslag med ränder och en spets. */
+.crayon-button {
   position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 4px 14px;
-  margin: 22px 6px 18px;
-  padding: 18px 18px 14px;
-  background-color: var(--note);
-  background-image: var(--grain);
-  color: var(--note-ink);
-  border-radius: 2px 3px 30px 2px / 2px 2px 8px 3px;
-  box-shadow: 0 8px 14px -8px rgb(0 0 0 / 0.45);
-  transform: rotate(-1.2deg);
+  justify-self: start;
+  min-height: 58px;
+  padding: 0 64px 0 30px;
+  border: 0;
+  border-radius: 12px 0 0 12px;
+  background-color: var(--button);
+  background-image:
+    linear-gradient(90deg, transparent 0 14px, rgb(0 0 0 / 0.2) 14px 18px, transparent 18px calc(100% - 66px), rgb(0 0 0 / 0.2) calc(100% - 66px) calc(100% - 62px), transparent calc(100% - 62px) calc(100% - 44px), rgb(0 0 0 / 0.22) calc(100% - 44px)),
+    linear-gradient(transparent 0 30%, rgb(255 255 255 / 0.16) 30% 42%, transparent 42%),
+    var(--grain);
+  color: var(--on-crayon);
+  font-family: var(--title);
+  font-size: 30px;
+  cursor: pointer;
+  clip-path: polygon(0 0, calc(100% - 44px) 0, calc(100% - 6px) 44%, 100% 50%, calc(100% - 6px) 56%, calc(100% - 44px) 100%, 0 100%);
+  transition: transform 0.15s;
 }
-/* Tejpbiten. */
-.note::before { content: ''; position: absolute; top: -12px; left: 50%; width: 92px; height: 24px; translate: -50% 0; rotate: 3deg; background: rgb(255 255 255 / 0.55); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
-.note-label { font-family: var(--title); font-size: 30px; }
-.note input { justify-self: start; min-height: 44px; padding: 4px 8px; border: 0; border-bottom: 2px solid rgb(42 39 35 / 0.55); border-radius: 0; background: transparent; color: var(--note-ink); font-size: 20px; color-scheme: light; }
-.note-count { grid-column: 1 / -1; margin: 2px 0 0; font-size: 19px; }
-.note-count b { font-family: var(--title); font-size: 30px; color: #8a1d16; }
+.crayon-button:hover { transform: translateX(4px) rotate(-1deg); }
+.crayon-button:active { transform: translateX(8px) scale(0.98); }
+.crayon-button:focus-visible { outline: none; filter: drop-shadow(0 0 0 var(--k5)) drop-shadow(3px 3px 0 var(--k5)) drop-shadow(-3px -3px 0 var(--k5)); }
 
-/* ---------- Flikarna: två pappersflikar ---------- */
-.tabs { position: sticky; top: 0; z-index: 4; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 8px 0 10px; background-color: var(--paper); background-image: var(--grain); }
-.tabs a {
-  display: grid;
-  justify-items: center;
-  padding: 6px 8px 8px;
-  min-height: 56px;
-  border: 2.5px solid var(--line);
-  border-radius: var(--wobble-2);
-  color: var(--ink-soft);
-  text-decoration: none;
-}
-.tab-name { font-family: var(--title); font-size: 30px; line-height: 1; }
-.tab-count { font-size: 15px; }
-.tabs a[aria-current="page"] { border-color: var(--ink); color: var(--ink); }
-.tabs a[aria-current="page"] .tab-name { padding: 0 6px; background: linear-gradient(transparent 50%, var(--highlight) 50%, var(--highlight) 88%, transparent 88%); }
-
-/* ---------- Mätaren: ritad stapel med streckad fyllning ---------- */
-.meter { margin: 6px 0 14px; }
-.meter-text { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 14px; margin: 0 2px 6px; font-size: 18px; }
-.meter-text b { font-family: var(--title); font-size: 28px; line-height: 1; }
-.meter-bar { height: 20px; border: 2.5px solid var(--ink); border-radius: var(--wobble); overflow: hidden; }
-.meter-fill { height: 100%; background-color: var(--c3); background-image: repeating-linear-gradient(-55deg, transparent 0 3px, rgb(255 255 255 / 0.3) 3px 5px), var(--grain); transition: width 0.3s; }
-.meter .hint { margin-top: 6px; }
-/* Bredden i steg om 5 % (inline-stil går inte med sidans CSP). */
-.w0 { width: 0%; }
-.w5 { width: 5%; }
-.w10 { width: 10%; }
-.w15 { width: 15%; }
-.w20 { width: 20%; }
-.w25 { width: 25%; }
-.w30 { width: 30%; }
-.w35 { width: 35%; }
-.w40 { width: 40%; }
-.w45 { width: 45%; }
-.w50 { width: 50%; }
-.w55 { width: 55%; }
-.w60 { width: 60%; }
-.w65 { width: 65%; }
-.w70 { width: 70%; }
-.w75 { width: 75%; }
-.w80 { width: 80%; }
-.w85 { width: 85%; }
-.w90 { width: 90%; }
-.w95 { width: 95%; }
-.w100 { width: 100%; }
+/* ---------- Rubriken: en kritlåda och en titel i alla färger ---------- */
+.top { position: relative; text-align: center; }
+.top-bar { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.box-of-crayons { display: block; width: min(300px, 82%); margin: 10px auto 2px; overflow: visible; }
+.box-of-crayons use { transition: transform 0.25s; }
+.box-front { fill: var(--box); stroke: var(--box-line); stroke-width: 4; stroke-linejoin: round; }
+.title { margin: 0; font-size: clamp(54px, 15vw, 84px); letter-spacing: 0.01em; }
+.title > span > span { display: inline-block; color: var(--ct); }
+.title > span > span:nth-child(odd) { transform: rotate(-4deg) translateY(2px); }
+.title > span > span:nth-child(3n) { transform: rotate(5deg) translateY(-3px); }
+.tagline { margin: -4px 0 0; color: var(--ink-soft); font-size: 20px; }
 
 /* ---------- Skriv på listan ---------- */
-.add { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; align-items: end; padding: 14px; border: 2.5px dashed var(--line); border-radius: var(--wobble); }
-.add label { display: grid; gap: 2px; min-width: 0; }
-.add label > span:not(.visually-hidden) { color: var(--ink-soft); font-size: 16px; }
-.add input, .add select, .field input, .field select, .field textarea {
+.add {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 12px 14px;
+  margin-top: 22px;
+  padding: 18px 18px 16px;
+  background-color: var(--card);
+  background-image: var(--grain);
+  border: 3px solid var(--ink);
+  border-radius: var(--wobble);
+  box-shadow: 6px 7px 0 var(--k3);
+  rotate: -0.5deg;
+}
+.add-title { grid-column: 1 / -1; margin: 0; font-size: 36px; color: var(--t6); }
+.field { display: grid; gap: 2px; min-width: 0; color: var(--ink-soft); font-size: 16px; }
+.field small { font-size: 14px; }
+.field input, .field textarea {
   width: 100%;
-  min-height: 44px;
+  min-height: 46px;
   padding: 4px 6px;
   border: 0;
-  border-bottom: 2.5px solid var(--line);
-  border-radius: 0;
+  border-bottom: 3px solid var(--line);
+  border-radius: 0 0 6px 10px;
   background: transparent;
+  color: var(--ink);
   font-size: 20px;
 }
-.add select, .field select { cursor: pointer; }
-.add input:focus, .add select:focus, .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-bottom-color: var(--c2); }
-.add input::placeholder, .field input::placeholder, .field textarea::placeholder { color: var(--ink-soft); opacity: 0.8; }
-.add-main { grid-column: 1 / -1; }
-.add-main input { font-size: 24px; }
-.add-link { grid-column: 1 / -1; }
-.add .crayon { grid-column: 1 / -1; }
-.add-buy .add-room { grid-column: 1 / -1; }
-select option { background: var(--paper-2); color: var(--ink); }
-@media (min-width: 620px) {
-  .add { grid-template-columns: 170px 1fr auto; }
-  .add-link { grid-column: auto; }
-  .add .crayon { grid-column: auto; }
-  .add-buy { grid-template-columns: 1fr 80px 100px; }
-  .add-buy .add-room { grid-column: auto; }
-  .add-buy .add-link { grid-column: 1 / 3; }
-  .add-buy .crayon { grid-column: 3; }
+.field input:focus, .field textarea:focus { outline: none; border-bottom-color: var(--k5); background: linear-gradient(transparent 70%, rgb(30 136 229 / 0.12) 70%); }
+.field input::placeholder, .field textarea::placeholder { color: var(--ink-soft); opacity: 0.75; }
+.field-name { grid-column: 1 / -1; }
+.field-name input { min-height: 54px; font-size: 26px; }
+.add .crayon-button, .add .hint, .add .status { grid-column: 1 / -1; }
+
+/* ---------- Summan: ritad stapel som en krita drar ---------- */
+.sum { margin: 30px 4px 6px; }
+.sum:empty { display: none; }
+.sum-line { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 16px; margin: 0 0 8px; }
+.sum-line b { font-family: var(--title); font-size: 34px; line-height: 1; color: var(--t5); }
+.sum-line .left b { color: var(--t1); }
+.track { position: relative; height: 18px; margin-right: 30px; border-bottom: 3px dashed var(--line); }
+.stroke { position: relative; height: 14px; margin-top: 2px; border-radius: 10px 40px 20px 8px; background-color: var(--k4); background-image: var(--grain); transition: width 0.4s; }
+/* Kritan som ritar: liggande, med spetsen åt höger. */
+.stroke::after {
+  content: '';
+  position: absolute;
+  right: -34px;
+  top: -10px;
+  width: 44px;
+  height: 32px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 24'%3E%3Cpath d='M74 5l23 7-23 7Z' fill='%2343aa46'/%3E%3Cpath d='M89 9.6l8 2.4-8 2.4Z' fill='%23000' opacity='.3'/%3E%3Crect x='3' y='4' width='72' height='16' rx='3' fill='%2343aa46'/%3E%3Crect x='18' y='4' width='44' height='16' fill='%23fff' opacity='.3'/%3E%3Cpath d='M22 4v16M58 4v16' stroke='%23000' stroke-opacity='.3' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+  rotate: -18deg;
 }
-.toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 10px; cursor: pointer; }
-.toggle input { width: 22px; height: 22px; margin: 0; accent-color: var(--c2); }
+.sum .hint { margin-top: 10px; }
+/* Bredden i steg om 5 % (inline-stil går inte med sidans CSP). */
+.w0 { width: 0%; } .w5 { width: 5%; } .w10 { width: 10%; } .w15 { width: 15%; } .w20 { width: 20%; } .w25 { width: 25%; } .w30 { width: 30%; }
+.w35 { width: 35%; } .w40 { width: 40%; } .w45 { width: 45%; } .w50 { width: 50%; } .w55 { width: 55%; } .w60 { width: 60%; } .w65 { width: 65%; }
+.w70 { width: 70%; } .w75 { width: 75%; } .w80 { width: 80%; } .w85 { width: 85%; } .w90 { width: 90%; } .w95 { width: 95%; } .w100 { width: 100%; }
 
-/* ---------- Listorna: linjerat papper, en krita per grupp ---------- */
-.group { --c: var(--c2); margin-top: 24px; }
-.group[data-c="1"] { --c: var(--c1); }
-.group[data-c="3"] { --c: var(--c3); }
-.group[data-c="4"] { --c: var(--c4); }
-.group[data-c="5"] { --c: var(--c5); }
-.group[data-c="6"] { --c: var(--c6); }
-.group-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 12px; margin: 0 0 4px; }
-.group-head h3 { margin: 0; font-size: 34px; color: var(--c); text-decoration: underline wavy var(--c) 2px; text-underline-offset: 7px; text-decoration-skip-ink: none; }
-.group-date { color: var(--ink-soft); font-size: 17px; }
-.rows { margin: 0; padding: 0; list-style: none; }
-.line { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: start; gap: 8px; padding: 10px 0 8px; border-bottom: 2px solid var(--line); border-bottom-left-radius: 2px 8px; }
-.line-text { display: grid; gap: 3px; min-width: 0; padding-top: 7px; }
-.line-title { overflow-wrap: anywhere; font-size: 21px; line-height: 1.25; }
-.line-note { color: var(--ink-soft); font-size: 17px; overflow-wrap: anywhere; }
-.line-note:empty { display: none; }
-.line.is-done .line-title { color: var(--ink-soft); text-decoration: line-through var(--c) 3px; }
-.late { display: inline-block; margin-left: 6px; padding: 0 8px; border: 2px solid var(--late); border-radius: var(--wobble-2); color: var(--late); font-size: 15px; transform: rotate(-3deg); }
+/* ---------- Listan: ett kritkort per sak ---------- */
+.list { display: grid; gap: 16px; margin: 22px 0 0; padding: 0; list-style: none; }
+.list:empty { display: none; }
+.done-title { margin: 34px 0 0; font-size: 34px; color: var(--t4); }
+.item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: start;
+  gap: 6px 10px;
+  padding: 12px 10px 12px 12px;
+  background-color: var(--card);
+  background-image: var(--grain);
+  border: 3px solid var(--c);
+  border-radius: var(--wobble);
+  box-shadow: 5px 6px 0 color-mix(in srgb, var(--c) 35%, transparent);
+}
+.item:nth-child(odd) { rotate: -0.6deg; }
+.item:nth-child(even) { rotate: 0.5deg; border-radius: var(--wobble-2); }
+.item-text { display: grid; gap: 6px; min-width: 0; padding-top: 6px; }
+.item-name { overflow-wrap: anywhere; font-size: 23px; line-height: 1.2; }
+.item-note { color: var(--ink-soft); font-size: 17px; overflow-wrap: anywhere; }
+.item-extras { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.item-extras:empty { display: none; }
 
-/* Länken: en stor knapp med sajtens namn, som går att trycka på direkt. */
+/* Prislappen. */
+.price { display: inline-flex; align-items: baseline; gap: 4px; padding: 0 12px 0 10px; border: 2.5px dashed var(--c); border-radius: 6px 14px 6px 14px; color: var(--ct); font-family: var(--title); font-size: 26px; line-height: 1.3; rotate: -2deg; }
+.price small { font-family: var(--hand); font-size: 15px; color: var(--ink-soft); }
+
+/* Länken: stor och lätt att trycka på, ifylld med kritan. */
 .link {
-  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   max-width: 100%;
-  min-height: 40px;
-  margin-top: 4px;
-  padding: 4px 14px 4px 10px;
-  border: 2px solid var(--c);
+  min-height: 44px;
+  padding: 4px 16px 4px 12px;
+  border: 2.5px solid var(--c);
   border-radius: var(--wobble-2);
+  background-color: color-mix(in srgb, var(--c) 16%, var(--card));
+  background-image: repeating-linear-gradient(-55deg, transparent 0 4px, color-mix(in srgb, var(--c) 18%, transparent) 4px 6px);
   color: var(--ink);
-  font-size: 18px;
+  font-size: 19px;
   text-decoration: none;
-  background: linear-gradient(transparent 55%, var(--highlight) 55%) no-repeat;
+  transition: transform 0.12s;
 }
 .link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.link svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.link:hover { transform: rotate(-1deg); }
+.link svg { flex: none; width: 20px; height: 20px; fill: none; stroke: var(--ct); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.link:hover { transform: rotate(-1.5deg) scale(1.03); }
 
-/* Bockrutan: en ritad ruta, och en stor krit-bock när den är klar. */
-.box { position: relative; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; }
-.box::before { content: ''; position: absolute; inset: 7px; border: 2.5px solid var(--c); border-radius: var(--wobble); }
+/* Bockrutan: ritad ruta som fylls med kritan och får en stor bock. */
+.box { position: relative; width: 48px; height: 48px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.box::before { content: ''; position: absolute; inset: 8px; border: 3px solid var(--c); border-radius: var(--wobble); }
 .box::after {
   content: '';
   position: absolute;
-  inset: -2px -4px 6px 6px;
+  inset: -2px -6px 6px 6px;
   background: var(--c);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M5 21c4 2 7 6 10 12C20 19 27 9 37 3' fill='none' stroke='black' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M5 21c4 2 7 6 10 12C20 19 27 9 37 3' fill='none' stroke='black' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M5 21c4 2 7 6 10 12C20 19 27 9 37 3' fill='none' stroke='black' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M5 21c4 2 7 6 10 12C20 19 27 9 37 3' fill='none' stroke='black' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
   opacity: 0;
-  transform: scale(0.6) rotate(-10deg);
-  transition: opacity 0.15s, transform 0.2s;
+  transform: scale(0.5) rotate(-15deg);
+  transition: opacity 0.15s, transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
+.box:hover::before { background: repeating-linear-gradient(-55deg, transparent 0 4px, color-mix(in srgb, var(--c) 30%, transparent) 4px 6px); }
+.box[aria-pressed="true"]::before { background: repeating-linear-gradient(-55deg, transparent 0 3px, color-mix(in srgb, var(--c) 45%, transparent) 3px 6px); }
 .box[aria-pressed="true"]::after { opacity: 1; transform: none; }
-.edit-btn { width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--wobble-2); background: transparent; color: var(--ink-soft); cursor: pointer; }
-.edit-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.edit-btn:hover { color: var(--c); }
-.empty { margin: 22px 0 0; font-family: var(--title); font-size: 30px; color: var(--c3); transform: rotate(-1deg); }
-#restore { margin-top: 22px; }
-.share { margin-top: 22px; }
 
-/* ---------- Förslagen ---------- */
-.ideas { margin-top: 22px; padding: 12px 16px 16px; border: 2.5px solid var(--line); border-radius: var(--wobble-2); }
-.ideas summary { min-height: 32px; font-family: var(--title); font-size: 28px; color: var(--c5); cursor: pointer; }
-.idea-room h3 { margin: 14px 0 6px; font-size: 24px; color: var(--ink-soft); }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { min-height: 40px; padding: 2px 12px; border: 2px solid var(--line); border-radius: var(--wobble); background: transparent; font-size: 18px; cursor: pointer; }
-.chip:hover { border-color: var(--c2); }
-.chip[aria-pressed="true"] { color: var(--ink-soft); text-decoration: line-through var(--c3) 2px; cursor: default; }
+/* Ändra: en liten krita. */
+.edit { width: 48px; height: 48px; padding: 6px; border: 0; border-radius: var(--wobble-2); background: transparent; color: var(--c); cursor: pointer; transition: transform 0.15s; }
+.edit svg { width: 100%; height: 100%; rotate: 40deg; }
+.edit:hover { transform: rotate(-12deg) translateY(-2px); }
 
-/* ---------- Pappersrutorna (ändra, synk) ---------- */
-.paper-dialog {
+/* Köpt: överstruket med kritan och lite blekare. */
+.item.is-done { border-style: dashed; box-shadow: none; }
+.item.is-done .item-name { color: var(--ink-soft); text-decoration: line-through var(--c) 4px; }
+.item.is-done .price, .item.is-done .item-note { opacity: 0.7; }
+
+/* Tom lista: en ritad hus-doodle. */
+.empty { margin-top: 26px; text-align: center; }
+.empty svg { width: 210px; max-width: 70%; fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.empty p { margin: 6px 0 0; font-family: var(--title); font-size: 30px; color: var(--t6); }
+.doodle-house { stroke: var(--k1); }
+.doodle-door { stroke: var(--k8); }
+.doodle-window { stroke: var(--k5); }
+.doodle-sun { stroke: var(--k3); }
+.doodle-grass { stroke: var(--k4); }
+
+.actions { margin-top: 30px; text-align: center; }
+
+/* ---------- Pappersrutorna (ändra, synk och data) ---------- */
+.paper {
   width: min(560px, calc(100% - 24px));
   max-height: min(90dvh, 820px);
   padding: 0;
-  border: 2.5px solid var(--ink);
+  border: 3px solid var(--ink);
   border-radius: var(--wobble);
-  background-color: var(--paper-2);
+  background-color: var(--card);
   background-image: var(--grain);
   color: var(--ink);
-  box-shadow: 6px 8px 0 rgb(0 0 0 / 0.18);
+  box-shadow: 7px 9px 0 var(--k7);
 }
-.paper-dialog[open] { display: flex; flex-direction: column; }
-.paper-dialog::backdrop { background: rgb(30 25 20 / 0.5); }
-.dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 12px 4px 18px; }
-.dialog-head h2 { margin: 0; font-size: 36px; color: var(--c2); }
-.dialog-head h2:focus { outline: none; }
-.close { flex: none; width: 44px; height: 44px; border: 2px solid var(--line); border-radius: var(--wobble-2); background: transparent; font-size: 28px; line-height: 1; cursor: pointer; }
-.dialog-body { overflow-y: auto; overscroll-behavior: contain; padding: 6px 18px 20px; }
-.dialog-body > p:first-child { margin-top: 0; }
-.dialog-body h3 { margin: 22px 0 4px; font-size: 28px; color: var(--c3); }
-.edit { display: grid; gap: 12px; }
-.field { display: grid; gap: 2px; color: var(--ink-soft); font-size: 16px; }
-.field input, .field select, .field textarea { color: var(--ink); }
-.field textarea { min-height: 80px; resize: vertical; border: 2.5px solid var(--line); border-radius: 6px 10px 6px 12px; padding: 6px 8px; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.edit .status { margin: 0; }
-.sync-offer { margin-top: 14px; padding: 12px 14px; border: 2.5px dashed var(--c4); border-radius: var(--wobble); }
+.paper[open] { display: flex; flex-direction: column; }
+.paper::backdrop { background: rgb(30 25 20 / 0.55); }
+.paper-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 12px 4px 20px; }
+.paper-head h2 { margin: 0; font-size: 40px; color: var(--t5); }
+.paper-head h2:focus { outline: none; }
+.close { flex: none; width: 46px; height: 46px; border: 2.5px solid var(--ink); border-radius: var(--wobble-2); background: transparent; font-size: 28px; line-height: 1; cursor: pointer; }
+.paper-body { overflow-y: auto; overscroll-behavior: contain; padding: 6px 20px 22px; }
+.paper-body > p:first-child { margin-top: 0; }
+.paper-body h3 { margin: 24px 0 4px; font-size: 30px; color: var(--t4); }
+.form { display: grid; gap: 14px; }
+.form textarea { min-height: 84px; resize: vertical; border: 3px solid var(--line); border-radius: 6px 12px 6px 14px; padding: 6px 8px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form .status { margin: 0; }
+.sync-offer { margin-top: 16px; padding: 12px 14px; border: 3px dashed var(--k2); border-radius: var(--wobble); }
 .sync-offer h3 { margin-top: 0; }
 
+@media (min-width: 560px) {
+  .add { grid-template-columns: 1fr 140px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .crayon, .box::after, .meter-fill, .link { transition: none; }
-  .crayon:hover, .crayon:active, .link:hover { transform: none; }
+  .pill, .crayon-button, .link, .edit, .stroke, .box::after { transition: none; }
+  .pill:hover, .crayon-button:hover, .crayon-button:active, .link:hover, .edit:hover { transform: none; }
 }
 
 @media print {
   body { background: #fff; color: #000; }
-  .more, .tabs, .add, .hint, .toggle, .edit-btn, .share, .ideas, .skip, #restore, .note input { display: none !important; }
-  .note { box-shadow: none; transform: none; border: 1px solid #000; }
-  .line { break-inside: avoid; }
+  .top-bar, .box-of-crayons, .add, .edit, .actions, .skip { display: none !important; }
+  .item { box-shadow: none; rotate: none; break-inside: avoid; }
 }

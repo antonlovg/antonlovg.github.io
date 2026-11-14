@@ -6,123 +6,135 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta name="robots" content="noindex">
   <meta name="referrer" content="no-referrer">
-  <title>Flytten · lovgren.dev</title>
-  <meta name="description" content="Att göra och att köpa inför flytten, med länkar och datum från flyttdagen.">
-  <meta name="theme-color" content="#fbf7ec" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1f2b25" media="(prefers-color-scheme: dark)">
+  <title>Flyttlistan · lovgren.dev</title>
+  <meta name="description" content="Inköpslistan inför flytten, med dina egna länkar och priser.">
+  <meta name="theme-color" content="#fffaf0">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preload" href="fonts/patrick-hand-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/caveat-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="flytt.css">
+  <script src="js/theme.js"></script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
-  <a class="skip" href="#main">Till listan</a>
+  <a class="skip" href="#add-name">Till listan</a>
+
+  <!-- En krita, som alla kritor på sidan ritas med (färgen kommer från color på <use>). -->
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <symbol id="crayon" viewBox="0 0 24 100">
+      <path d="M5 26 12 3l7 23Z" fill="currentColor"/>
+      <path d="M9.6 11 12 3l2.4 8Z" fill="#000" opacity=".3"/>
+      <rect x="4" y="25" width="16" height="72" rx="3" fill="currentColor"/>
+      <rect x="4" y="38" width="16" height="44" fill="#fff" opacity=".28"/>
+      <path d="M4 42h16M4 78h16" stroke="#000" stroke-opacity=".28" stroke-width="2"/>
+      <path d="M7 52q2.5-4 5 0t5 0M7 62q2.5-4 5 0t5 0" fill="none" stroke="#000" stroke-opacity=".3" stroke-width="1.6" stroke-linecap="round"/>
+      <rect x="4" y="25" width="5" height="72" fill="#fff" opacity=".18"/>
+    </symbol>
+  </svg>
+
   <div class="page">
     <header class="top">
-      <h1 class="title">Flytten</h1>
-      <button type="button" class="more" id="open-more" aria-haspopup="dialog">Synk &amp; data</button>
+      <div class="top-bar">
+        <button type="button" class="pill" id="theme" aria-pressed="false">Mörkt läge</button>
+        <button type="button" class="pill" id="open-more" aria-haspopup="dialog">Synk &amp; data</button>
+      </div>
+      <svg class="box-of-crayons" viewBox="0 0 330 120" aria-hidden="true" focusable="false">
+        <use href="#crayon" color="#e63946" x="20" y="6" width="34" height="140" transform="rotate(-14 37 120)"/>
+        <use href="#crayon" color="#f77f00" x="58" y="0" width="34" height="140" transform="rotate(-8 75 120)"/>
+        <use href="#crayon" color="#fcbf49" x="96" y="-4" width="34" height="140" transform="rotate(-3 113 120)"/>
+        <use href="#crayon" color="#43aa46" x="134" y="-8" width="34" height="140" transform="rotate(1 151 120)"/>
+        <use href="#crayon" color="#1e88e5" x="172" y="-6" width="34" height="140" transform="rotate(4 189 120)"/>
+        <use href="#crayon" color="#8e44ec" x="210" y="-2" width="34" height="140" transform="rotate(8 227 120)"/>
+        <use href="#crayon" color="#ef5ea0" x="248" y="2" width="34" height="140" transform="rotate(12 265 120)"/>
+        <use href="#crayon" color="#8d5524" x="286" y="8" width="34" height="140" transform="rotate(16 303 120)"/>
+        <path class="box-front" d="M6 82h318l-10 38H16Z"/>
+      </svg>
+      <h1 class="title" aria-label="Flyttlistan">
+        <span aria-hidden="true"><span class="k1">F</span><span class="k2">l</span><span class="k3">y</span><span class="k4">t</span><span class="k5">t</span><span class="k6">l</span><span class="k1">i</span><span class="k2">s</span><span class="k3">t</span><span class="k4">a</span><span class="k5">n</span></span>
+      </h1>
+      <p class="tagline">Allt jag behöver köpa till nya stället</p>
     </header>
 
-    <section class="note" aria-labelledby="date-label">
-      <label class="note-label" id="date-label" for="move-date">Flyttdag</label>
-      <input type="date" id="move-date">
-      <p class="note-count" id="countdown">Välj dagen så får allt ett datum</p>
-    </section>
+    <main id="main" class="main">
+      <form class="add" id="add" novalidate>
+        <h2 class="add-title">Vad behöver du?</h2>
+        <label class="field field-name"><span class="visually-hidden">Vad behöver du?</span>
+          <input type="text" id="add-name" name="name" maxlength="2200" autocomplete="off" enterkeyhint="next" placeholder="Bestick, gardiner, lampa…"></label>
+        <label class="field field-link"><span>Länk <small>(om du har en)</small></span>
+          <input type="url" name="link" inputmode="url" autocomplete="off" placeholder="https://…"></label>
+        <label class="field field-price"><span>Pris <small>(kr)</small></span>
+          <input type="text" name="price" inputmode="decimal" autocomplete="off" placeholder="199"></label>
+        <button type="submit" class="crayon-button"><span>Lägg till</span></button>
+        <p class="hint">Du kan också klistra in länken direkt efter namnet.</p>
+        <p class="status" id="status" role="status"></p>
+      </form>
 
-    <nav class="tabs" aria-label="Listor">
-      <a href="#gora" data-view="gora"><span class="tab-name">Att göra</span><span class="tab-count" id="tab-gora"></span></a>
-      <a href="#kopa" data-view="kopa"><span class="tab-name">Att köpa</span><span class="tab-count" id="tab-kopa"></span></a>
-    </nav>
+      <section class="sum" id="sum" aria-label="Summa"></section>
 
-    <main id="main" class="main" tabindex="-1">
-      <!-- Att göra -->
-      <section id="view-gora" class="view" aria-labelledby="gora-title" hidden>
-        <h2 class="visually-hidden" id="gora-title" tabindex="-1">Att göra</h2>
-        <div class="meter" id="gora-meter"></div>
-        <form class="add" id="task-form" novalidate>
-          <label class="add-main"><span class="visually-hidden">Ny uppgift</span><input type="text" name="title" maxlength="2200" autocomplete="off" enterkeyhint="done" placeholder="Skriv något att göra…"></label>
-          <label class="add-field"><span>När</span><select name="days"></select></label>
-          <label class="add-field add-link"><span>Länk</span><input type="url" name="link" inputmode="url" autocomplete="off" placeholder="valfritt"></label>
-          <button type="submit" class="crayon">Lägg till</button>
-        </form>
-        <p class="hint">Tips: klistra in en länk direkt i rutan, så blir den en knapp på raden.</p>
-        <p class="status" id="task-status" role="status"></p>
-        <label class="toggle"><input type="checkbox" id="hide-tasks"> Göm det som är klart</label>
-        <div id="tasks"></div>
-        <button type="button" class="crayon quiet" id="restore" hidden>Lägg tillbaka mallens uppgifter</button>
-      </section>
-
-      <!-- Att köpa -->
-      <section id="view-kopa" class="view" aria-labelledby="kopa-title" hidden>
-        <h2 class="visually-hidden" id="kopa-title" tabindex="-1">Att köpa</h2>
-        <div class="meter" id="kopa-meter"></div>
-        <form class="add add-buy" id="item-form" novalidate>
-          <label class="add-main"><span class="visually-hidden">Ny sak att köpa</span><input type="text" name="name" maxlength="2200" autocomplete="off" enterkeyhint="done" placeholder="Köp bestick…"></label>
-          <label class="add-field add-room"><span>Rum</span><select name="room"></select></label>
-          <label class="add-field add-num"><span>Antal</span><input type="text" name="qty" inputmode="numeric" autocomplete="off" value="1"></label>
-          <label class="add-field add-num"><span>Pris/st</span><input type="text" name="price" inputmode="decimal" autocomplete="off" placeholder="kr"></label>
-          <label class="add-field add-link"><span>Länk</span><input type="url" name="link" inputmode="url" autocomplete="off" placeholder="valfritt"></label>
-          <button type="submit" class="crayon">Lägg till</button>
-        </form>
-        <p class="hint">Tips: klistra in en länk direkt i rutan. Bara en länk? Då blir namnet det som står i adressen.</p>
-        <p class="status" id="item-status" role="status"></p>
-        <label class="toggle"><input type="checkbox" id="hide-items"> Göm det som är köpt</label>
-        <div id="items"></div>
-        <div class="share">
-          <button type="button" class="crayon quiet" id="copy-list">Kopiera listan som text</button>
-          <p class="status" id="copy-status" role="status"></p>
+      <section aria-labelledby="list-title">
+        <h2 class="visually-hidden" id="list-title" tabindex="-1">Listan</h2>
+        <ul class="list" id="list"></ul>
+        <div class="empty" id="empty" hidden>
+          <svg viewBox="0 0 200 140" aria-hidden="true" focusable="false">
+            <path class="doodle-house" d="M40 128V66l60-46 60 46v62Z"/>
+            <path class="doodle-door" d="M88 128V96h24v32"/>
+            <path class="doodle-window" d="M56 78h20v18H56zM124 78h20v18h-20z"/>
+            <path class="doodle-sun" d="M172 22a12 12 0 1 1-.1 0M172 2v6M192 22h-6M186 8l-4 4M158 8l4 4"/>
+            <path class="doodle-grass" d="M10 130q10-8 20 0t20 0 20 0 20 0 20 0 20 0 20 0 20 0 20 0"/>
+          </svg>
+          <p>Listan är tom. Skriv den första saken ovan!</p>
         </div>
-        <details class="ideas">
-          <summary>Förslag på sånt man ofta glömmer</summary>
-          <p class="hint">Tryck för att lägga till. Det som redan står på listan är bockat.</p>
-          <div id="ideas"></div>
-        </details>
+        <ul class="list list-done" id="done" aria-label="Köpt"></ul>
       </section>
+
+      <div class="actions">
+        <button type="button" class="pill" id="copy-list" hidden>Kopiera listan som text</button>
+        <p class="status" id="copy-status" role="status"></p>
+      </div>
     </main>
   </div>
 
-  <!-- Ändra en rad -->
-  <dialog class="paper-dialog" id="sheet" aria-labelledby="sheet-title">
-    <div class="dialog-head">
-      <h2 id="sheet-title"></h2>
+  <!-- Ändra en sak -->
+  <dialog class="paper" id="sheet" aria-labelledby="sheet-title">
+    <div class="paper-head">
+      <h2 id="sheet-title">Ändra</h2>
       <button type="button" class="close" id="sheet-close" aria-label="Stäng">×</button>
     </div>
-    <div class="dialog-body" id="sheet-body"></div>
+    <div class="paper-body" id="sheet-body"></div>
   </dialog>
 
   <!-- Synk och data -->
-  <dialog class="paper-dialog" id="more" aria-labelledby="more-title">
-    <div class="dialog-head">
+  <dialog class="paper" id="more" aria-labelledby="more-title">
+    <div class="paper-head">
       <h2 id="more-title" tabindex="-1">Synk &amp; data</h2>
       <button type="button" class="close" id="more-close" aria-label="Stäng">×</button>
     </div>
-    <div class="dialog-body">
-      <p>Det finns ingen inloggning: allt ligger bara i den här webbläsaren. För att få samma listor på en annan enhet, skicka en synklänk till dig själv och öppna den där, eller spara en fil och läs in den. För varje rad gäller den senaste ändringen.</p>
+    <div class="paper-body">
+      <p>Det finns ingen inloggning: listan ligger bara i den här webbläsaren. För att få den på en annan enhet, skicka en synklänk till dig själv och öppna den där, eller spara en fil och läs in den. För varje sak gäller den senaste ändringen.</p>
       <div class="buttons">
-        <button type="button" class="crayon" id="sync-link">Kopiera synklänk</button>
-        <button type="button" class="crayon quiet" id="sync-save">Spara som fil</button>
-        <button type="button" class="crayon quiet" id="sync-open">Läs in fil</button>
+        <button type="button" class="pill solid" id="sync-link">Kopiera synklänk</button>
+        <button type="button" class="pill" id="sync-save">Spara som fil</button>
+        <button type="button" class="pill" id="sync-open">Läs in fil</button>
         <input type="file" id="sync-file" accept="application/json,.json" hidden>
       </div>
       <div class="sync-offer" id="sync-offer" hidden>
         <h3>Läsa in från en annan enhet?</h3>
         <p id="sync-summary"></p>
         <div class="buttons">
-          <button type="button" class="crayon" id="sync-accept">Läs in</button>
-          <button type="button" class="crayon quiet" id="sync-cancel">Avbryt</button>
+          <button type="button" class="pill solid" id="sync-accept">Läs in</button>
+          <button type="button" class="pill" id="sync-cancel">Avbryt</button>
         </div>
       </div>
       <p class="status" id="sync-status" role="status"></p>
-      <p class="hint">Länken innehåller allt du skrivit, men efter #, så den skickas aldrig till webbservern. Skickar du den i en chatt eller ett mejl kan den tjänsten se den.</p>
+      <p class="hint">Länken innehåller hela listan, men efter #, så den skickas aldrig till webbservern. Skickar du den i en chatt eller ett mejl kan den tjänsten se den.</p>
 
       <h3>Utan nät</h3>
       <p id="offline"></p>
 
       <h3>Din data</h3>
-      <p>Allt sparas bara här, i webbläsarens lokala lagring under namnet <code>lovgren-flytt</code>, även länkarna. Inget skickas någonstans; en länk öppnas först när du trycker på den. Mer i <a href="/cookies/">cookiepolicyn</a>.</p>
-      <button type="button" class="crayon quiet danger" id="forget">Sudda ut allt</button>
+      <p>Allt sparas bara här, i webbläsarens lokala lagring under namnet <code>lovgren-flytt</code>, även länkarna och om du valt mörkt läge. Inget skickas någonstans; en länk öppnas först när du trycker på den. Mer i <a href="/cookies/">cookiepolicyn</a>.</p>
+      <button type="button" class="pill danger" id="forget">Sudda ut allt</button>
       <p class="status" id="forget-status" role="status"></p>
     </div>
   </dialog>

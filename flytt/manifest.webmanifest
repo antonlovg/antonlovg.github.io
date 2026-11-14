@@ -1,11 +1,11 @@
 {
-  "name": "Flytten",
-  "short_name": "Flytten",
+  "name": "Flyttlistan",
+  "short_name": "Flyttlistan",
   "lang": "sv",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#fbf7ec",
-  "theme_color": "#fbf7ec",
+  "background_color": "#fffaf0",
+  "theme_color": "#fffaf0",
   "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

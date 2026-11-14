@@ -1,15 +1,30 @@
 # Flyttlistan (/flytt/)
 
-A private, unlisted page for a move: what to do before and after, and what to buy. Swedish only.
+A private, unlisted shopping list for a move, drawn with crayons. Swedish only. It starts empty: you write
+what you need, add your own link to the thing you want and a price if there is one.
 
-- **Look**: drawn with crayons on squared paper (dark mode: chalk on a blackboard). Handwriting fonts Caveat and Patrick Hand are self-hosted in `fonts/` (SIL OFL, licences next to them). Everything drawn is CSS: uneven corners, hatched fills and a grain texture from an inline SVG data URI. Each group gets its own crayon (`data-c` 1–6). The moving day sits on a taped sticky note; *Synk & data* is a dialog, not a tab.
-- **Links**: every task and item can have a link, shown as a large button with the site's name. Paste a link anywhere in the text box and it's split out (`splitEntry` in `js/list.js`); only a link gives a name from the address (`nameFromLink`). Only `http(s)` links are kept (`safeLink`), and they open in a new tab with `noopener noreferrer`.
-
-- **Att göra**: starts as a template of common tasks (`TEMPLATE` in `js/list.js`), grouped by phase from *3 månader före* to *Första månaden efter* (`PHASES`, in days from the moving day). Set the moving day and every phase gets a due date; unfinished tasks in a phase whose date has passed are tagged *sent!*. Tasks can be checked off, edited (title, phase, link, note), erased and added; removed template tasks can be brought back.
-- **Att köpa**: things to buy per room (`ROOMS`), with quantity and an optional price per item (`49,90` or `49.90`). The summary shows the total, what's bought and what's left; items without a price are counted separately. One-tap suggestions per room (`SUGGESTIONS`), and *Kopiera listan som text* copies (or shares) what's left to buy.
-- **Storage**: `js/store.js` keeps everything in `localStorage` under `lovgren-flytt`, only once you change something (until then the template is in memory). Every task and item has an id and a timestamp (`at`); deleting leaves `{ gone: true, at }` so a sync doesn't bring it back.
-- **Sync**: like the meal plan, a `#synk/…` link or a JSON file (`js/sync.js`, deflate + base64url after `#`, never sent to the server). Reading one in merges per task and item: the newest change wins, and the incoming moving day applies if it has one.
-- **Offline**: `sw.js` keeps a copy (cache `flytt-v2`, scope `/flytt/`, both listed on /cookies/). Network first with a 3 s timeout, then the copy.
-- **Unlisted**: `noindex`, `Disallow: /flytt/` in robots.txt, not linked from the site. Strict CSP (`script-src 'self'`).
+- **Adding**: name, link and price (all but the name optional). A link pasted right after the name is split out
+  (`splitEntry` in `js/list.js`); only a link gives a name from the address (`nameFromLink`). The link field
+  takes `ikea.se/…` without `https://` (`linkFrom`). Only `http(s)` links are kept (`safeLink`), and they open in
+  a new tab with `noopener noreferrer`. Prices take `199`, `49,90`, `1 299 kr` (`priceFrom`).
+- **The list**: one crayon card per thing, the crayons in turn in the order you added them (`data-c` 1–8). Each
+  shows the price tag and the link as a large button with the site's name. Tap the box when it's bought; bought
+  things move to *Köpt* at the bottom. The crayon button edits the name, link, price per item, quantity and a note,
+  or erases it. The sum shows the total and what's left to buy, with a crayon drawing how much is bought.
+  *Kopiera listan som text* copies (or shares) what's left, with prices and links.
+- **Look**: light paper by default; dark mode (black drawing paper, not the system setting) is a button and
+  `js/theme.js` applies it before the page is drawn. Handwriting fonts Caveat and Patrick Hand are self-hosted
+  in `fonts/` (SIL OFL, licences next to them). Everything drawn is CSS and inline SVG: the crayon (`#crayon`
+  symbol) in the box at the top, on the edit buttons and drawing the progress, uneven corners, a grain and
+  doodles in the background.
+- **Storage**: `js/store.js` keeps the list in `localStorage` under `lovgren-flytt`, only once you change
+  something. Every thing has an id and a timestamp (`at`); erasing leaves `{ gone: true, at }` so a sync doesn't
+  bring it back. Lists saved by the earlier version (`buy`, with rooms) are read in without the rooms.
+- **Sync**: a `#synk/…` link or a JSON file (`js/sync.js`, deflate + base64url after `#`, never sent to the
+  server), opened from *Synk & data*. Reading one in merges per thing: the newest change wins.
+- **Offline**: `sw.js` keeps a copy (cache `flytt-v3`, scope `/flytt/`, both listed on /cookies/). Network first
+  with a 3 s timeout, then the copy.
+- **Unlisted**: `noindex`, `Disallow: /flytt/` in robots.txt, not linked from the site. Strict CSP
+  (`script-src 'self'`, no inline styles).
 
 Tests: `tests/flytt.test.mjs`.

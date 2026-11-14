@@ -1,7 +1,6 @@
-// Flyttlistan: att göra (med datum räknat från flyttdagen) och att köpa (per rum, med pris), där varje rad kan ha
-// en länk. Adressen bestämmer listan: #gora eller #kopa. #mer öppnar synk och data, och #synk/… läser in det du
-// sparat på en annan enhet.
-import { PHASES, ROOMS, SUGGESTIONS, cost, daysBetween, linkLabel, missingTemplate, phases, rooms, safeLink, shoppingText, splitEntry, todayIso, totals } from './list.js';
+// Flyttlistan: en inköpslista där du själv skriver in vad du behöver, med din egen länk och ett pris om det
+// finns. Det köpta hamnar sist. #mer öppnar synk och data, och #synk/… läser in listan från en annan enhet.
+import { cost, linkFrom, linkLabel, ordered, priceFrom, shoppingText, splitEntry, totals } from './list.js';
 import { pack, unpack, fileText, readFile } from './sync.js';
 import * as store from './store.js';
 
@@ -18,354 +17,173 @@ function h(tag, attrs = {}, ...children) {
   node.append(...children.flat().filter(child => child != null && child !== false));
   return node;
 }
-
-// Ritade ikoner (länk och penna).
-const ICONS = {
-  link: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
-  pencil: 'M4 20l1-5L16 4l4 4L9 19l-5 1ZM14 6l4 4'
-};
-function icon(name) {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('aria-hidden', 'true');
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', ICONS[name]);
-  svg.append(path);
-  return svg;
+const SVG = 'http://www.w3.org/2000/svg';
+function svg(viewBox, ...children) {
+  const node = document.createElementNS(SVG, 'svg');
+  node.setAttribute('viewBox', viewBox);
+  node.setAttribute('aria-hidden', 'true');
+  node.setAttribute('focusable', 'false');
+  node.append(...children);
+  return node;
 }
+// Länkpilen, och kritan (#crayon i index.html) som ändra-knappen är ritad med.
+const arrow = () => { const path = document.createElementNS(SVG, 'path'); path.setAttribute('d', 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'); return svg('0 0 24 24', path); };
+const crayon = () => { const use = document.createElementNS(SVG, 'use'); use.setAttribute('href', '#crayon'); return svg('0 0 24 100', use); };
 
-// ---------- Tal, datum och länkar ----------
 const kr = value => `${Math.round(value).toLocaleString('sv-SE')} kr`;
-// Ett styckpris med ören om det har det (49,90 kr), annars utan.
+// Ett pris med ören om det har det (49,90 kr), annars utan.
 const each = value => `${value.toLocaleString('sv-SE', { minimumFractionDigits: Number.isInteger(value) ? 0 : 2, maximumFractionDigits: 2 })} kr`;
-// "49,90" och "49.90" är samma sak; tomt är inget pris.
-const amount = value => {
-  const text = value.trim().replace(/\s/g, '').replace(',', '.');
-  return text === '' ? null : /^\d+(\.\d+)?$/.test(text) ? Number(text) : NaN;
-};
-const format = (date, options) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'UTC', ...options }).format(new Date(`${date}T12:00:00Z`));
-const dayMonth = date => format(date, { day: 'numeric', month: 'long', ...(date.slice(0, 4) !== today.slice(0, 4) ? { year: 'numeric' } : {}) });
-const weekday = date => format(date, { weekday: 'long' });
-// Länkfältet: tomt är ingen länk (null), "ikea.se/…" utan https:// går också, och något annat är fel (undefined).
-const linkFrom = text => {
-  const value = text.trim();
-  if (!value) return null;
-  return safeLink(/^https?:\/\//i.test(value) ? value : `https://${value}`) ?? undefined;
-};
-const BAD_LINK = 'Länken ser inte ut som en webbadress. Klistra in hela adressen, till exempel https://www.ikea.se/…';
+const today = () => new Date().toISOString().slice(0, 10);
 
-let today = todayIso();
+// Kritan för en sak: kritorna i tur och ordning, efter när sakerna skrevs in.
+let colors = new Map();
+const crayonFor = item => String((colors.get(item.id) ?? 0) % 8 + 1);
 
-// ---------- Listorna ----------
-const VIEWS = ['gora', 'kopa'];
-let view = 'gora';
-
-function route() {
-  const [name, arg] = location.hash.slice(1).split('/');
-  if (name === 'synk' || name === 'mer') {
-    // Ta bort datan ur adressen direkt (och ur historiken), och fråga innan något läses in.
-    history.replaceState(null, '', `#${view}`);
-    render();
-    openMore();
-    if (name === 'synk' && arg) offerSync(arg);
-    return;
-  }
-  view = VIEWS.includes(name) ? name : 'gora';
-  render();
+// ---------- Ljust eller mörkt ----------
+function applyTheme() {
+  const dark = store.theme() === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#1b1923' : '#fffaf0');
+  $('theme').setAttribute('aria-pressed', String(dark));
 }
+$('theme').addEventListener('click', () => {
+  store.setTheme(store.theme() === 'dark' ? 'light' : 'dark');
+  applyTheme();
+});
 
+// ---------- Listan ----------
 function render() {
-  for (const name of VIEWS) $(`view-${name}`).hidden = name !== view;
-  for (const tab of document.querySelectorAll('.tabs a')) {
-    if (tab.dataset.view === view) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
-  }
-  renderNote();
-  const tasks = store.tasks(), items = store.items();
-  $('tab-gora').textContent = `${tasks.filter(task => task.done).length} av ${tasks.length} klara`;
-  $('tab-kopa').textContent = items.length ? `${items.filter(item => !item.done).length} kvar` : 'tom än';
-  (view === 'gora' ? renderTasks : renderItems)();
-}
-
-// Lappen: flyttdagen och hur långt det är kvar.
-function renderNote() {
-  const date = store.date();
-  $('move-date').value = date ?? '';
-  if (!date) { $('countdown').replaceChildren('Välj dagen så får allt ett datum'); return; }
-  const days = daysBetween(today, date);
-  const day = `${weekday(date)} ${dayMonth(date)}`;
-  $('countdown').replaceChildren(...(days > 1 ? [h('b', {}, `${days} dagar`), ` kvar, ${day}`]
-    : days === 1 ? [h('b', {}, 'Imorgon!'), ` ${day[0].toUpperCase()}${day.slice(1)}`]
-    : days === 0 ? [h('b', {}, 'Idag!'), ' Lycka till med flytten']
-    : [`Flyttade ${day}, för ${-days} ${days === -1 ? 'dag' : 'dagar'} sedan`]));
-}
-
-$('move-date').addEventListener('change', event => {
-  store.setDate(event.target.value || null);
-  render();
-  $(view === 'gora' ? 'task-status' : 'item-status').textContent = event.target.value ? `Flyttdagen är ${dayMonth(event.target.value)}.` : 'Ingen flyttdag vald.';
-});
-
-// Mätaren: ritad stapel med hur mycket som är klart (bredden i steg om 5 %, se .w0–.w100 i CSS:en).
-function meter(id, parts, share, hint) {
-  $(id).replaceChildren(
-    h('p', { class: 'meter-text' }, parts),
-    h('div', { class: 'meter-bar', 'aria-hidden': 'true' }, h('div', { class: `meter-fill w${Math.round(share * 20) * 5}` })),
-    hint ? h('p', { class: 'hint' }, hint) : '');
-}
-
-// En rad: bockruta, text (med anteckning och länk) och en penna för att ändra.
-function line({ key, id, title, done, note, link, label, onToggle, onEdit, extra }) {
-  return h('li', { class: done ? 'line is-done' : 'line', [`data-${key}`]: id },
-    h('button', { type: 'button', class: 'box', 'aria-pressed': String(done), 'aria-label': `${title}. ${label}`, onclick: onToggle }),
-    h('div', { class: 'line-text' },
-      h('span', { class: 'line-title' }, title, extra),
-      note ? h('span', { class: 'line-note' }, note) : null,
-      link ? h('a', { class: 'link', href: link, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${title}: öppna ${linkLabel(link)} (ny flik)` },
-        icon('link'), h('span', {}, linkLabel(link))) : null),
-    h('button', { type: 'button', class: 'edit-btn', 'aria-haspopup': 'dialog', 'aria-label': `Ändra ${title}`, onclick: onEdit }, icon('pencil')));
-}
-
-// Fokus tillbaka till samma rad (eller listans rubrik) när listan ritats om.
-const refocus = (selector, fallback) => (document.querySelector(selector) ?? $(fallback)).focus();
-// Varje grupp har sin egen krita (data-c 1–6), efter gruppens plats i PHASES eller ROOMS.
-const crayon = index => String(index % 6 + 1);
-
-// ---------- Att göra ----------
-const phaseOptions = selected => PHASES.map(phase => h('option', { value: phase.days, selected: phase.days === selected }, phase.name));
-$('task-form').elements.days.append(...phaseOptions(-28));
-
-function renderTasks() {
-  const date = store.date();
-  const all = store.tasks(), done = all.filter(task => task.done).length;
-  meter('gora-meter', [h('span', {}, h('b', {}, `${done} av ${all.length}`), ' klara'), all.length > done ? h('span', {}, `${all.length - done} kvar`) : null],
-    all.length ? done / all.length : 0, date ? null : 'Välj flyttdag på lappen, så får varje grupp ett datum att vara klar till.');
-  $('hide-tasks').checked = store.hide('tasks');
-  const shown = store.hide('tasks') ? all.filter(task => !task.done) : all;
-  const groups = phases(shown, date);
-  $('tasks').replaceChildren(...groups.map(group => h('section', { class: 'group', 'data-c': crayon(PHASES.findIndex(phase => phase.days === group.days)) },
-    h('div', { class: 'group-head' }, h('h3', {}, group.name),
-      group.due ? h('span', { class: 'group-date' }, group.days === 0 ? dayMonth(group.due) : `senast ${dayMonth(group.due)}`) : null),
-    h('ul', { class: 'rows' }, group.tasks.map(task => line({
-      key: 'task', id: task.id, title: task.title, done: task.done, note: task.note, link: task.link, label: 'Klar',
-      extra: group.due && group.due < today && !task.done ? h('span', { class: 'late' }, 'sent!') : null,
-      onToggle: () => {
-        store.setTask(task.id, { ...task, done: !task.done });
-        render();
-        refocus(`[data-task="${task.id}"] .box`, 'gora-title');
-      },
-      onEdit: () => editTask(task)
-    }))))));
-  if (!groups.length) $('tasks').append(h('p', { class: 'empty' }, all.length ? 'Allt är klart. Bra jobbat!' : 'Listan är tom. Skriv något ovan.'));
-  $('restore').hidden = !missingTemplate(all).length;
-}
-
-// Det du skrev i rutan och i länkfältet: { title, link } eller ett fel och fältet det gäller. En länk i
-// länkfältet går före en i rutan, och bara en länk ger ett namn ur adressen.
-function readEntry(textInput, linkInput, max) {
-  const entry = splitEntry(textInput.value);
-  const typed = linkFrom(linkInput.value);
-  if (typed === undefined) return { error: BAD_LINK, input: linkInput };
-  const link = typed ?? entry.link;
-  const title = entry.title || (typed ? splitEntry(typed).title : '');
-  if (!title) return { error: 'Skriv vad det gäller.', input: textInput };
-  if (title.length > max) return { error: `Skriv lite kortare, högst ${max} tecken.`, input: textInput };
-  return { title, link };
-}
-
-$('task-form').addEventListener('submit', event => {
-  event.preventDefault();
-  const form = event.target;
-  const read = readEntry(form.elements.title, form.elements.link, 120);
-  if (read.error) { $('task-status').textContent = read.error; read.input.focus(); return; }
-  const days = Number(form.elements.days.value);
-  store.setTask(store.id(), { title: read.title, note: '', link: read.link ?? '', days, done: false, made: Date.now() });
-  form.elements.title.value = '';
-  form.elements.link.value = '';
-  render();
-  $('task-status').textContent = `Lade till ${read.title} (${PHASES.find(phase => phase.days === days).name.toLowerCase()})${read.link ? ', med länk' : ''}.`;
-  form.elements.title.focus();
-});
-
-$('hide-tasks').addEventListener('change', event => { store.setHide('tasks', event.target.checked); render(); });
-$('restore').addEventListener('click', () => {
-  const missing = missingTemplate(store.tasks());
-  store.restoreTemplate(missing);
-  render();
-  $('task-status').textContent = `${missing.length} ${missing.length === 1 ? 'uppgift' : 'uppgifter'} från mallen är tillbaka.`;
-  $('gora-title').focus();
-});
-
-// ---------- Rutan för att ändra en rad ----------
-const sheet = $('sheet');
-let sheetBack = null;
-function openSheet(title, body, back) {
-  sheetBack = back;
-  $('sheet-title').textContent = title;
-  $('sheet-body').replaceChildren(...body.filter(Boolean));
-  if (!sheet.open) sheet.showModal();
-  $('sheet-body').querySelector('input')?.focus();
-}
-const closeSheet = () => { if (sheet.open) sheet.close(); };
-sheet.addEventListener('close', () => { const back = sheetBack; sheetBack = null; back?.()?.focus(); });
-// Ett tryck utanför rutan (på bakgrunden) stänger den.
-for (const dialog of [sheet, $('more')]) dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
-$('sheet-close').addEventListener('click', closeSheet);
-
-const field = (label, input) => h('label', { class: 'field' }, h('span', {}, label), input);
-const linkInput = value => h('input', { type: 'url', inputmode: 'url', autocomplete: 'off', placeholder: 'https://…', value: value || '' });
-const eraseButton = onclick => h('button', { type: 'button', class: 'crayon quiet danger', onclick }, 'Sudda ut');
-
-function editTask(task) {
-  const title = h('input', { type: 'text', maxlength: 2200, autocomplete: 'off', value: task.title });
-  const days = h('select', {}, phaseOptions(task.days));
-  const link = linkInput(task.link);
-  const text = h('textarea', { rows: 3, maxlength: 500 });
-  text.value = task.note;
-  const status = h('p', { class: 'status', role: 'status' });
-  const form = h('form', { class: 'edit', novalidate: true },
-    field('Uppgift', title), field('När', days), field('Länk', link), field('Anteckning', text), status,
-    h('div', { class: 'buttons' },
-      h('button', { type: 'submit', class: 'crayon' }, 'Spara'),
-      eraseButton(() => {
-        store.setTask(task.id, null);
-        render();
-        closeSheet();
-        $('task-status').textContent = `Suddade ut ${task.title}.`;
-      })));
-  form.addEventListener('submit', event => {
-    event.preventDefault();
-    const read = readEntry(title, link, 120);
-    if (read.error) { status.textContent = read.error; read.input.focus(); return; }
-    store.setTask(task.id, { ...task, title: read.title, link: read.link ?? '', days: Number(days.value), note: text.value.trim() });
-    render();
-    closeSheet();
-    $('task-status').textContent = 'Sparat.';
-  });
-  openSheet('Ändra uppgift', [form], () => document.querySelector(`[data-task="${task.id}"] .edit-btn`) ?? $('gora-title'));
-}
-
-// ---------- Att köpa ----------
-const roomOptions = selected => ROOMS.map(room => h('option', { value: room, selected: room === selected }, room));
-$('item-form').elements.room.append(...roomOptions('Kök'));
-
-// Antal och pris ur ett formulär: { qty, price } eller ett felmeddelande och fältet det gäller.
-function readAmounts(qtyInput, priceInput) {
-  const qty = Number(qtyInput.value.trim() || '1');
-  if (!Number.isInteger(qty) || qty < 1 || qty > 999) return { error: 'Antal ska vara ett heltal från 1 till 999.', input: qtyInput };
-  const price = amount(priceInput.value);
-  if (Number.isNaN(price) || price > 1e6) return { error: 'Skriv priset i kronor, till exempel 49 eller 49,90, eller lämna det tomt.', input: priceInput };
-  return { qty, price };
-}
-
-function renderItems() {
+  applyTheme();
   const all = store.items();
+  colors = new Map([...all].sort((a, b) => a.made - b.made).map((item, i) => [item.id, i]));
+  renderSum(all);
+  const list = ordered(all);
+  const open = list.filter(item => !item.done), done = list.filter(item => item.done);
+  $('list').replaceChildren(...open.map(card));
+  $('done').replaceChildren(...(done.length ? [h('li', { class: 'done-title-row' }, h('h3', { class: 'done-title' }, `Köpt (${done.length})`)), ...done.map(card)] : []));
+  $('empty').hidden = all.length > 0;
+  $('copy-list').hidden = !open.length;
+}
+
+// Summan: totalt och kvar, och en krita som ritar hur mycket som är köpt.
+function renderSum(all) {
+  if (!all.length) { $('sum').replaceChildren(); return; }
   const sum = totals(all);
   const bought = all.filter(item => item.done).length;
-  meter('kopa-meter', all.length
-    ? [h('span', {}, 'Totalt ', h('b', {}, kr(sum.total))), h('span', {}, 'köpt ', h('b', {}, kr(sum.bought))), h('span', {}, 'kvar ', h('b', {}, kr(sum.left)))]
-    : [h('span', {}, 'Inget på listan än')],
-  all.length ? bought / all.length : 0,
-  sum.unpriced === 1 ? '1 sak som inte är köpt saknar pris och räknas inte med.'
-    : sum.unpriced ? `${sum.unpriced} saker som inte är köpta saknar pris och räknas inte med.` : null);
-  $('hide-items').checked = store.hide('items');
-  const shown = store.hide('items') ? all.filter(item => !item.done) : all;
-  const groups = rooms(shown);
-  $('items').replaceChildren(...groups.map(group => h('section', { class: 'group', 'data-c': crayon(ROOMS.indexOf(group.room)) },
-    h('div', { class: 'group-head' }, h('h3', {}, group.room), group.total ? h('span', { class: 'group-date' }, kr(group.total)) : null),
-    h('ul', { class: 'rows' }, group.items.map(item => {
-      const price = cost(item);
-      return line({
-        key: 'item', id: item.id, title: item.name, done: item.done, link: item.link, label: 'Köpt',
-        note: [item.qty > 1 ? `${item.qty} st` : null,
-          price === null ? null : item.qty > 1 ? `à ${each(item.price)} = ${kr(price)}` : each(item.price),
-          item.note || null].filter(Boolean).join(' · '),
-        onToggle: () => {
-          store.setItem(item.id, { ...item, done: !item.done });
-          render();
-          refocus(`[data-item="${item.id}"] .box`, 'kopa-title');
-        },
-        onEdit: () => editItem(item)
-      });
-    })))));
-  if (!groups.length && all.length) $('items').append(h('p', { class: 'empty' }, 'Allt är köpt!'));
-  $('copy-list').hidden = !all.some(item => !item.done);
-  renderIdeas(all);
+  const share = bought / all.length;
+  $('sum').replaceChildren(
+    h('p', { class: 'sum-line' },
+      h('span', {}, 'Totalt ', h('b', {}, kr(sum.total))),
+      h('span', { class: 'left' }, 'kvar att köpa ', h('b', {}, kr(sum.left)))),
+    h('div', { class: 'track', role: 'img', 'aria-label': `${bought} av ${all.length} köpta` },
+      h('div', { class: `stroke w${Math.round(share * 20) * 5}` })),
+    h('p', { class: 'hint' }, `${bought} av ${all.length} köpta${sum.bought ? `, för ${kr(sum.bought)}` : ''}.`,
+      sum.unpriced ? ` ${sum.unpriced === 1 ? '1 sak saknar' : `${sum.unpriced} saker saknar`} pris och räknas inte med.` : ''));
 }
 
-function renderIdeas(all) {
-  const have = new Set(all.map(item => item.name.toLowerCase()));
-  $('ideas').replaceChildren(...Object.entries(SUGGESTIONS).map(([room, names]) => h('div', { class: 'idea-room' },
-    h('h3', {}, room),
-    h('div', { class: 'chips', role: 'group', 'aria-label': room }, names.map(name => {
-      const added = have.has(name.toLowerCase());
-      return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(added), disabled: added, onclick: event => {
-        const at = [...document.querySelectorAll('#ideas .chip')].indexOf(event.currentTarget);
-        store.setItem(store.id(), { name, room, qty: 1, price: null, note: '', link: '', done: false, made: Date.now() });
-        render();
-        $('item-status').textContent = `Lade till ${name} under ${room}.`;
-        const chips = [...document.querySelectorAll('#ideas .chip')];
-        (chips.slice(at).find(chip => !chip.disabled) ?? chips.find(chip => !chip.disabled) ?? $('kopa-title')).focus();
-      } }, name);
-    })))));
+function card(item) {
+  const price = cost(item);
+  return h('li', { class: item.done ? 'item is-done' : 'item', 'data-c': crayonFor(item), 'data-item': item.id },
+    h('button', { type: 'button', class: 'box', 'aria-pressed': String(item.done), 'aria-label': `${item.name}. Köpt`, onclick: () => {
+      store.setItem(item.id, { ...item, done: !item.done });
+      render();
+      $('status').textContent = item.done ? `${item.name} är inte köpt längre.` : `${item.name} är köpt!`;
+      (document.querySelector(`[data-item="${item.id}"] .box`) ?? $('list-title')).focus();
+    } }),
+    h('div', { class: 'item-text' },
+      h('span', { class: 'item-name' }, item.name),
+      h('div', { class: 'item-extras' },
+        price === null ? null : item.qty > 1 ? h('span', { class: 'price' }, kr(price), h('small', {}, `${item.qty} × ${each(item.price)}`))
+          : h('span', { class: 'price' }, each(item.price)),
+        item.link ? h('a', { class: 'link', href: item.link, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${item.name}: öppna ${linkLabel(item.link)} (ny flik)` },
+          arrow(), h('span', {}, linkLabel(item.link))) : null),
+      item.note ? h('span', { class: 'item-note' }, item.note) : null),
+    h('button', { type: 'button', class: 'edit', 'aria-haspopup': 'dialog', 'aria-label': `Ändra ${item.name}`, onclick: () => edit(item) }, crayon()));
 }
 
-$('item-form').addEventListener('submit', event => {
+// Namn och länk ur två fält: en länk i länkfältet går före en som klistrats in efter namnet, och bara en länk
+// ger ett namn ur adressen. { name, link } eller ett fel och fältet det gäller.
+function readEntry(nameInput, linkInput) {
+  const entry = splitEntry(nameInput.value);
+  const typed = linkFrom(linkInput.value);
+  if (typed === undefined) return { error: 'Länken ser inte ut som en webbadress. Klistra in hela adressen, till exempel https://www.ikea.se/…', input: linkInput };
+  const name = entry.name || (typed ? splitEntry(typed).name : '');
+  if (!name) return { error: 'Skriv vad du behöver.', input: nameInput };
+  if (name.length > 80) return { error: 'Skriv lite kortare, högst 80 tecken.', input: nameInput };
+  return { name, link: typed ?? entry.link };
+}
+const BAD_PRICE = 'Skriv priset i kronor, till exempel 199 eller 49,90, eller lämna det tomt.';
+
+$('add').addEventListener('submit', event => {
   event.preventDefault();
   const form = event.target;
-  const read = readEntry(form.elements.name, form.elements.link, 80);
-  if (read.error) { $('item-status').textContent = read.error; read.input.focus(); return; }
-  const amounts = readAmounts(form.elements.qty, form.elements.price);
-  if (amounts.error) { $('item-status').textContent = amounts.error; amounts.input.focus(); return; }
-  const room = form.elements.room.value;
-  store.setItem(store.id(), { name: read.title, room, qty: amounts.qty, price: amounts.price, note: '', link: read.link ?? '', done: false, made: Date.now() });
-  for (const name of ['name', 'price', 'link']) form.elements[name].value = '';
-  form.elements.qty.value = '1';
+  const read = readEntry(form.elements.name, form.elements.link);
+  if (read.error) { $('status').textContent = read.error; read.input.focus(); return; }
+  const price = priceFrom(form.elements.price.value);
+  if (Number.isNaN(price)) { $('status').textContent = BAD_PRICE; form.elements.price.focus(); return; }
+  store.setItem(store.id(), { name: read.name, link: read.link ?? '', price, qty: 1, note: '', done: false, made: Date.now() });
+  form.reset();
   render();
-  $('item-status').textContent = `Lade till ${read.title} under ${room}${read.link ? ', med länk' : ''}.`;
+  $('status').textContent = [`${read.name} står på listan`, read.link ? 'med länk' : null, price === null ? null : `för ${each(price)}`].filter(Boolean).join(', ') + '.';
   form.elements.name.focus();
 });
 
-$('hide-items').addEventListener('change', event => { store.setHide('items', event.target.checked); render(); });
+// ---------- Ändra en sak ----------
+const sheet = $('sheet');
+let sheetBack = null;
+const closeSheet = () => { if (sheet.open) sheet.close(); };
+sheet.addEventListener('close', () => { const back = sheetBack; sheetBack = null; back?.()?.focus(); });
+$('sheet-close').addEventListener('click', closeSheet);
+// Ett tryck utanför rutan (på bakgrunden) stänger den.
+for (const dialog of [sheet, $('more')]) dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 
-function editItem(item) {
+const field = (label, input) => h('label', { class: 'field' }, h('span', {}, label), input);
+
+function edit(item) {
   const name = h('input', { type: 'text', maxlength: 2200, autocomplete: 'off', value: item.name });
-  const room = h('select', {}, roomOptions(item.room));
-  const qty = h('input', { type: 'text', inputmode: 'numeric', autocomplete: 'off', value: item.qty });
+  const link = h('input', { type: 'url', inputmode: 'url', autocomplete: 'off', placeholder: 'https://…', value: item.link || '' });
   const price = h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: 'kr', value: item.price === null ? '' : String(item.price).replace('.', ',') });
-  const link = linkInput(item.link);
-  const text = h('textarea', { rows: 3, maxlength: 500, placeholder: 'T.ex. mått, färg eller butik' });
-  text.value = item.note;
+  const qty = h('input', { type: 'text', inputmode: 'numeric', autocomplete: 'off', value: item.qty });
+  const note = h('textarea', { rows: 3, maxlength: 500, placeholder: 'Mått, färg, butik…' });
+  note.value = item.note || '';
   const status = h('p', { class: 'status', role: 'status' });
-  const form = h('form', { class: 'edit', novalidate: true },
-    field('Sak', name), field('Rum', room),
-    h('div', { class: 'pair' }, field('Antal', qty), field('Pris/st (kr)', price)),
-    field('Länk', link), field('Anteckning', text), status,
+  const form = h('form', { class: 'form', novalidate: true },
+    field('Vad', name), field('Länk', link),
+    h('div', { class: 'pair' }, field('Pris/st (kr)', price), field('Antal', qty)),
+    field('Anteckning', note), status,
     h('div', { class: 'buttons' },
-      h('button', { type: 'submit', class: 'crayon' }, 'Spara'),
-      eraseButton(() => {
+      h('button', { type: 'submit', class: 'pill solid' }, 'Spara'),
+      h('button', { type: 'button', class: 'pill danger', onclick: () => {
         store.setItem(item.id, null);
         render();
+        sheetBack = () => $('add-name');
         closeSheet();
-        $('item-status').textContent = `Suddade ut ${item.name}.`;
-      })));
+        $('status').textContent = `Suddade ut ${item.name}.`;
+      } }, 'Sudda ut')));
   form.addEventListener('submit', event => {
     event.preventDefault();
-    const read = readEntry(name, link, 80);
+    const read = readEntry(name, link);
     if (read.error) { status.textContent = read.error; read.input.focus(); return; }
-    const amounts = readAmounts(qty, price);
-    if (amounts.error) { status.textContent = amounts.error; amounts.input.focus(); return; }
-    store.setItem(item.id, { ...item, name: read.title, room: room.value, qty: amounts.qty, price: amounts.price, link: read.link ?? '', note: text.value.trim() });
+    const amount = priceFrom(price.value);
+    if (Number.isNaN(amount)) { status.textContent = BAD_PRICE; price.focus(); return; }
+    const count = Number(qty.value.trim() || '1');
+    if (!Number.isInteger(count) || count < 1 || count > 999) { status.textContent = 'Antal ska vara ett heltal från 1 till 999.'; qty.focus(); return; }
+    store.setItem(item.id, { ...item, name: read.name, link: read.link ?? '', price: amount, qty: count, note: note.value.trim() });
     render();
     closeSheet();
-    $('item-status').textContent = 'Sparat.';
+    $('status').textContent = `${read.name} är ändrad.`;
   });
-  openSheet('Ändra sak', [form], () => document.querySelector(`[data-item="${item.id}"] .edit-btn`) ?? $('kopa-title'));
+  sheetBack = () => document.querySelector(`[data-item="${item.id}"] .edit`) ?? $('add-name');
+  $('sheet-title').textContent = `Ändra ${item.name}`;
+  $('sheet-body').replaceChildren(form);
+  sheet.showModal();
+  name.focus();
 }
 
 $('copy-list').addEventListener('click', async () => {
   const text = shoppingText(store.items());
   try {
-    if (navigator.share && matchMedia('(pointer: coarse)').matches) await navigator.share({ title: 'Att köpa till flytten', text });
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) await navigator.share({ title: 'Flyttlistan', text });
     else { await navigator.clipboard.writeText(text); $('copy-status').textContent = 'Listan är kopierad. Klistra in den där du vill.'; }
   } catch (error) {
     if (error.name !== 'AbortError') $('copy-status').textContent = 'Det gick inte att kopiera listan.';
@@ -381,10 +199,7 @@ function openMore() {
 }
 $('open-more').addEventListener('click', openMore);
 $('more-close').addEventListener('click', () => more.close());
-more.addEventListener('close', () => {
-  disarm();
-  $('open-more').focus();
-});
+more.addEventListener('close', () => { disarm(); $('open-more').focus(); });
 
 let incoming = null; // det som väntar på att läsas in från en annan enhet
 
@@ -398,14 +213,10 @@ async function offerSync(code) {
 
 function showOffer(value) {
   const other = store.clean(value);
-  const tasks = Object.values(other.tasks).filter(task => !task.gone), items = Object.values(other.buy).filter(item => !item.gone);
-  const done = tasks.filter(task => task.done).length, bought = items.filter(item => item.done).length;
+  const items = Object.values(other.items).filter(item => !item.gone);
+  const bought = items.filter(item => item.done).length;
   incoming = other;
-  $('sync-summary').textContent = [
-    other.date ? `flyttdag ${dayMonth(other.date)}` : null,
-    `${tasks.length} ${tasks.length === 1 ? 'uppgift' : 'uppgifter'} (${done} ${done === 1 ? 'klar' : 'klara'})`,
-    `${items.length} ${items.length === 1 ? 'sak' : 'saker'} att köpa (${bought} ${bought === 1 ? 'köpt' : 'köpta'})`
-  ].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase()) + '.';
+  $('sync-summary').textContent = `${items.length} ${items.length === 1 ? 'sak' : 'saker'} på listan, ${bought} ${bought === 1 ? 'köpt' : 'köpta'}.`;
   $('sync-offer').hidden = false;
   $('sync-accept').focus();
 }
@@ -415,7 +226,7 @@ $('sync-link').addEventListener('click', async () => {
   try {
     const link = `${location.origin}${location.pathname}#synk/${await pack(store.snapshot())}`;
     if (navigator.share && matchMedia('(pointer: coarse)').matches) {
-      await navigator.share({ title: 'Flytten: synklänk', url: link });
+      await navigator.share({ title: 'Flyttlistan: synklänk', url: link });
       status.textContent = '';
     } else {
       await navigator.clipboard.writeText(link);
@@ -426,8 +237,8 @@ $('sync-link').addEventListener('click', async () => {
   }
 });
 $('sync-save').addEventListener('click', () => {
-  const url = URL.createObjectURL(new Blob([fileText(store.snapshot(), today)], { type: 'application/json' }));
-  const link = h('a', { href: url, download: `flytt-${today}.json` });
+  const url = URL.createObjectURL(new Blob([fileText(store.snapshot(), today())], { type: 'application/json' }));
+  const link = h('a', { href: url, download: `flyttlistan-${today()}.json` });
   document.body.append(link);
   link.click();
   link.remove();
@@ -450,7 +261,7 @@ $('sync-accept').addEventListener('click', () => {
   incoming = null;
   $('sync-offer').hidden = true;
   render();
-  $('sync-status').textContent = 'Inläst. Listorna är ihopslagna med den andra enhetens.';
+  $('sync-status').textContent = 'Inläst. Listan är ihopslagen med den andra enhetens.';
   $('more-title').focus();
 });
 $('sync-cancel').addEventListener('click', () => {
@@ -472,27 +283,33 @@ $('forget').addEventListener('click', () => {
   if (!forgetArmed) {
     forgetArmed = true;
     $('forget').textContent = 'Tryck igen för att sudda ut allt';
-    $('forget-status').textContent = 'Allt du skrivit, även länkarna, försvinner från den här enheten.';
+    $('forget-status').textContent = 'Hela listan, även länkarna, försvinner från den här enheten.';
     return;
   }
   forgetArmed = false;
   store.forget();
   $('forget').textContent = 'Sudda ut allt';
   render();
-  $('forget-status').textContent = 'Allt är utsuddat. Att göra-listan är tillbaka som mallen.';
+  $('forget-status').textContent = 'Allt är utsuddat.';
 });
 $('forget').addEventListener('blur', disarm);
 
-// Över midnatt, eller när en annan flik ändrat något.
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) return;
-  today = todayIso();
-  render();
-});
+// #mer öppnar synk och data; #synk/… läser in från en annan enhet. Datan tas bort ur adressen direkt (och ur
+// historiken), och inget läses in innan du sagt ja.
+function route() {
+  const [name, arg] = location.hash.slice(1).split('/');
+  if (name !== 'mer' && name !== 'synk') return;
+  history.replaceState(null, '', location.pathname);
+  openMore();
+  if (name === 'synk' && arg) offerSync(arg);
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
 window.addEventListener('storage', event => { if (event.key === store.KEY || event.key === null) { store.reload(); render(); } });
 window.addEventListener('hashchange', route);
 
 // Sparar sidan på enheten så att den öppnas utan nät (sw.js, bara /flytt/).
 navigator.serviceWorker?.register('sw.js').catch(() => {});
 
+render();
 route();
