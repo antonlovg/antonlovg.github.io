@@ -39,8 +39,8 @@ const today = () => new Date().toISOString().slice(0, 10);
 let colors = new Map();
 const crayonFor = item => String((colors.get(item.id) ?? 0) % 8 + 1);
 
-// ---------- Utseendet: kritor, mörkt eller gulligt ----------
-const BAR = { light: '#fffaf0', dark: '#1b1923', cute: '#ffe3ef' };
+// ---------- Utseendet: kritor, mörkt, gulligt eller busigt ----------
+const BAR = { light: '#fffaf0', dark: '#1b1923', cute: '#ffe3ef', punk: '#1a1422' };
 function applyTheme() {
   const look = store.theme();
   document.documentElement.dataset.theme = look;

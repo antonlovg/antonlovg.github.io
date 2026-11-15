@@ -40,6 +40,7 @@
           <button type="button" class="pill look" data-look="light" aria-pressed="true">Kritor</button>
           <button type="button" class="pill look" data-look="dark" aria-pressed="false">Mörkt</button>
           <button type="button" class="pill look" data-look="cute" aria-pressed="false">Gulligt</button>
+          <button type="button" class="pill look" data-look="punk" aria-pressed="false">Busigt</button>
         </div>
         <button type="button" class="pill" id="open-more" aria-haspopup="dialog">Synk &amp; data</button>
       </div>
@@ -55,7 +56,7 @@
         <path class="box-front" d="M6 82h318l-10 38H16Z"/>
       </svg>
       <!-- Gulligt läge: en flyttkartong med ansikte, rosett och hjärtan. -->
-      <svg class="mascot" viewBox="0 0 260 170" aria-hidden="true" focusable="false">
+      <svg class="mascot mascot-cute" viewBox="0 0 260 170" aria-hidden="true" focusable="false">
         <g class="mascot-float">
           <path class="m-heart h1" d="M30 52c-6-10-22-4-16 8l16 16 16-16c6-12-10-18-16-8z"/>
           <path class="m-heart h2" d="M226 34c-4-7-15-3-11 5l11 11 11-11c4-8-7-12-11-5z"/>
@@ -77,6 +78,35 @@
           <path class="m-mouth" d="M122 120q8 9 16 0"/>
           <path class="m-bow" d="M130 52c-10-14-30-14-30 0s20 14 30 0c10 14 30 14 30 0s-20-14-30 0Z"/>
           <circle class="m-knot" cx="130" cy="52" r="7"/>
+        </g>
+      </svg>
+      <!-- Busigt läge: en svart flyttkartong med horn, svans och en dödskalle, och fladdermöss runt. -->
+      <svg class="mascot mascot-punk" viewBox="0 0 260 170" aria-hidden="true" focusable="false">
+        <g class="mascot-float">
+          <path class="p-bat" d="M8 54q9-12 18-5 4-9 8 0 4-9 8 0 9-7 18 5-11-2-15 7-4-5-11-5t-11 5q-4-9-15-7z"/>
+          <path class="p-bat b2" d="M200 30q7-9 14-4 3-7 6 0 3-7 6 0 7-5 14 4-8-1-11 5-3-4-9-4t-9 4q-3-6-11-5z"/>
+          <path class="p-spark" d="M226 104l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
+          <path class="p-spark s2" d="M40 112l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+          <path class="p-spark s3" d="M128 4l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+        </g>
+        <g class="mascot-box">
+          <path class="p-tail" d="M188 134q34 2 34-26t-18-20"/>
+          <path class="p-tip" d="M196 84l16-2-5 15Z"/>
+          <path class="p-horn" d="M58 42 46 10l30 26Z"/>
+          <path class="p-horn" d="M202 42l12-32-30 26Z"/>
+          <path class="p-flap" d="M70 60 52 38h66l12 22Z"/>
+          <path class="p-flap" d="M190 60l18-22h-66l-12 22Z"/>
+          <rect class="p-body" x="70" y="58" width="120" height="98" rx="18"/>
+          <path class="p-skull" fill-rule="evenodd" d="M130 64c-8 0-13 5-13 11 0 4 2 6 4 7v5h18v-5c2-1 4-3 4-7 0-6-5-11-13-11Zm-8 11a3 3 0 1 0 6 0 3 3 0 1 0-6 0Zm10 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0Z"/>
+          <ellipse class="p-eye" cx="106" cy="110" rx="10" ry="11"/>
+          <ellipse class="p-eye" cx="154" cy="110" rx="10" ry="11"/>
+          <circle class="p-pupil" cx="108" cy="112" r="5.5"/>
+          <circle class="p-pupil" cx="156" cy="112" r="5.5"/>
+          <path class="p-brow" d="M93 95l22 6M167 95l-22 6"/>
+          <ellipse class="p-blush" cx="90" cy="130" rx="9" ry="5"/>
+          <ellipse class="p-blush" cx="170" cy="130" rx="9" ry="5"/>
+          <path class="p-mouth" d="M118 130q12 8 24-2"/>
+          <path class="p-fang" d="M123 133l3 7 3-6Z"/>
         </g>
       </svg>
       <h1 class="title" aria-label="Flyttlistan">

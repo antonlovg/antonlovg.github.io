@@ -1,11 +1,11 @@
 // Det du skriver in: sakerna på listan (namn, länk, pris, antal, anteckning, om de är köpta) och vilket
-// utseende du valt (kritor, mörkt eller gulligt). Bara i den här webbläsarens lokala lagring ("lovgren-flytt", listad på /cookies/), och
+// utseende du valt (kritor, mörkt, gulligt eller busigt). Bara i den här webbläsarens lokala lagring ("lovgren-flytt", listad på /cookies/), och
 // bara när du ändrar något. Varje sak har ett id och när den senast ändrades (at), så att två enheter kan slås
 // ihop; en borttagen sparas som { gone: true, at } så att den inte kommer tillbaka från den andra enheten.
 import { safeLink } from './list.js';
 
 const KEY = 'lovgren-flytt';
-const THEMES = ['light', 'dark', 'cute'];
+const THEMES = ['light', 'dark', 'cute', 'punk'];
 const blank = () => ({ items: {}, theme: 'light' });
 
 // Bara det sidan känner till, i rätt form (gäller också det som läses in från en annan enhet).
@@ -57,7 +57,7 @@ export function setItem(key, value) {
   save();
 }
 
-// ---------- Utseendet: kritor (ljust), mörkt eller gulligt ----------
+// ---------- Utseendet: kritor (ljust), mörkt, gulligt eller busigt ----------
 export const theme = () => data.theme;
 export function setTheme(value) {
   data.theme = THEMES.includes(value) ? value : 'light';

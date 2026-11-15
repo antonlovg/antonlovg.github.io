@@ -1,5 +1,5 @@
 /* Flyttlistan (/flytt/): en inköpslista ritad med kritor. Ljust papper som standard, svart ritpapper om du
-   väljer mörkt och rosa med hjärtan om du väljer gulligt (js/theme.js sätter data-theme på <html> innan sidan
+   väljer mörkt, rosa med hjärtan om du väljer gulligt och svart, lila och rosa med dödskallar om du väljer busigt (js/theme.js sätter data-theme på <html> innan sidan
    ritas). Handstilen är Caveat
    (rubriker) och Patrick Hand (text), båda SIL Open Font License (fonts/OFL-*.txt). Allt ritat är CSS och
    SVG: ojämna hörn (--wobble), korn (--grain), klotter i bakgrunden (--doodles) och kritan i #crayon. */
@@ -89,6 +89,30 @@
   --wobble: 26px;
   --wobble-2: 26px;
   color-scheme: light;
+}
+
+/* Busigt: svart och lila med rosa, dödskallar, fladdermöss och en flyttkartong med horn och svans. */
+:root[data-theme="punk"] {
+  --paper: #1a1422;
+  --card: #261d31;
+  --ink: #f6eefc;
+  --ink-soft: #cbb8dc;
+  --line: rgb(176 124 255 / 0.45);
+  --k1: #ff6fb5; --t1: #ff8cc6;
+  --k2: #a978ff; --t2: #c3a2ff;
+  --k3: #ff4d8d; --t3: #ff86ad;
+  --k4: #d4b8ff; --t4: #d4b8ff;
+  --k5: #8f6bff; --t5: #b49cff;
+  --k6: #f7a8d8; --t6: #f7a8d8;
+  --k7: #c084fc; --t7: #d6b0ff;
+  --k8: #ececf4; --t8: #ececf4;
+  --on-crayon: #ffffff;
+  --button: #c51f6f;
+  --grain: none;
+  --doodles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='%23b07cff' fill-opacity='.22' fill-rule='evenodd'%3E%3Cpath transform='translate(70 70)' d='M0 -9c-6 0-10 4-10 9 0 3 1.5 5 3.5 6v4h13v-4c2-1 3.5-3 3.5-6 0-5-4-9-10-9Zm-6 9a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0Zm7.2 0a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0Z'/%3E%3Cpath transform='translate(330 300) rotate(15)' d='M0 -9c-6 0-10 4-10 9 0 3 1.5 5 3.5 6v4h13v-4c2-1 3.5-3 3.5-6 0-5-4-9-10-9Zm-6 9a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0Zm7.2 0a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0Z'/%3E%3C/g%3E%3Cg fill='%23ff6fb5' fill-opacity='.2'%3E%3Cpath transform='translate(300 80)' d='M-30 0q9-12 18-5 4-9 8 0 4-9 8 0 9-7 18 5-11-2-15 7-4-5-11-5t-11 5q-4-9-15-7z'/%3E%3Cpath transform='translate(120 330) scale(.7)' d='M-30 0q9-12 18-5 4-9 8 0 4-9 8 0 9-7 18 5-11-2-15 7-4-5-11-5t-11 5q-4-9-15-7z'/%3E%3C/g%3E%3Cg fill='%23f6eefc' fill-opacity='.18'%3E%3Cpath transform='translate(210 200)' d='M0-10l3 7 7 3-7 3-3 7-3-7-7-3 7-3z'/%3E%3Cpath transform='translate(40 240) scale(.7)' d='M0-10l3 7 7 3-7 3-3 7-3-7-7-3 7-3z'/%3E%3Cpath transform='translate(390 160) scale(.6)' d='M0-10l3 7 7 3-7 3-3 7-3-7-7-3 7-3z'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(circle, rgb(176 124 255 / 0.16) 2.5px, transparent 3px);
+  --wobble: 26px;
+  --wobble-2: 26px;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -352,17 +376,17 @@ code { font-family: ui-monospace, monospace; font-size: 0.8em; }
 .sync-offer { margin-top: 16px; padding: 12px 14px; border: 3px dashed var(--k2); border-radius: var(--wobble); }
 .sync-offer h3 { margin-top: 0; }
 
-/* ---------- Gulligt läge ---------- */
-:root[data-theme="cute"] body { background-size: 420px 420px, 26px 26px; background-attachment: fixed, fixed; }
-:root[data-theme="cute"] :focus-visible { outline-color: var(--t1); }
-:root[data-theme="cute"] .pill { border-color: var(--k1); border-radius: 999px; }
-:root[data-theme="cute"] .pill[aria-pressed="true"] { background-color: var(--t1); border-color: var(--t1); color: #fff; }
-:root[data-theme="cute"] .pill.solid { border-color: var(--t1); background-color: var(--t1); color: #fff; }
-:root[data-theme="cute"] .close { border-color: var(--k1); border-radius: 50%; color: var(--t1); }
+/* ---------- Gulligt och busigt läge (samma former, egna färger) ---------- */
+:root:is([data-theme="cute"], [data-theme="punk"]) body { background-size: 420px 420px, 26px 26px; background-attachment: fixed, fixed; }
+:root:is([data-theme="cute"], [data-theme="punk"]) :focus-visible { outline-color: var(--t1); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .pill { border-color: var(--k1); border-radius: 999px; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .pill[aria-pressed="true"] { background-color: var(--t1); border-color: var(--t1); color: #fff; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .pill.solid { border-color: var(--t1); background-color: var(--t1); color: #fff; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .close { border-color: var(--k1); border-radius: 50%; color: var(--t1); }
 
 /* Maskoten i stället för kritlådan: en flyttkartong som guppar. */
-:root[data-theme="cute"] .box-of-crayons { display: none; }
-:root[data-theme="cute"] .mascot { display: block; width: min(250px, 72%); margin: 6px auto 0; overflow: visible; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .box-of-crayons { display: none; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .mascot { display: block; width: min(250px, 72%); margin: 6px auto 0; overflow: visible; }
 .m-body { fill: #ffd9b0; stroke: #c9875a; stroke-width: 4; }
 .m-flap { fill: #ffc994; stroke: #c9875a; stroke-width: 4; stroke-linejoin: round; }
 .m-tape { fill: #ffb3cf; }
@@ -383,19 +407,19 @@ code { font-family: ui-monospace, monospace; font-size: 0.8em; }
 @keyframes twinkle { 0%, 100% { opacity: 1; transform: none; } 50% { opacity: 0.6; transform: translateY(-5px); } }
 
 /* Rubriken: bubbliga bokstäver med vit kant och rosa skugga. */
-:root[data-theme="cute"] .title > span > span { text-shadow: 3px 0 #fff, -3px 0 #fff, 0 3px #fff, 0 -3px #fff, 2px 2px #fff, -2px -2px #fff, 2px -2px #fff, -2px 2px #fff, 4px 5px 0 var(--k6); }
-:root[data-theme="cute"] .title .k3 { --ct: var(--t7); }
-:root[data-theme="cute"] .title .k4 { --ct: var(--t1); }
-:root[data-theme="cute"] .title .k5 { --ct: var(--t2); }
-:root[data-theme="cute"] .done-title, :root[data-theme="cute"] .paper-body h3 { color: var(--t7); }
-:root[data-theme="cute"] .paper-head h2, :root[data-theme="cute"] .empty p { color: var(--t1); }
-:root[data-theme="cute"] .tagline::before, :root[data-theme="cute"] .tagline::after { content: '\2661'; margin: 0 8px; color: var(--t1); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .title > span > span { text-shadow: 3px 0 #fff, -3px 0 #fff, 0 3px #fff, 0 -3px #fff, 2px 2px #fff, -2px -2px #fff, 2px -2px #fff, -2px 2px #fff, 4px 5px 0 var(--k6); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .title .k3 { --ct: var(--t7); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .title .k4 { --ct: var(--t1); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .title .k5 { --ct: var(--t2); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .done-title, :root:is([data-theme="cute"], [data-theme="punk"]) .paper-body h3 { color: var(--t7); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .paper-head h2, :root:is([data-theme="cute"], [data-theme="punk"]) .empty p { color: var(--t1); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .tagline::before, :root:is([data-theme="cute"], [data-theme="punk"]) .tagline::after { content: '\2661'; margin: 0 8px; color: var(--t1); }
 
 /* Kort och rutor: runda, med mjuk rosa skugga och ett hjärta som klisterlapp. */
-:root[data-theme="cute"] .add { border-color: var(--k1); border-style: dashed; box-shadow: 0 8px 0 var(--k6), 0 14px 30px rgb(232 65 138 / 0.18); rotate: none; }
-:root[data-theme="cute"] .add-title { color: var(--t1); }
-:root[data-theme="cute"] .item { position: relative; box-shadow: 0 5px 0 color-mix(in srgb, var(--c) 55%, transparent), 0 10px 22px rgb(232 65 138 / 0.12); rotate: none; }
-:root[data-theme="cute"] .item::before {
+:root:is([data-theme="cute"], [data-theme="punk"]) .add { border-color: var(--k1); border-style: dashed; box-shadow: 0 8px 0 var(--k6), 0 14px 30px rgb(232 65 138 / 0.18); rotate: none; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .add-title { color: var(--t1); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .item { position: relative; box-shadow: 0 5px 0 color-mix(in srgb, var(--c) 55%, transparent), 0 10px 22px rgb(232 65 138 / 0.12); rotate: none; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .item::before {
   content: '';
   position: absolute;
   top: -12px;
@@ -405,39 +429,73 @@ code { font-family: ui-monospace, monospace; font-size: 0.8em; }
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23ff5fa2' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat;
   rotate: -14deg;
 }
-:root[data-theme="cute"] .item.is-done { box-shadow: none; }
-:root[data-theme="cute"] .item.is-done::before { opacity: 0.45; }
-:root[data-theme="cute"] .price { border-style: solid; border-radius: 999px; background: color-mix(in srgb, var(--c) 18%, #fff); rotate: none; }
-:root[data-theme="cute"] .link { border-radius: 999px; background-image: radial-gradient(circle, color-mix(in srgb, var(--c) 45%, transparent) 1.6px, transparent 2px); background-size: 10px 10px; }
-:root[data-theme="cute"] .paper { border-color: var(--k1); border-radius: 28px; box-shadow: 0 9px 0 var(--k6); }
-:root[data-theme="cute"] .paper::backdrop { background: rgb(91 35 70 / 0.45); }
-:root[data-theme="cute"] .field input:focus, :root[data-theme="cute"] .field textarea:focus { border-bottom-color: var(--k1); background: linear-gradient(transparent 70%, rgb(255 95 162 / 0.15) 70%); }
-:root[data-theme="cute"] .sync-offer { border-color: var(--k1); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .item.is-done { box-shadow: none; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .item.is-done::before { opacity: 0.45; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .price { border-style: solid; border-radius: 999px; background: color-mix(in srgb, var(--c) 18%, #fff); rotate: none; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .link { border-radius: 999px; background-image: radial-gradient(circle, color-mix(in srgb, var(--c) 45%, transparent) 1.6px, transparent 2px); background-size: 10px 10px; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .paper { border-color: var(--k1); border-radius: 28px; box-shadow: 0 9px 0 var(--k6); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .paper::backdrop { background: rgb(91 35 70 / 0.45); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .field input:focus, :root:is([data-theme="cute"], [data-theme="punk"]) .field textarea:focus { border-bottom-color: var(--k1); background: linear-gradient(transparent 70%, rgb(255 95 162 / 0.15) 70%); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .sync-offer { border-color: var(--k1); }
 
 /* Bockrutan blir en rund ruta som fylls med ett hjärta. */
-:root[data-theme="cute"] .box::before { border-radius: 50%; }
-:root[data-theme="cute"] .box::after { inset: 13px 12px 11px; background: var(--t1); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z'/%3E%3C/svg%3E") center / contain no-repeat; }
-:root[data-theme="cute"] .box:hover::before, :root[data-theme="cute"] .box[aria-pressed="true"]::before { background: color-mix(in srgb, var(--c) 28%, transparent); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .box::before { border-radius: 50%; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .box::after { inset: 13px 12px 11px; background: var(--t1); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z'/%3E%3C/svg%3E") center / contain no-repeat; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .box:hover::before, :root:is([data-theme="cute"], [data-theme="punk"]) .box[aria-pressed="true"]::before { background: color-mix(in srgb, var(--c) 28%, transparent); }
 
 /* Lägg till-knappen: en rund godisknapp med ett hjärta. */
-:root[data-theme="cute"] .crayon-button {
+:root:is([data-theme="cute"], [data-theme="punk"]) .crayon-button {
   padding: 0 30px 0 58px;
   border-radius: 999px;
   clip-path: none;
   background-image: linear-gradient(transparent 0 16%, rgb(255 255 255 / 0.28) 16% 32%, transparent 32%);
   box-shadow: 0 6px 0 #a3134f;
 }
-:root[data-theme="cute"] .crayon-button::before { content: ''; position: absolute; left: 20px; top: calc(50% - 13px); width: 28px; height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23fff'/%3E%3C/svg%3E") center / contain no-repeat; }
-:root[data-theme="cute"] .crayon-button:hover { transform: translateY(-2px) scale(1.03); }
-:root[data-theme="cute"] .crayon-button:active { transform: translateY(4px); box-shadow: 0 2px 0 #a3134f; }
-:root[data-theme="cute"] .crayon-button:focus-visible { filter: none; outline: 3px dashed var(--t5); outline-offset: 4px; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .crayon-button::before { content: ''; position: absolute; left: 20px; top: calc(50% - 13px); width: 28px; height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23fff'/%3E%3C/svg%3E") center / contain no-repeat; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .crayon-button:hover { transform: translateY(-2px) scale(1.03); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .crayon-button:active { transform: translateY(4px); box-shadow: 0 2px 0 #a3134f; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .crayon-button:focus-visible { filter: none; outline: 3px dashed var(--t5); outline-offset: 4px; }
 
 /* Summan: en randig godisstång som ett hjärta drar. */
-:root[data-theme="cute"] .sum-line b { color: var(--t2); }
-:root[data-theme="cute"] .sum-line .left b { color: var(--t1); }
-:root[data-theme="cute"] .track { border-bottom-color: var(--k6); }
-:root[data-theme="cute"] .stroke { border-radius: 999px; background-color: var(--k1); background-image: repeating-linear-gradient(-45deg, transparent 0 7px, rgb(255 255 255 / 0.45) 7px 13px); }
-:root[data-theme="cute"] .stroke::after { right: -18px; top: -9px; width: 32px; height: 30px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23ff5fa2' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat; rotate: 10deg; }
+:root:is([data-theme="cute"], [data-theme="punk"]) .sum-line b { color: var(--t2); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .sum-line .left b { color: var(--t1); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .track { border-bottom-color: var(--k6); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .stroke { border-radius: 999px; background-color: var(--k1); background-image: repeating-linear-gradient(-45deg, transparent 0 7px, rgb(255 255 255 / 0.45) 7px 13px); }
+:root:is([data-theme="cute"], [data-theme="punk"]) .stroke::after { right: -18px; top: -9px; width: 32px; height: 30px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23ff5fa2' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat; rotate: 10deg; }
+
+/* Busigt: det som skiljer sig från gulligt. */
+:root[data-theme="cute"] .mascot-punk, :root[data-theme="punk"] .mascot-cute { display: none; }
+.p-body { fill: #2b2233; stroke: #b07cff; stroke-width: 4; }
+.p-flap { fill: #3a2d47; stroke: #b07cff; stroke-width: 4; stroke-linejoin: round; }
+.p-horn { fill: #ff6fb5; stroke: #c51f6f; stroke-width: 3; stroke-linejoin: round; }
+.p-tail { fill: none; stroke: #b07cff; stroke-width: 5; stroke-linecap: round; }
+.p-tip { fill: #ff6fb5; stroke: #c51f6f; stroke-width: 2.5; stroke-linejoin: round; }
+.p-skull { fill: #f6eefc; }
+.p-eye { fill: #fff; }
+.p-pupil { fill: #8f4dff; }
+.p-brow, .p-mouth { fill: none; stroke: #f6eefc; stroke-width: 4; stroke-linecap: round; }
+.p-blush { fill: #ff6fb5; opacity: 0.55; }
+.p-fang { fill: #fff; }
+.p-bat { fill: #b07cff; }
+.p-bat.b2 { fill: #ff6fb5; }
+.p-spark { fill: #ff6fb5; }
+.p-spark.s2 { fill: #f6eefc; }
+.p-spark.s3 { fill: #c084fc; }
+:root[data-theme="punk"] .pill[aria-pressed="true"], :root[data-theme="punk"] .pill.solid { background-color: var(--k1); border-color: var(--k1); color: #1a1422; }
+:root[data-theme="punk"] .title > span > span { text-shadow: 3px 0 #000, -3px 0 #000, 0 3px #000, 0 -3px #000, 2px 2px #000, -2px -2px #000, 2px -2px #000, -2px 2px #000, 4px 5px 0 var(--k5); }
+:root[data-theme="punk"] .tagline::before, :root[data-theme="punk"] .tagline::after { content: '\2726'; }
+:root[data-theme="punk"] .add { box-shadow: 0 8px 0 var(--k5), 0 14px 30px rgb(0 0 0 / 0.4); }
+:root[data-theme="punk"] .item { box-shadow: 0 5px 0 color-mix(in srgb, var(--c) 45%, transparent), 0 10px 22px rgb(0 0 0 / 0.35); }
+:root[data-theme="punk"] .item::before, :root[data-theme="punk"] .stroke::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath fill-rule='evenodd' d='M13 1C6.4 1 2 5.6 2 11.2c0 3.3 1.7 6 4.2 7.3V23h13.6v-4.5c2.5-1.3 4.2-4 4.2-7.3C24 5.6 19.6 1 13 1ZM5.6 12a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0Zm9.2 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0ZM13 15.5l-1.6 2.6h3.2Z' fill='%23f6eefc' stroke='%23ff6fb5' stroke-width='2'/%3E%3C/svg%3E"); }
+:root[data-theme="punk"] .price { background: color-mix(in srgb, var(--c) 16%, var(--card)); }
+:root[data-theme="punk"] .paper { box-shadow: 0 9px 0 var(--k5); }
+:root[data-theme="punk"] .paper::backdrop { background: rgb(0 0 0 / 0.6); }
+:root[data-theme="punk"] .box::after { inset: 11px; background: var(--k1); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath fill-rule='evenodd' d='M13 1C6.4 1 2 5.6 2 11.2c0 3.3 1.7 6 4.2 7.3V23h13.6v-4.5c2.5-1.3 4.2-4 4.2-7.3C24 5.6 19.6 1 13 1ZM5.6 12a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0Zm9.2 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0ZM13 15.5l-1.6 2.6h3.2Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath fill-rule='evenodd' d='M13 1C6.4 1 2 5.6 2 11.2c0 3.3 1.7 6 4.2 7.3V23h13.6v-4.5c2.5-1.3 4.2-4 4.2-7.3C24 5.6 19.6 1 13 1ZM5.6 12a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0Zm9.2 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0ZM13 15.5l-1.6 2.6h3.2Z'/%3E%3C/svg%3E"); }
+:root[data-theme="punk"] .crayon-button { box-shadow: 0 6px 0 #6e0f3f; }
+:root[data-theme="punk"] .crayon-button:active { box-shadow: 0 2px 0 #6e0f3f; }
+:root[data-theme="punk"] .crayon-button::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath fill-rule='evenodd' d='M13 1C6.4 1 2 5.6 2 11.2c0 3.3 1.7 6 4.2 7.3V23h13.6v-4.5c2.5-1.3 4.2-4 4.2-7.3C24 5.6 19.6 1 13 1ZM5.6 12a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0Zm9.2 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0ZM13 15.5l-1.6 2.6h3.2Z' fill='%23fff'/%3E%3C/svg%3E"); }
+:root[data-theme="punk"] .stroke { background-color: var(--k5); background-image: repeating-linear-gradient(-45deg, transparent 0 7px, rgb(0 0 0 / 0.35) 7px 13px); }
+:root[data-theme="punk"] .field input:focus, :root[data-theme="punk"] .field textarea:focus { background: linear-gradient(transparent 70%, rgb(255 111 181 / 0.18) 70%); }
 
 @media (min-width: 560px) {
   .add { grid-template-columns: 1fr 140px; }
@@ -446,7 +504,7 @@ code { font-family: ui-monospace, monospace; font-size: 0.8em; }
 @media (prefers-reduced-motion: reduce) {
   .pill, .crayon-button, .link, .edit, .stroke, .box::after { transition: none; }
   .pill:hover, .crayon-button:hover, .crayon-button:active, .link:hover, .edit:hover,
-  :root[data-theme="cute"] .crayon-button:hover, :root[data-theme="cute"] .crayon-button:active { transform: none; }
+  :root:is([data-theme="cute"], [data-theme="punk"]) .crayon-button:hover, :root:is([data-theme="cute"], [data-theme="punk"]) .crayon-button:active { transform: none; }
   .mascot-box, .mascot-float { animation: none; }
 }
 
