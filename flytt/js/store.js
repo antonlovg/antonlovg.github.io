@@ -1,10 +1,11 @@
-// Det du skriver in: sakerna på listan (namn, länk, pris, antal, anteckning, om de är köpta) och om sidan ska
-// vara ljus eller mörk. Bara i den här webbläsarens lokala lagring ("lovgren-flytt", listad på /cookies/), och
+// Det du skriver in: sakerna på listan (namn, länk, pris, antal, anteckning, om de är köpta) och vilket
+// utseende du valt (kritor, mörkt eller gulligt). Bara i den här webbläsarens lokala lagring ("lovgren-flytt", listad på /cookies/), och
 // bara när du ändrar något. Varje sak har ett id och när den senast ändrades (at), så att två enheter kan slås
 // ihop; en borttagen sparas som { gone: true, at } så att den inte kommer tillbaka från den andra enheten.
 import { safeLink } from './list.js';
 
 const KEY = 'lovgren-flytt';
+const THEMES = ['light', 'dark', 'cute'];
 const blank = () => ({ items: {}, theme: 'light' });
 
 // Bara det sidan känner till, i rätt form (gäller också det som läses in från en annan enhet).
@@ -30,7 +31,7 @@ export function clean(value) {
   const source = isObject(value.items) ? value.items : value.buy;
   const items = Object.fromEntries(Object.entries(isObject(source) ? source : {})
     .filter(([id, entry]) => ID.test(id) && item(entry)).map(([id, entry]) => [id, tidy(entry)]));
-  return { items, theme: value.theme === 'dark' ? 'dark' : 'light' };
+  return { items, theme: THEMES.includes(value.theme) ? value.theme : 'light' };
 }
 
 function load() {
@@ -56,18 +57,18 @@ export function setItem(key, value) {
   save();
 }
 
-// ---------- Ljust eller mörkt ----------
+// ---------- Utseendet: kritor (ljust), mörkt eller gulligt ----------
 export const theme = () => data.theme;
 export function setTheme(value) {
-  data.theme = value === 'dark' ? 'dark' : 'light';
+  data.theme = THEMES.includes(value) ? value : 'light';
   save();
 }
 
 // ---------- Synk ----------
 export const snapshot = () => structuredClone(data);
 
-// Läs in från en annan enhet: för varje sak gäller den senaste ändringen (även att den tagits bort). Ljust
-// eller mörkt följer den här enheten.
+// Läs in från en annan enhet: för varje sak gäller den senaste ändringen (även att den tagits bort). Utseendet
+// följer den här enheten.
 export function merge(incoming) {
   const other = clean(incoming);
   const result = { ...data.items };
@@ -85,4 +86,4 @@ export function forget() {
 export function reload() {
   data = load();
 }
-export { KEY };
+export { KEY, THEMES };

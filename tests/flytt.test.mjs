@@ -60,6 +60,7 @@ test('the list is cleaned, old lists are read in, and two devices merge by the n
   });
   assert.deepEqual(Object.keys(value.items), ['a1', 'a5']);
   assert.equal(value.theme, 'dark');
+  assert.equal(store.clean({ theme: 'cute' }).theme, 'cute');
   assert.equal(store.clean({ theme: 'neon' }).theme, 'light');
   // Den förra versionen sparade under "buy", med rum, och hade en att göra-lista.
   const old = store.clean({ tasks: { m1: { title: 'x' } }, buy: { b1: { name: 'Lampa', room: 'Sovrum', qty: 2, price: 99.9, note: '', link: '', done: false, made: 1, at: 1 } } });
@@ -110,7 +111,17 @@ test('the page is unlisted, strict, and its storage is on the cookie page', asyn
   assert.match(await read('scripts/build-site.mjs'), /Disallow: \/flytt\//);
   for (const file of ['index.html', 'games/index.html', 'assets/site.js']) assert.ok(!(await read(file)).includes('/flytt/'), `${file} links to /flytt/`);
   const key = (await read('flytt/js/store.js')).match(/const KEY = '([^']+)'/)[1];
-  assert.ok((await read('flytt/js/theme.js')).includes(`'${key}'`), 'theme.js reads the same storage');
+  const head = await read('flytt/js/theme.js');
+  assert.ok(head.includes(`'${key}'`), 'theme.js reads the same storage');
+  // Varje utseende har en knapp, ett eget tema i CSS och känns igen av theme.js.
+  const css = await read('flytt/flytt.css');
+  for (const look of store.THEMES) {
+    assert.ok(html.includes(`data-look="${look}"`), `no button for ${look}`);
+    if (look !== 'light') {
+      assert.ok(css.includes(`:root[data-theme="${look}"] {`), `no colours for ${look}`);
+      assert.ok(head.includes(`'${look}'`), `theme.js does not know ${look}`);
+    }
+  }
   const cache = (await read('flytt/sw.js')).match(/const CACHE = '([^']+)'/)[1];
   const cookies = await read('cookies/index.html');
   for (const name of [key, cache, '/flytt/sw.js']) assert.ok(cookies.includes(`<code>${name}</code>`), name);

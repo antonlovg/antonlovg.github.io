@@ -1,5 +1,6 @@
 /* Flyttlistan (/flytt/): en inköpslista ritad med kritor. Ljust papper som standard, svart ritpapper om du
-   väljer mörkt läge (js/theme.js sätter data-theme på <html> innan sidan ritas). Handstilen är Caveat
+   väljer mörkt och rosa med hjärtan om du väljer gulligt (js/theme.js sätter data-theme på <html> innan sidan
+   ritas). Handstilen är Caveat
    (rubriker) och Patrick Hand (text), båda SIL Open Font License (fonts/OFL-*.txt). Allt ritat är CSS och
    SVG: ojämna hörn (--wobble), korn (--grain), klotter i bakgrunden (--doodles) och kritan i #crayon. */
 @font-face {
@@ -66,6 +67,30 @@
   color-scheme: dark;
 }
 
+/* Gulligt: rosa prickigt papper, pastellkritor, hjärtan och en flyttkartong med ansikte. */
+:root[data-theme="cute"] {
+  --paper: #ffeef5;
+  --card: #ffffff;
+  --ink: #5b2346;
+  --ink-soft: #84476a;
+  --line: rgb(214 51 132 / 0.35);
+  --k1: #ff5fa2; --t1: #c2185b;
+  --k2: #b9a2ff; --t2: #6b3fd4;
+  --k3: #ffb38a; --t3: #a3461a;
+  --k4: #7fd8b4; --t4: #1d7650;
+  --k5: #8ccfff; --t5: #1a65a3;
+  --k6: #ff8fc0; --t6: #ad1f5c;
+  --k7: #e9a2ff; --t7: #8d2aa0;
+  --k8: #ffd166; --t8: #8a5a00;
+  --on-crayon: #ffffff;
+  --button: #d6337f;
+  --grain: none;
+  --doodles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cg fill='%23ff8fc0' fill-opacity='.35'%3E%3Cpath d='M60 50c-6-10-22-4-16 8l16 16 16-16c6-12-10-18-16-8z'/%3E%3Cpath d='M330 250c-5-8-18-3-13 6l13 13 13-13c5-9-8-14-13-6z'/%3E%3Cpath d='M160 360c-4-7-15-3-11 5l11 11 11-11c4-8-7-12-11-5z'/%3E%3C/g%3E%3Cg fill='%23b9a2ff' fill-opacity='.4'%3E%3Cpath d='M300 60l5 12 12 5-12 5-5 12-5-12-12-5 12-5z'/%3E%3Cpath d='M90 230l4 9 9 4-9 4-4 9-4-9-9-4 9-4z'/%3E%3C/g%3E%3Cpath fill='%23ffb38a' fill-opacity='.45' d='M200 160c-14-10-24-2-24 6s10 16 24 6c14 10 24 2 24-6s-10-16-24-6z'/%3E%3Ccircle cx='200' cy='166' r='5' fill='%23ff8fc0' fill-opacity='.6'/%3E%3C/svg%3E"), radial-gradient(circle, rgb(255 143 192 / 0.22) 3px, transparent 3.5px);
+  --wobble: 26px;
+  --wobble-2: 26px;
+  color-scheme: light;
+}
+
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
@@ -107,6 +132,8 @@ code { font-family: ui-monospace, monospace; font-size: 0.8em; }
 :root[data-theme="dark"] .pill.solid { border-color: var(--k5); background-color: var(--k5); color: var(--on-crayon); }
 .pill.danger { border-color: var(--t1); color: var(--t1); }
 .pill[aria-pressed="true"] { background-color: var(--k3); color: #2b2622; border-color: var(--k3); }
+.looks { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.look { padding: 4px 12px; }
 .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
 .hint { margin: 8px 2px 0; color: var(--ink-soft); font-size: 16px; }
 .status { margin: 8px 2px 0; color: var(--t4); font-size: 17px; }
@@ -141,6 +168,7 @@ code { font-family: ui-monospace, monospace; font-size: 0.8em; }
 .top-bar { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .box-of-crayons { display: block; width: min(300px, 82%); margin: 10px auto 2px; overflow: visible; }
 .box-of-crayons use { transition: transform 0.25s; }
+.mascot { display: none; }
 .box-front { fill: var(--box); stroke: var(--box-line); stroke-width: 4; stroke-linejoin: round; }
 .title { margin: 0; font-size: clamp(54px, 15vw, 84px); letter-spacing: 0.01em; }
 .title > span > span { display: inline-block; color: var(--ct); }
@@ -324,17 +352,106 @@ code { font-family: ui-monospace, monospace; font-size: 0.8em; }
 .sync-offer { margin-top: 16px; padding: 12px 14px; border: 3px dashed var(--k2); border-radius: var(--wobble); }
 .sync-offer h3 { margin-top: 0; }
 
+/* ---------- Gulligt läge ---------- */
+:root[data-theme="cute"] body { background-size: 420px 420px, 26px 26px; background-attachment: fixed, fixed; }
+:root[data-theme="cute"] :focus-visible { outline-color: var(--t1); }
+:root[data-theme="cute"] .pill { border-color: var(--k1); border-radius: 999px; }
+:root[data-theme="cute"] .pill[aria-pressed="true"] { background-color: var(--t1); border-color: var(--t1); color: #fff; }
+:root[data-theme="cute"] .pill.solid { border-color: var(--t1); background-color: var(--t1); color: #fff; }
+:root[data-theme="cute"] .close { border-color: var(--k1); border-radius: 50%; color: var(--t1); }
+
+/* Maskoten i stället för kritlådan: en flyttkartong som guppar. */
+:root[data-theme="cute"] .box-of-crayons { display: none; }
+:root[data-theme="cute"] .mascot { display: block; width: min(250px, 72%); margin: 6px auto 0; overflow: visible; }
+.m-body { fill: #ffd9b0; stroke: #c9875a; stroke-width: 4; }
+.m-flap { fill: #ffc994; stroke: #c9875a; stroke-width: 4; stroke-linejoin: round; }
+.m-tape { fill: #ffb3cf; }
+.m-eye { fill: #5b2346; }
+.m-glint { fill: #fff; }
+.m-blush { fill: #ff8fc0; opacity: 0.6; }
+.m-mouth { fill: none; stroke: #5b2346; stroke-width: 4; stroke-linecap: round; }
+.m-bow { fill: #ff5fa2; stroke: #c2185b; stroke-width: 3; stroke-linejoin: round; }
+.m-knot { fill: #ff8fc0; stroke: #c2185b; stroke-width: 3; }
+.m-heart { fill: #ff5fa2; }
+.m-heart.h2 { fill: #e9a2ff; }
+.m-spark { fill: #ffd166; }
+.m-spark.s2 { fill: #8ccfff; }
+.m-spark.s3 { fill: #b9a2ff; }
+.mascot-box { transform-origin: 130px 156px; animation: bop 2.6s ease-in-out infinite; }
+.mascot-float { animation: twinkle 3.2s ease-in-out infinite; }
+@keyframes bop { 0%, 50%, 100% { transform: none; } 25% { transform: translateY(-6px) rotate(-2deg); } 75% { transform: translateY(-4px) rotate(2deg); } }
+@keyframes twinkle { 0%, 100% { opacity: 1; transform: none; } 50% { opacity: 0.6; transform: translateY(-5px); } }
+
+/* Rubriken: bubbliga bokstäver med vit kant och rosa skugga. */
+:root[data-theme="cute"] .title > span > span { text-shadow: 3px 0 #fff, -3px 0 #fff, 0 3px #fff, 0 -3px #fff, 2px 2px #fff, -2px -2px #fff, 2px -2px #fff, -2px 2px #fff, 4px 5px 0 var(--k6); }
+:root[data-theme="cute"] .title .k3 { --ct: var(--t7); }
+:root[data-theme="cute"] .title .k4 { --ct: var(--t1); }
+:root[data-theme="cute"] .title .k5 { --ct: var(--t2); }
+:root[data-theme="cute"] .done-title, :root[data-theme="cute"] .paper-body h3 { color: var(--t7); }
+:root[data-theme="cute"] .paper-head h2, :root[data-theme="cute"] .empty p { color: var(--t1); }
+:root[data-theme="cute"] .tagline::before, :root[data-theme="cute"] .tagline::after { content: '\2661'; margin: 0 8px; color: var(--t1); }
+
+/* Kort och rutor: runda, med mjuk rosa skugga och ett hjärta som klisterlapp. */
+:root[data-theme="cute"] .add { border-color: var(--k1); border-style: dashed; box-shadow: 0 8px 0 var(--k6), 0 14px 30px rgb(232 65 138 / 0.18); rotate: none; }
+:root[data-theme="cute"] .add-title { color: var(--t1); }
+:root[data-theme="cute"] .item { position: relative; box-shadow: 0 5px 0 color-mix(in srgb, var(--c) 55%, transparent), 0 10px 22px rgb(232 65 138 / 0.12); rotate: none; }
+:root[data-theme="cute"] .item::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -10px;
+  width: 28px;
+  height: 26px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23ff5fa2' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  rotate: -14deg;
+}
+:root[data-theme="cute"] .item.is-done { box-shadow: none; }
+:root[data-theme="cute"] .item.is-done::before { opacity: 0.45; }
+:root[data-theme="cute"] .price { border-style: solid; border-radius: 999px; background: color-mix(in srgb, var(--c) 18%, #fff); rotate: none; }
+:root[data-theme="cute"] .link { border-radius: 999px; background-image: radial-gradient(circle, color-mix(in srgb, var(--c) 45%, transparent) 1.6px, transparent 2px); background-size: 10px 10px; }
+:root[data-theme="cute"] .paper { border-color: var(--k1); border-radius: 28px; box-shadow: 0 9px 0 var(--k6); }
+:root[data-theme="cute"] .paper::backdrop { background: rgb(91 35 70 / 0.45); }
+:root[data-theme="cute"] .field input:focus, :root[data-theme="cute"] .field textarea:focus { border-bottom-color: var(--k1); background: linear-gradient(transparent 70%, rgb(255 95 162 / 0.15) 70%); }
+:root[data-theme="cute"] .sync-offer { border-color: var(--k1); }
+
+/* Bockrutan blir en rund ruta som fylls med ett hjärta. */
+:root[data-theme="cute"] .box::before { border-radius: 50%; }
+:root[data-theme="cute"] .box::after { inset: 13px 12px 11px; background: var(--t1); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 24'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z'/%3E%3C/svg%3E") center / contain no-repeat; }
+:root[data-theme="cute"] .box:hover::before, :root[data-theme="cute"] .box[aria-pressed="true"]::before { background: color-mix(in srgb, var(--c) 28%, transparent); }
+
+/* Lägg till-knappen: en rund godisknapp med ett hjärta. */
+:root[data-theme="cute"] .crayon-button {
+  padding: 0 30px 0 58px;
+  border-radius: 999px;
+  clip-path: none;
+  background-image: linear-gradient(transparent 0 16%, rgb(255 255 255 / 0.28) 16% 32%, transparent 32%);
+  box-shadow: 0 6px 0 #a3134f;
+}
+:root[data-theme="cute"] .crayon-button::before { content: ''; position: absolute; left: 20px; top: calc(50% - 13px); width: 28px; height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23fff'/%3E%3C/svg%3E") center / contain no-repeat; }
+:root[data-theme="cute"] .crayon-button:hover { transform: translateY(-2px) scale(1.03); }
+:root[data-theme="cute"] .crayon-button:active { transform: translateY(4px); box-shadow: 0 2px 0 #a3134f; }
+:root[data-theme="cute"] .crayon-button:focus-visible { filter: none; outline: 3px dashed var(--t5); outline-offset: 4px; }
+
+/* Summan: en randig godisstång som ett hjärta drar. */
+:root[data-theme="cute"] .sum-line b { color: var(--t2); }
+:root[data-theme="cute"] .sum-line .left b { color: var(--t1); }
+:root[data-theme="cute"] .track { border-bottom-color: var(--k6); }
+:root[data-theme="cute"] .stroke { border-radius: 999px; background-color: var(--k1); background-image: repeating-linear-gradient(-45deg, transparent 0 7px, rgb(255 255 255 / 0.45) 7px 13px); }
+:root[data-theme="cute"] .stroke::after { right: -18px; top: -9px; width: 32px; height: 30px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 -2 30 28'%3E%3Cpath d='M13 6C10-1 0 1 2 10l11 12 11-12c2-9-8-11-11-4z' fill='%23ff5fa2' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E") center / contain no-repeat; rotate: 10deg; }
+
 @media (min-width: 560px) {
   .add { grid-template-columns: 1fr 140px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pill, .crayon-button, .link, .edit, .stroke, .box::after { transition: none; }
-  .pill:hover, .crayon-button:hover, .crayon-button:active, .link:hover, .edit:hover { transform: none; }
+  .pill:hover, .crayon-button:hover, .crayon-button:active, .link:hover, .edit:hover,
+  :root[data-theme="cute"] .crayon-button:hover, :root[data-theme="cute"] .crayon-button:active { transform: none; }
+  .mascot-box, .mascot-float { animation: none; }
 }
 
 @media print {
   body { background: #fff; color: #000; }
-  .top-bar, .box-of-crayons, .add, .edit, .actions, .skip { display: none !important; }
+  .top-bar, .box-of-crayons, .mascot, .add, .edit, .actions, .skip { display: none !important; }
   .item { box-shadow: none; rotate: none; break-inside: avoid; }
 }

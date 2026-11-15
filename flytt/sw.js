@@ -1,6 +1,6 @@
 // Flyttlistan utan nät (bara /flytt/). Allt sidan behöver sparas när den installeras. Med nät hämtas filerna
 // på nytt (så att ändringar syns direkt) men ger upp efter 3 sekunder; då, och utan nät, används den sparade kopian.
-const CACHE = 'flytt-v3';
+const CACHE = 'flytt-v4';
 const PRECACHE = [
   './',
   'flytt.css',

@@ -36,7 +36,11 @@
   <div class="page">
     <header class="top">
       <div class="top-bar">
-        <button type="button" class="pill" id="theme" aria-pressed="false">Mörkt läge</button>
+        <div class="looks" role="group" aria-label="Utseende">
+          <button type="button" class="pill look" data-look="light" aria-pressed="true">Kritor</button>
+          <button type="button" class="pill look" data-look="dark" aria-pressed="false">Mörkt</button>
+          <button type="button" class="pill look" data-look="cute" aria-pressed="false">Gulligt</button>
+        </div>
         <button type="button" class="pill" id="open-more" aria-haspopup="dialog">Synk &amp; data</button>
       </div>
       <svg class="box-of-crayons" viewBox="0 0 330 120" aria-hidden="true" focusable="false">
@@ -49,6 +53,31 @@
         <use href="#crayon" color="#ef5ea0" x="248" y="2" width="34" height="140" transform="rotate(12 265 120)"/>
         <use href="#crayon" color="#8d5524" x="286" y="8" width="34" height="140" transform="rotate(16 303 120)"/>
         <path class="box-front" d="M6 82h318l-10 38H16Z"/>
+      </svg>
+      <!-- Gulligt läge: en flyttkartong med ansikte, rosett och hjärtan. -->
+      <svg class="mascot" viewBox="0 0 260 170" aria-hidden="true" focusable="false">
+        <g class="mascot-float">
+          <path class="m-heart h1" d="M30 52c-6-10-22-4-16 8l16 16 16-16c6-12-10-18-16-8z"/>
+          <path class="m-heart h2" d="M226 34c-4-7-15-3-11 5l11 11 11-11c4-8-7-12-11-5z"/>
+          <path class="m-spark s1" d="M206 96l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
+          <path class="m-spark s2" d="M54 112l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+          <path class="m-spark s3" d="M120 8l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>
+        </g>
+        <g class="mascot-box">
+          <path class="m-flap" d="M70 60 52 38h66l12 22Z"/>
+          <path class="m-flap" d="M190 60l18-22h-66l-12 22Z"/>
+          <rect class="m-body" x="70" y="58" width="120" height="98" rx="18"/>
+          <path class="m-tape" d="M118 58h24v26h-24Z"/>
+          <ellipse class="m-eye" cx="106" cy="104" rx="7" ry="9"/>
+          <ellipse class="m-eye" cx="154" cy="104" rx="7" ry="9"/>
+          <circle class="m-glint" cx="108.5" cy="100" r="2.6"/>
+          <circle class="m-glint" cx="156.5" cy="100" r="2.6"/>
+          <ellipse class="m-blush" cx="92" cy="122" rx="10" ry="6"/>
+          <ellipse class="m-blush" cx="168" cy="122" rx="10" ry="6"/>
+          <path class="m-mouth" d="M122 120q8 9 16 0"/>
+          <path class="m-bow" d="M130 52c-10-14-30-14-30 0s20 14 30 0c10 14 30 14 30 0s-20-14-30 0Z"/>
+          <circle class="m-knot" cx="130" cy="52" r="7"/>
+        </g>
       </svg>
       <h1 class="title" aria-label="Flyttlistan">
         <span aria-hidden="true"><span class="k1">F</span><span class="k2">l</span><span class="k3">y</span><span class="k4">t</span><span class="k5">t</span><span class="k6">l</span><span class="k1">i</span><span class="k2">s</span><span class="k3">t</span><span class="k4">a</span><span class="k5">n</span></span>
@@ -133,7 +162,7 @@
       <p id="offline"></p>
 
       <h3>Din data</h3>
-      <p>Allt sparas bara här, i webbläsarens lokala lagring under namnet <code>lovgren-flytt</code>, även länkarna och om du valt mörkt läge. Inget skickas någonstans; en länk öppnas först när du trycker på den. Mer i <a href="/cookies/">cookiepolicyn</a>.</p>
+      <p>Allt sparas bara här, i webbläsarens lokala lagring under namnet <code>lovgren-flytt</code>, även länkarna och vilket utseende du valt. Inget skickas någonstans; en länk öppnas först när du trycker på den. Mer i <a href="/cookies/">cookiepolicyn</a>.</p>
       <button type="button" class="pill danger" id="forget">Sudda ut allt</button>
       <p class="status" id="forget-status" role="status"></p>
     </div>

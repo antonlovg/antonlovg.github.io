@@ -39,15 +39,16 @@ const today = () => new Date().toISOString().slice(0, 10);
 let colors = new Map();
 const crayonFor = item => String((colors.get(item.id) ?? 0) % 8 + 1);
 
-// ---------- Ljust eller mörkt ----------
+// ---------- Utseendet: kritor, mörkt eller gulligt ----------
+const BAR = { light: '#fffaf0', dark: '#1b1923', cute: '#ffe3ef' };
 function applyTheme() {
-  const dark = store.theme() === 'dark';
-  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#1b1923' : '#fffaf0');
-  $('theme').setAttribute('aria-pressed', String(dark));
+  const look = store.theme();
+  document.documentElement.dataset.theme = look;
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', BAR[look]);
+  for (const button of document.querySelectorAll('.look')) button.setAttribute('aria-pressed', String(button.dataset.look === look));
 }
-$('theme').addEventListener('click', () => {
-  store.setTheme(store.theme() === 'dark' ? 'light' : 'dark');
+for (const button of document.querySelectorAll('.look')) button.addEventListener('click', () => {
+  store.setTheme(button.dataset.look);
   applyTheme();
 });
 
@@ -142,7 +143,7 @@ const field = (label, input) => h('label', { class: 'field' }, h('span', {}, lab
 function edit(item) {
   const name = h('input', { type: 'text', maxlength: 2200, autocomplete: 'off', value: item.name });
   const link = h('input', { type: 'url', inputmode: 'url', autocomplete: 'off', placeholder: 'https://…', value: item.link || '' });
-  const price = h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: 'kr', value: item.price === null ? '' : String(item.price).replace('.', ',') });
+  const price = h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: 'kr', value: item.price === null ? '' : (Number.isInteger(item.price) ? String(item.price) : item.price.toFixed(2).replace('.', ',')) });
   const qty = h('input', { type: 'text', inputmode: 'numeric', autocomplete: 'off', value: item.qty });
   const note = h('textarea', { rows: 3, maxlength: 500, placeholder: 'Mått, färg, butik…' });
   note.value = item.note || '';
